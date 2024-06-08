@@ -209,8 +209,9 @@ def calculate_type_effectiveness(type_data_list):
 
 if __name__ == '__main__':
     try:
+        logger.info("Starting initialization...")
         logger.info("Starting Flask server...")
-        app.run(debug=True)
+        app.run(debug=True, host='0.0.0.0')  # Ensure it listens on all interfaces
     except Exception as e:
         logger.error(f"Fatal error occurred: {e}", exc_info=True)
-        input("Press Enter to exit...")
+        input("Press Enter to exit...")  # Keep the console window open
