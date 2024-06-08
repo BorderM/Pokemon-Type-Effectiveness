@@ -59,10 +59,10 @@
             border-bottom: none;
         }
         .suggestions li:hover, .suggestions .highlighted {
-            background-color: #BFC2BA;
+            background-color: #f9f9f9;
         }
         .highlighted {
-            background-color: #BFC2BA;
+            background-color: #ddd;
         }
         .control-buttons {
             display: flex;
@@ -247,9 +247,7 @@
                     .then(response => response.json())
                     .then(data => {
                         suggestionsBox.style.display = 'block';
-                        suggestionsBox.innerHTML = data.suggestions.map((name, index) => 
-                            `<li class="${index === selectedIndex ? 'highlighted' : ''}" onclick="selectSuggestion('${name}')">${name}</li>`
-                        ).join('');
+                        suggestionsBox.innerHTML = data.suggestions.map(name => `<li onclick="selectSuggestion('${name}')">${name}</li>`).join('');
                         selectedIndex = -1; // Reset the selected index when suggestions are shown
                     });
             } else {
@@ -327,7 +325,9 @@
 
             if (response.ok) {
                 data.forEach(result => {
-                    resultsDiv.appendChild(createResultCard(result));
+                    const newCard = createResultCard(result);
+                    resultsDiv.appendChild(newCard);
+                    scrollToNewCard(newCard);  // Scroll to the new card
                 });
             } else {
                 handleSuggestionError(data.error, pokemonName);
@@ -386,25 +386,8 @@
             card.remove();
         }
 
-        function handleSuggestionError(error, pokemonName) {
-            const errorMessageDiv = document.getElementById('error-message');
-            const matches = error.match(/Did you mean: (.*)/);
-            if (matches) {
-                const suggestions = matches[1].split(', ').map(name => `<a href="#" onclick="selectSuggestion('${name}')">${name}</a>`).join(', ');
-                errorMessageDiv.innerHTML = `
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center w-full" role="alert">
-                        <strong class="font-bold">Error:</strong>
-                        <span class="block sm:inline">Pokémon ${pokemonName} not found. Did you mean: ${suggestions}?</span>
-                    </div>
-                `;
-            } else {
-                errorMessageDiv.innerHTML = `
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center w-full" role="alert">
-                        <strong class="font-bold">Error:</strong>
-                        <span class="block sm:inline">${error}</span>
-                    </div>
-                `;
-            }
+        function scrollToNewCard(card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }
     </script>
 </body>
