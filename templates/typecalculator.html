@@ -12,8 +12,8 @@
             margin-bottom: 10px;
             display: flex;
             align-items: center;
-			padding-left: 10px;
-			gap: 20px;
+            padding-left: 10px;
+            gap: 20px;
         }
         .dropdown {
             background-color: white;
@@ -155,192 +155,202 @@
         <div class="watermark-fixed">Created by BorderM</div>
         <h1 class="text-3xl font-bold text-center mb-2">Pokémon Type Calculator</h1>
         <div class="control-buttons">
-            <button onclick="fetchTypeEffectiveness()" class="bg-blue-500 text-white p-2 rounded-lg">Calculate</button>
             <button onclick="clearResults()" class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
-			<a href="/typeeffectiveness" class="bg-green-500 text-white p-2 rounded-lg">Type Effectiveness</a>
+            <a href="/typeeffectiveness" class="bg-green-500 text-white p-2 rounded-lg">Type Effectiveness</a>
             <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
-			<a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
-		</div>
+            <a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
+        </div>
         <div class="input-container">
             <select id="type1" class="dropdown">
                 <option value="">Select Type 1</option>
-                <option value="normal">Normal</option>
-                <option value="fire">Fire</option>
-                <option value="water">Water</option>
-                <option value="electric">Electric</option>
-                <option value="grass">Grass</option>
-                <option value="ice">Ice</option>
-                <option value="fighting">Fighting</option>
-                <option value="poison">Poison</option>
-                <option value="ground">Ground</option>
-                <option value="flying">Flying</option>
-                <option value="psychic">Psychic</option>
                 <option value="bug">Bug</option>
-                <option value="rock">Rock</option>
-                <option value="ghost">Ghost</option>
-                <option value="dragon">Dragon</option>
                 <option value="dark">Dark</option>
-                <option value="steel">Steel</option>
+                <option value="dragon">Dragon</option>
+                <option value="electric">Electric</option>
                 <option value="fairy">Fairy</option>
+                <option value="fighting">Fighting</option>
+                <option value="fire">Fire</option>
+                <option value="flying">Flying</option>
+                <option value="ghost">Ghost</option>
+                <option value="grass">Grass</option>
+                <option value="ground">Ground</option>
+                <option value="ice">Ice</option>
+                <option value="normal">Normal</option>
+                <option value="poison">Poison</option>
+                <option value="psychic">Psychic</option>
+                <option value="rock">Rock</option>
+                <option value="steel">Steel</option>
+                <option value="water">Water</option>
             </select>
             <select id="type2" class="dropdown">
                 <option value="">Select Type 2</option>
-                <option value="normal">Normal</option>
-                <option value="fire">Fire</option>
-                <option value="water">Water</option>
-                <option value="electric">Electric</option>
-                <option value="grass">Grass</option>
-                <option value="ice">Ice</option>
-                <option value="fighting">Fighting</option>
-                <option value="poison">Poison</option>
-                <option value="ground">Ground</option>
-                <option value="flying">Flying</option>
-                <option value="psychic">Psychic</option>
                 <option value="bug">Bug</option>
-                <option value="rock">Rock</option>
-                <option value="ghost">Ghost</option>
-                <option value="dragon">Dragon</option>
                 <option value="dark">Dark</option>
-                <option value="steel">Steel</option>
+                <option value="dragon">Dragon</option>
+                <option value="electric">Electric</option>
                 <option value="fairy">Fairy</option>
+                <option value="fighting">Fighting</option>
+                <option value="fire">Fire</option>
+                <option value="flying">Flying</option>
+                <option value="ghost">Ghost</option>
+                <option value="grass">Grass</option>
+                <option value="ground">Ground</option>
+                <option value="ice">Ice</option>
+                <option value="normal">Normal</option>
+                <option value="poison">Poison</option>
+                <option value="psychic">Psychic</option>
+                <option value="rock">Rock</option>
+                <option value="steel">Steel</option>
+                <option value="water">Water</option>
             </select>
         </div>
     </div>
     <div id="results"></div>
     <script>
-		const types = [
-			"normal", "fire", "water", "electric", "grass", "ice", "fighting",
-			"poison", "ground", "flying", "psychic", "bug", "rock", "ghost",
-			"dragon", "dark", "steel", "fairy"
-		];
+        const types = [
+            "bug", "dark", "dragon", "electric", "fairy", "fighting",
+            "fire", "flying", "ghost", "grass", "ground", "ice",
+            "normal", "poison", "psychic", "rock", "steel", "water"
+        ];
 
-		function populateDropdowns() {
-			const type1Dropdown = document.getElementById('type1');
-			const type2Dropdown = document.getElementById('type2');
+        function populateDropdowns() {
+            const type1Dropdown = document.getElementById('type1');
+            const type2Dropdown = document.getElementById('type2');
 
-			const type1Value = type1Dropdown.value;
-			const type2Value = type2Dropdown.value;
+            const type1Value = localStorage.getItem('type1') || type1Dropdown.value;
+            const type2Value = localStorage.getItem('type2') || type2Dropdown.value;
 
-			type1Dropdown.innerHTML = '<option value="">Select Type 1</option>';
-			type2Dropdown.innerHTML = '<option value="">Select Type 2</option>';
+            type1Dropdown.innerHTML = '<option value="">Select Type 1</option>';
+            type2Dropdown.innerHTML = '<option value="">Select Type 2</option>';
 
-			types.forEach(type => {
-				const option1 = document.createElement('option');
-				option1.value = type;
-				option1.textContent = capitalizeFirstLetter(type);
-				type1Dropdown.appendChild(option1);
+            types.forEach(type => {
+                const option1 = document.createElement('option');
+                option1.value = type;
+                option1.textContent = capitalizeFirstLetter(type);
+                type1Dropdown.appendChild(option1);
 
-				const option2 = document.createElement('option');
-				option2.value = type;
-				option2.textContent = capitalizeFirstLetter(type);
-				type2Dropdown.appendChild(option2);
-			});
+                const option2 = document.createElement('option');
+                option2.value = type;
+                option2.textContent = capitalizeFirstLetter(type);
+                type2Dropdown.appendChild(option2);
+            });
 
-			type1Dropdown.value = type1Value;
-			type2Dropdown.value = type2Value;
+            type1Dropdown.value = type1Value;
+            type2Dropdown.value = type2Value;
 
-			if (type1Value) {
-				document.querySelector(`#type2 option[value="${type1Value}"]`).disabled = true;
-			}
+            disableSelectedOptions();
+        }
 
-			if (type2Value) {
-				document.querySelector(`#type1 option[value="${type2Value}"]`).disabled = true;
-			}
-		}
+        function disableSelectedOptions() {
+            const type1 = document.getElementById('type1').value;
+            const type2 = document.getElementById('type2').value;
 
-		async function fetchTypeEffectiveness() {
-			const type1 = document.getElementById('type1').value;
-			const type2 = document.getElementById('type2').value;
+            document.querySelectorAll('#type1 option').forEach(option => {
+                option.disabled = false;
+            });
 
-			if (!type1) {
-				document.getElementById('results').innerHTML = '';
-				return;
-			}
+            document.querySelectorAll('#type2 option').forEach(option => {
+                option.disabled = false;
+            });
 
-			const response = await fetch(`/api/typeeffectiveness?type1=${type1}&type2=${type2}`);
-			const data = await response.json();
+            if (type1) {
+                document.querySelector(`#type2 option[value="${type1}"]`).disabled = true;
+            }
 
-			if (response.ok) {
-				displayResults(data);
-			} else {
-				alert(data.error || 'An error occurred');
-			}
-		}
-		
-		function updateDropdowns() {
-			const type1 = document.getElementById('type1').value;
-			const type2 = document.getElementById('type2').value;
+            if (type2) {
+                document.querySelector(`#type1 option[value="${type2}"]`).disabled = true;
+            }
+        }
 
-			populateDropdowns();
+        function updateDropdowns() {
+            const type1 = document.getElementById('type1').value;
+            const type2 = document.getElementById('type2').value;
 
-			if (type1) {
-				document.querySelector(`#type2 option[value="${type1}"]`).disabled = true;
-			}
+            disableSelectedOptions();
 
-			if (type2) {
-				document.querySelector(`#type1 option[value="${type2}"]`).disabled = true;
-			}
-		}
+            localStorage.setItem('type1', type1);
+            localStorage.setItem('type2', type2);
 
-		function clearResults() {
-			document.getElementById('results').innerHTML = '';
-			document.getElementById('type1').value = '';
-			document.getElementById('type2').value = '';
-			populateDropdowns();
-		}
+            fetchTypeEffectiveness();
+        }
 
-		function displayResults(data) {
-			const resultsDiv = document.getElementById('results');
-			resultsDiv.innerHTML = `
-				<div class="result-card">
-					<h2>Type Effectiveness</h2>
-					${createEffectivenessRow('4x Weak', data.four_times_effective)}
-					<div class="separator"></div>
-					${createEffectivenessRow('2x Weak', data.super_effective)}
-					<div class="separator"></div>
-					${createEffectivenessRow('Normal', data.normal_effective)}
-					<div class="separator"></div>
-					${createEffectivenessRow('2x Resistant', data.two_times_resistant)}
-					<div class="separator"></div>
-					${createEffectivenessRow('4x Resistant', data.four_times_resistant)}
-					<div class="separator"></div>
-					${createEffectivenessRow('Immune', data.immune)}
-				</div>
-			`;
-		}
+        async function fetchTypeEffectiveness() {
+            const type1 = document.getElementById('type1').value;
+            const type2 = document.getElementById('type2').value;
 
-		function createEffectivenessRow(label, types) {
-			const formattedTypes = types.length > 0 ? 
-				types.map(type => `<span class="type-badge type-${type.toLowerCase()}">${capitalizeFirstLetter(type)}</span>`).join(' ') :
-				`<span class="type-badge type-none">None</span>`;
-			
-			return `
-				<div class="effectiveness-row">
-					<span class="effectiveness-label">${label}:</span>
-					<div class="effectiveness-content">${formattedTypes}</div>
-				</div>
-			`;
-		}
+            if (!type1) {
+                document.getElementById('results').innerHTML = '';
+                return;
+            }
 
-		function capitalizeFirstLetter(string) {
-			return string.charAt(0).toUpperCase() + string.slice(1);
-		}
+            const response = await fetch(`/api/typeeffectiveness?type1=${type1}&type2=${type2}`);
+            const data = await response.json();
 
-		function navigateToPage(page) {
-			window.location.href = page;
-		}
+            if (response.ok) {
+                displayResults(data);
+            } else {
+                alert(data.error || 'An error occurred');
+            }
+        }
 
-		document.getElementById('type1').addEventListener('change', () => {
-			updateDropdowns();
-			fetchTypeEffectiveness();
-		});
+        function clearResults() {
+			localStorage.removeItem('type1');
+            localStorage.removeItem('type2');
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('type1').value = '';
+            document.getElementById('type2').value = '';
+            populateDropdowns();
+            
+        }
 
-		document.getElementById('type2').addEventListener('change', () => {
-			updateDropdowns();
-			fetchTypeEffectiveness();
-		});
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="result-card">
+                    <h2>Type Effectiveness</h2>
+                    ${createEffectivenessRow('4x Weak', data.four_times_effective)}
+                    <div class="separator"></div>
+                    ${createEffectivenessRow('2x Weak', data.super_effective)}
+                    <div class="separator"></div>
+                    ${createEffectivenessRow('Normal', data.normal_effective)}
+                    <div class="separator"></div>
+                    ${createEffectivenessRow('2x Resistant', data.two_times_resistant)}
+                    <div class="separator"></div>
+                    ${createEffectivenessRow('4x Resistant', data.four_times_resistant)}
+                    <div class="separator"></div>
+                    ${createEffectivenessRow('Immune', data.immune)}
+                </div>
+            `;
+        }
 
-		window.onload = populateDropdowns;
-	</script>
+        function createEffectivenessRow(label, types) {
+            const formattedTypes = types.length > 0 ? 
+                types.map(type => `<span class="type-badge type-${type.toLowerCase()}">${capitalizeFirstLetter(type)}</span>`).join(' ') :
+                `<span class="type-badge type-none">None</span>`;
+            
+            return `
+                <div class="effectiveness-row">
+                    <span class="effectiveness-label">${label}:</span>
+                    <div class="effectiveness-content">${formattedTypes}</div>
+                </div>
+            `;
+        }
+
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        function navigateToPage(page) {
+            window.location.href = page;
+        }
+
+        document.getElementById('type1').addEventListener('change', updateDropdowns);
+        document.getElementById('type2').addEventListener('change', updateDropdowns);
+
+        window.onload = () => {
+            populateDropdowns();
+            fetchTypeEffectiveness();
+        };
+    </script>
 </body>
 </html>
