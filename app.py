@@ -40,9 +40,25 @@ async def fetch(session, url):
 
 @app.route('/')
 def index():
-    return render_template('Pokemon Type Effectiveness.html')
+    return render_template('pokemonlandingpage.html')
 
-@app.route('/api/pokemon', methods=['GET'])
+@app.route('/typeeffectiveness')
+def type_effectiveness():
+    return render_template('pokemontypeeffectiveness.html')
+
+@app.route('/stats')
+def stats():
+    return render_template('pokemonstats.html')
+    
+@app.route('/typecalculator')
+def type_calculator():
+    return render_template('typecalculator.html')
+    
+@app.route('/natures')
+def natures():
+    return render_template('pokemonnatures.html')
+
+@app.route('/api/pokemon/info', methods=['GET'])
 async def get_pokemon_info():
     try:
         pokemon_names = request.args.getlist('name')
@@ -75,7 +91,7 @@ async def get_pokemon_info():
             else:
                 closest_matches = difflib.get_close_matches(pokemon_name.lower(), [p['name'] for p in processed_data])
                 if closest_matches:
-                    suggestions = ', '.join([f'<a href="#" onclick="suggestPokemon(\'{match}\')">{match.capitalize()}</a>' for match in closest_matches])
+                    suggestions = ', '.join([f'<a href="#" onclick="selectSuggestion(\'{match}\')">{match.capitalize()}</a>' for match in closest_matches])
                     return jsonify({'error': f'Pokémon {pokemon_name} not found. Did you mean: {suggestions}'}), 404
 
         for match in matches:
@@ -87,7 +103,11 @@ async def get_pokemon_info():
         logger.error(f"Error occurred: {e}", exc_info=True)
         return jsonify({'error': 'An error occurred while processing your request.'}), 500
 
-@app.route('/api/suggestions', methods=['GET'])
+@app.route('/api/pokemon/stats', methods=['GET'])
+async def get_pokemon_stats():
+    return await get_pokemon_info()
+
+@app.route('/api/pokemon/suggestions', methods=['GET'])
 async def get_suggestions():
     query = request.args.get('query', '').lower()
     if not query:
@@ -137,13 +157,24 @@ async def process_pokemon_data(pokemon_names, processed_data):
                 type_data_list = [data for data in type_data_list if data]
                 effectiveness = calculate_type_effectiveness(type_data_list)
 
+                stats = {
+                    'hp': variety_data['stats'][0]['base_stat'],
+                    'attack': variety_data['stats'][1]['base_stat'],
+                    'defense': variety_data['stats'][2]['base_stat'],
+                    'special_attack': variety_data['stats'][3]['base_stat'],
+                    'special_defense': variety_data['stats'][4]['base_stat'],
+                    'speed': variety_data['stats'][5]['base_stat'],
+                    'total': sum(stat['base_stat'] for stat in variety_data['stats'])
+                }
+
                 processed_data.append({
                     'name': variety_data['name'],
                     'display_name': variety['pokemon']['name'].capitalize(),
                     'form': variety['pokemon']['name'],
                     'id': variety_data['id'],
                     'types': type_names,
-                    'effectiveness': effectiveness
+                    'effectiveness': effectiveness,
+                    'stats': stats
                 })
 
         with open(PROCESSED_CACHE_FILE, 'w') as f:
@@ -206,6 +237,87 @@ def calculate_type_effectiveness(type_data_list):
     effectiveness['normal_effective'] = list(all_types - categorized_types)
 
     return effectiveness
+    
+def calculate_combined_effectiveness(type_data_list):
+    damage_multipliers = {}
+
+    for type_data in type_data_list:
+        damage_relations = type_data['damage_relations']
+
+        for relation_type, related_types in damage_relations.items():
+            multiplier = 1
+            if relation_type == 'double_damage_from':
+                multiplier = 2
+            elif relation_type == 'half_damage_from':
+                multiplier = 0.5
+            elif relation_type == 'no_damage_from':
+                multiplier = 0
+
+            for related_type in related_types:
+                type_name = related_type['name']
+                if type_name not in damage_multipliers:
+                    damage_multipliers[type_name] = 1
+                damage_multipliers[type_name] *= multiplier
+
+    effectiveness = {
+        'four_times_effective': [],
+        'super_effective': [],
+        'normal_effective': [],
+        'two_times_resistant': [],
+        'four_times_resistant': [],
+        'immune': []
+    }
+
+    for type_name, multiplier in damage_multipliers.items():
+        if multiplier == 4:
+            effectiveness['four_times_effective'].append(type_name)
+        elif multiplier == 2:
+            effectiveness['super_effective'].append(type_name)
+        elif multiplier == 0.25:
+            effectiveness['four_times_resistant'].append(type_name)
+        elif multiplier == 0.5:
+            effectiveness['two_times_resistant'].append(type_name)
+        elif multiplier == 0:
+            effectiveness['immune'].append(type_name)
+
+    all_types = set([
+        'normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 
+        'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'
+    ])
+    categorized_types = (
+        set(effectiveness['four_times_effective']) |
+        set(effectiveness['super_effective']) |
+        set(effectiveness['two_times_resistant']) |
+        set(effectiveness['four_times_resistant']) |
+        set(effectiveness['immune'])
+    )
+    effectiveness['normal_effective'] = list(all_types - categorized_types)
+
+    return effectiveness
+    
+@app.route('/api/typeeffectiveness', methods=['GET'])
+async def get_type_effectiveness():
+    try:
+        type1 = request.args.get('type1')
+        type2 = request.args.get('type2', None)
+        if not type1:
+            return jsonify({'error': 'Type 1 is required'}), 400
+
+        type_urls = [f"https://pokeapi.co/api/v2/type/{type1}"]
+        if type2:
+            type_urls.append(f"https://pokeapi.co/api/v2/type/{type2}")
+
+        async with aiohttp.ClientSession() as session:
+            type_data_list = await asyncio.gather(*[fetch(session, url) for url in type_urls])
+
+        effectiveness = calculate_combined_effectiveness(type_data_list)
+        return jsonify(effectiveness)
+
+    except Exception as e:
+        logger.error(f"Error occurred: {e}", exc_info=True)
+        return jsonify({'error': 'An error occurred while processing your request.'}), 500
+        
+    
 
 if __name__ == '__main__':
     try:

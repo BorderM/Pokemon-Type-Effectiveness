@@ -59,10 +59,10 @@
             border-bottom: none;
         }
         .suggestions li:hover, .suggestions .highlighted {
-            background-color: #f9f9f9;
+            background-color: #BFC2BA;
         }
         .highlighted {
-            background-color: #ddd;
+            background-color: #BFC2BA;
         }
         .control-buttons {
             display: flex;
@@ -92,9 +92,11 @@
             position: relative;
         }
         .result-card img {
-            width: 125px;
-            height: 125px;
+            width: 115px;
+            height: 115px;
             align-self: center;
+			margin-bottom: -1rem;
+			margin-top: -1rem;
         }
         .result-card h2 {
             font-size: 1rem; /* Smaller font size */
@@ -156,8 +158,8 @@
             gap: 0.5rem;
         }
         .separator {
-            border-top: 1px solid #444;
-            margin: 0.5rem 0;
+            border-top: 2px solid #444;
+            margin: 0rem;
         }
         .control-buttons {
             display: flex;
@@ -215,6 +217,14 @@
         .hidden {
             visibility: hidden; /* Hide the progress bar without collapsing the space */
         }
+		.error-message-fixed {
+			position: absolute;
+			top: 80px; /* Adjust as needed to position below the search bar */
+			left: 10px;
+			width: 100%;
+			max-width: 450px;
+			z-index: 1001; /* Ensure it is above other elements */
+		}
     </style>
     <title>Pokémon Type Effectiveness</title>
 </head>
@@ -224,8 +234,11 @@
         <h1 class="text-3xl font-bold text-center mb-2">Pokémon Type Effectiveness</h1>
         <div class="control-buttons">
             <button onclick="fetchPokemon()" class="bg-blue-500 text-white p-2 rounded-lg">Search</button>
-            <button onclick="clearResults()" class="bg-gray-500 text-white p-2 rounded-lg">Home</button>
-        </div>
+            <button onclick="clearResults()" class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
+            <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
+			<a href="/typecalculator" class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
+			<a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
+		</div>
         <div class="input-container">
             <input type="text" class="input-field" id="pokemon-input" placeholder="Enter Pokémon Name" oninput="handleInput(event)" onkeydown="handleEnterKey(event)">
             <ul class="suggestions"></ul>
@@ -233,17 +246,18 @@
         <div id="progress-bar-container" class="progress-bar-container hidden">
             <div class="progress-bar"></div>
         </div>
+        <div id="error-message" class="error-message-fixed"></div>
     </div>
-    <div id="error-message" class="w-full max-w-lg mx-auto mt-4"></div>
     <div id="results" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4"></div>
     <script>
+        const LOCAL_STORAGE_KEY = 'activePokemonData';
         let selectedIndex = -1;
 
         function handleInput(event) {
             const input = event.target;
             const suggestionsBox = input.parentElement.querySelector('.suggestions');
             if (input.value.length > 1) {
-                fetch(`/api/suggestions?query=${input.value}`)
+                fetch(`/api/pokemon/suggestions?query=${input.value}`)
                     .then(response => response.json())
                     .then(data => {
                         suggestionsBox.style.display = 'block';
@@ -317,7 +331,7 @@
             const progressBarContainer = document.getElementById('progress-bar-container');
             progressBarContainer.classList.remove('hidden');
 
-            const response = await fetch(`/api/pokemon?name=${pokemonName}`);
+            const response = await fetch(`/api/pokemon/${window.location.pathname.includes('stats') ? 'stats' : 'info'}?name=${pokemonName}`);
             const data = await response.json();
 
             const errorMessageDiv = document.getElementById('error-message');
@@ -325,10 +339,11 @@
 
             if (response.ok) {
                 data.forEach(result => {
-                    const newCard = createResultCard(result);
+                    const newCard = createEffectivenessCard(result);
                     resultsDiv.appendChild(newCard);
-                    scrollToNewCard(newCard);  // Scroll to the new card
+                    scrollToNewCard(newCard);
                 });
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data)); // Store the results in local storage
             } else {
                 handleSuggestionError(data.error, pokemonName);
             }
@@ -338,13 +353,17 @@
             progressBarContainer.classList.add('hidden');
         }
 
-        function createResultCard(result) {
+        function createEffectivenessCard(result) {
             const formDiv = document.createElement('div');
             formDiv.className = "bg-white dark:bg-zinc-700 rounded-lg p-4 shadow-md result-card";
+            formDiv.setAttribute('data-pokemon', JSON.stringify(result));
+            const pokemonName = capitalizeFirstLetter(result.name);
+            const bulbapediaLinkName = pokemonName.split('-')[0]; // Use part of name before first hyphen
+            const bulbapediaLink = `https://bulbapedia.bulbagarden.net/wiki/${bulbapediaLinkName}_(Pok%C3%A9mon)`;
             formDiv.innerHTML = `
                 <button class="close-button" onclick="removeCard(this)">X</button>
                 <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${result.id}.png" alt="${result.form}" class="mx-auto mb-2">
-                <h2 class="text-center mb-2">${capitalizeFirstLetter(result.name)}</h2>
+                <h2 class="text-center mb-2"><a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">${pokemonName}</a></h2>
                 <p class="text-center"><span>Type:</span> ${result.types.map(type => `<span class="type-badge type-${type.toLowerCase()}">${capitalizeFirstLetter(type)}</span>`).join(' ')}</p>
                 <div class="content mt-2">
                     <p><br></p>
@@ -384,21 +403,56 @@
         function removeCard(button) {
             const card = button.parentElement;
             card.remove();
+            updateLocalStorage(); // Update local storage when a card is removed
         }
-		
-		function handleSuggestionError(error, pokemonName) {
+
+        function handleSuggestionError(error, pokemonName) {
             const errorMessageDiv = document.getElementById('error-message');
             errorMessageDiv.innerHTML = `
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center w-full" role="alert">
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center" role="alert">
                     <strong class="font-bold">Error:</strong>
                     <span class="block sm:inline">Pokémon ${pokemonName} could not be found. Please enter a new name.</span>
                 </div>
             `;
+
+            // Hide the error message after 3 seconds
+            setTimeout(() => {
+                errorMessageDiv.innerHTML = '';
+            }, 3000);
         }
 
         function scrollToNewCard(card) {
             card.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }
+
+        function navigateToPage(page) {
+            updateLocalStorage();
+            window.location.href = page;
+        }
+
+        function updateLocalStorage() {
+            const resultsDiv = document.getElementById('results');
+            const activeCards = [];
+            resultsDiv.querySelectorAll('.result-card').forEach(card => {
+                const pokemonData = JSON.parse(card.getAttribute('data-pokemon'));
+                activeCards.push(pokemonData);
+            });
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(activeCards));
+        }
+
+        function loadDataFromLocalStorage() {
+            const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (storedData) {
+                const resultsDiv = document.getElementById('results');
+                const data = JSON.parse(storedData);
+                data.forEach(result => {
+                    const newCard = createEffectivenessCard(result);
+                    resultsDiv.appendChild(newCard);
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDataFromLocalStorage);
     </script>
 </body>
 </html>
