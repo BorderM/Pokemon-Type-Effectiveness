@@ -8,6 +8,7 @@ import ssl
 import certifi
 import logging
 from aiohttp import ClientTimeout
+from asgiref.wsgi import WsgiToAsgi
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -18,6 +19,16 @@ app = Flask(__name__, template_folder='templates')
 CACHE_FILE = 'pokemon_cache.json'
 PROCESSED_CACHE_FILE = 'processed_pokemon_cache.json'
 REQUEST_TIMEOUT = 10  # seconds
+
+def get_resource_path(filename):
+    """Get the absolute path to a resource, works for dev and for PyInstaller."""
+    try:
+        # PyInstaller stores data files in a tmp folder referred to as _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, filename)
 
 async def create_aiohttp_session():
     ssl_context = ssl.create_default_context(cafile=certifi.where())
@@ -49,14 +60,18 @@ def type_effectiveness():
 @app.route('/stats')
 def stats():
     return render_template('pokemonstats.html')
-    
+
 @app.route('/typecalculator')
 def type_calculator():
     return render_template('typecalculator.html')
-    
+
 @app.route('/natures')
 def natures():
     return render_template('pokemonnatures.html')
+    
+@app.route('/evolutions')
+def evolution():
+    return render_template('pokemonevolutions.html')
 
 @app.route('/api/pokemon/info', methods=['GET'])
 async def get_pokemon_info():
@@ -113,11 +128,103 @@ async def get_suggestions():
     if not query:
         return jsonify({'suggestions': []})
 
-    with open(CACHE_FILE, 'r') as f:
+    with open(get_resource_path(CACHE_FILE), 'r') as f:
         all_pokemon_data = json.load(f)
 
     suggestions = [pokemon['name'] for pokemon in all_pokemon_data['results'] if query in pokemon['name'].lower()]
     return jsonify({'suggestions': suggestions[:10]})
+
+@app.route('/api/pokemon/evolutions', methods=['GET'])
+async def get_pokemon_evolutions():
+    try:
+        pokemon_name = request.args.get('name')
+        if not pokemon_name:
+            return jsonify({'error': 'No Pokémon name provided'}), 400
+
+        async with aiohttp.ClientSession() as session:
+            species_url = f"https://pokeapi.co/api/v2/pokemon-species/{pokemon_name.lower()}"
+            species_data = await fetch(session, species_url)
+            if not species_data:
+                return jsonify({'error': 'Failed to fetch species data.'}), 500
+
+            evolution_chain_url = species_data['evolution_chain']['url']
+            evolution_chain_data = await fetch(session, evolution_chain_url)
+            if not evolution_chain_data:
+                return jsonify({'error': 'Failed to fetch evolution chain data.'}), 500
+
+            logger.info(f"Evolution chain data: {evolution_chain_data}")
+
+            evolutions = parse_evolution_chain(evolution_chain_data['chain'], pokemon_name.lower())
+
+        return jsonify(evolutions)
+    except Exception as e:
+        logger.error(f"Error occurred: {e}", exc_info=True)
+        return jsonify({'error': 'An error occurred while processing your request.'}), 500
+
+def capitalize_pokemon_name(name):
+    return ' '.join([word.capitalize() for word in name.split('-')])
+
+def get_evolution_conditions(evolution_details):
+    conditions = []
+    for detail in evolution_details:
+        condition = {}
+        if detail.get('item'):
+            condition['Item'] = detail['item']['name']
+        if detail.get('trigger'):
+            condition['Trigger'] = detail['trigger']['name']
+        if detail.get('min_level') is not None:
+            condition['Min Level'] = detail['min_level']
+        if detail.get('time_of_day'):
+            condition['Time of Day'] = detail['time_of_day']
+        if detail.get('location'):
+            condition['Location'] = detail['location']['name']
+        if detail.get('held_item'):
+            condition['Held Item'] = detail['held_item']['name']
+        if detail.get('known_move'):
+            condition['Known Move'] = detail['known_move']['name']
+        if detail.get('known_move_type'):
+            condition['Known Move Type'] = detail['known_move_type']['name']
+        if detail.get('min_happiness') is not None:
+            condition['Min Happiness'] = detail['min_happiness']
+        if detail.get('min_beauty') is not None:
+            condition['Min Beauty'] = detail['min_beauty']
+        if detail.get('min_affection') is not None:
+            condition['Min Affection'] = detail['min_affection']
+        if detail.get('party_species'):
+            condition['Party Species'] = detail['party_species']['name']
+        if detail.get('party_type'):
+            condition['Party Type'] = detail['party_type']['name']
+        if detail.get('relative_physical_stats') is not None:
+            condition['Relative Physical Stats'] = detail['relative_physical_stats']
+        if detail.get('trade_species'):
+            condition['Trade Species'] = detail['trade_species']['name']
+        
+        if condition:  # Only append non-empty condition dictionaries
+            conditions.append(condition)
+    
+    # Remove duplicates
+    unique_conditions = [dict(t) for t in {tuple(d.items()) for d in conditions}]
+    return unique_conditions
+
+def parse_evolution_chain(evolution_chain_data, pokemon_name):
+    evolution_data = []
+
+    def extract_evolution_details(chain, evolves_from=None):
+        details = {
+            'name': capitalize_pokemon_name(chain['species']['name']),
+            'evolves_from': capitalize_pokemon_name(evolves_from) if evolves_from else None,
+            'evolution_conditions': get_evolution_conditions(chain.get('evolution_details', [])),
+            'id': chain['species']['url'].split('/')[-2],  # Extract ID from the URL
+        }
+
+        evolution_data.append(details)
+
+        for evolves_to in chain.get('evolves_to', []):
+            extract_evolution_details(evolves_to, chain['species']['name'])
+
+    extract_evolution_details(evolution_chain_data)
+
+    return evolution_data
 
 async def process_pokemon_data(pokemon_names, processed_data):
     async with await create_aiohttp_session() as session:
@@ -224,7 +331,7 @@ def calculate_type_effectiveness(type_data_list):
             effectiveness['immune'].append(type_name)
 
     all_types = set([
-        'normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 
+        'normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison',
         'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'
     ])
     categorized_types = (
@@ -237,7 +344,7 @@ def calculate_type_effectiveness(type_data_list):
     effectiveness['normal_effective'] = list(all_types - categorized_types)
 
     return effectiveness
-    
+
 def calculate_combined_effectiveness(type_data_list):
     damage_multipliers = {}
 
@@ -281,7 +388,7 @@ def calculate_combined_effectiveness(type_data_list):
             effectiveness['immune'].append(type_name)
 
     all_types = set([
-        'normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 
+        'normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison',
         'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'
     ])
     categorized_types = (
@@ -294,7 +401,7 @@ def calculate_combined_effectiveness(type_data_list):
     effectiveness['normal_effective'] = list(all_types - categorized_types)
 
     return effectiveness
-    
+
 @app.route('/api/typeeffectiveness', methods=['GET'])
 async def get_type_effectiveness():
     try:
@@ -316,14 +423,15 @@ async def get_type_effectiveness():
     except Exception as e:
         logger.error(f"Error occurred: {e}", exc_info=True)
         return jsonify({'error': 'An error occurred while processing your request.'}), 500
-        
-    
+
+# Wrap the Flask app with WsgiToAsgi for ASGI compatibility
+asgi_app = WsgiToAsgi(app)
 
 if __name__ == '__main__':
     try:
         logger.info("Starting initialization...")
         logger.info("Starting Flask server...")
-        app.run(debug=True, host='0.0.0.0')  # Ensure it listens on all interfaces
+        app.run(debug=True, host='0.0.0.0', port=5000)  # Ensure it listens on all interfaces
     except Exception as e:
         logger.error(f"Fatal error occurred: {e}", exc_info=True)
         input("Press Enter to exit...")  # Keep the console window open
