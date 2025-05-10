@@ -259,6 +259,17 @@
     </div>
     <div id="results" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4"></div>
     <script>
+         // Calculate once, at page load, the height of your fixed header
+        const HEADER_HEIGHT = document.querySelector('header').offsetHeight;
+
+        /** Scroll `el` into view leaving a 16px gap below the header */
+        function scrollWithGap(el) {
+            const pageY   = window.scrollY || window.pageYOffset;
+            const elY     = el.getBoundingClientRect().top + pageY;
+            const targetY = elY - HEADER_HEIGHT - 16;  // 16px extra breathing room
+
+            window.scrollTo({ top: targetY, behavior: 'smooth' });
+        }
         const LOCAL_STORAGE_KEY = 'activePokemonData';
         let selectedIndex = -1;
 
