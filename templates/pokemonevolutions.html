@@ -81,9 +81,6 @@
             margin-top: 10px;
             height: 20px;
         }
-        .hidden {
-            visibility: hidden;
-        }
         #results {
             display: flex;
             flex-wrap: wrap;
@@ -102,23 +99,19 @@
             width: 100%;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             z-index: 1000;
-            display: none;
+            display: none;       /* hidden by default */
             color: black;
-        }
-        .suggestions ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-        .suggestions li {
+            }
+            .suggestions li {
             padding: 8px;
             cursor: pointer;
             border-bottom: 1px solid #eee;
-        }
-        .suggestions li:last-child {
+            }
+            .suggestions li:last-child {
             border-bottom: none;
-        }
-        .suggestions li:hover, .suggestions .highlighted {
+            }
+            .suggestions li.highlighted,
+            .suggestions li:hover {
             background-color: #BFC2BA;
         }
     </style>
@@ -147,6 +140,28 @@
     </div>
     <div id="results"></div>
     <script>
+        let selectedIndex = -1;
+
+        async function handleInput(event) {
+            const input = event.target;
+            const box   = input.parentElement.querySelector('.suggestions');
+
+            const q = input.value.trim().toLowerCase();
+            if (q.length > 1) {
+            const resp = await fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(q)}`);
+            const data = await resp.json();
+
+            // Populate & show
+            box.innerHTML = data.suggestions
+                .map(name => `<li onclick="selectSuggestion('${name}')">${name}</li>`)
+                .join('');
+            box.style.display = data.suggestions.length ? 'block' : 'none';
+            selectedIndex = -1;
+            } else {
+            box.style.display = 'none';
+            box.innerHTML   = '';
+            }
+        }
         async function fetchPokemonData() {
             const query = document.getElementById('pokemon-search').value.trim();
             if (!query) return;
@@ -159,6 +174,11 @@
             } else {
                 alert(data.error || 'An error occurred');
             }
+            const input = document.getElementById('pokemon-search');
+            input.value = '';
+            const box = document.getElementById('suggestions');
+            box.style.display = 'none';
+            box.innerHTML = '';
         }
 
         function capitalize(str) {
@@ -195,53 +215,74 @@
             });
         }
 
-        async function handleInput(event) {
-            const query = event.target.value.trim().toLowerCase();
-            if (!query) {
-                document.getElementById('suggestions').classList.add('hidden');
-                return;
-            }
+        function selectSuggestion(name) {
+            const input = document.getElementById('pokemon-search');
+            const box   = document.getElementById('suggestions');
 
-            const response = await fetch(`/api/pokemon/suggestions?query=${query}`);
-            const data = await response.json();
-            const suggestionsDiv = document.getElementById('suggestions');
-            suggestionsDiv.innerHTML = '';
-
-            data.suggestions.forEach(suggestion => {
-                const li = document.createElement('li');
-                li.textContent = suggestion;
-                li.onclick = () => selectSuggestion(suggestion);
-                suggestionsDiv.appendChild(li);
-            });
-
-            if (data.suggestions.length > 0) {
-                suggestionsDiv.classList.remove('hidden');
-            } else {
-                suggestionsDiv.classList.add('hidden');
-            }
-        }
-
-        function selectSuggestion(suggestion) {
-            document.getElementById('pokemon-search').value = suggestion;
-            document.getElementById('suggestions').classList.add('hidden');
+            input.value = name;
+            box.style.display = 'none';
+            box.innerHTML = '';
             fetchPokemonData();
         }
 
         function handleEnter(event) {
-            if (event.key === 'Enter') {
-                const suggestions = document.getElementById('suggestions').querySelectorAll('li');
-                if (suggestions.length > 0) {
-                    selectSuggestion(suggestions[0].textContent);
+            const box = document.getElementById('suggestions');
+            const items = Array.from(box.querySelectorAll('li'));
+
+            switch (event.key) {
+            case 'ArrowDown':
+                if (selectedIndex < items.length - 1) selectedIndex++;
+                highlightSuggestion(items);
+                event.preventDefault();
+                break;
+            case 'ArrowUp':
+                if (selectedIndex > 0) selectedIndex--;
+                highlightSuggestion(items);
+                event.preventDefault();
+                break;
+            case 'Enter':
+                event.preventDefault();
+                if (selectedIndex >= 0) {
+                selectSuggestion(items[selectedIndex].textContent);
+                } else if (items.length) {
+                selectSuggestion(items[0].textContent);
                 } else {
-                    fetchPokemonData();
+                fetchPokemonData();
                 }
+                break;
             }
+        }
+
+        function highlightSuggestion(items) {
+            items.forEach((li, i) =>
+            li.classList.toggle('highlighted', i === selectedIndex)
+            );
         }
 
         function clearResults() {
             document.getElementById('pokemon-search').value = '';
             document.getElementById('results').innerHTML = '';
-            document.getElementById('suggestions').classList.add('hidden');
+            document.getElementById('suggestions').style.display = 'none';
+            document.getElementById('suggestions').innerHTML = '';
+        }
+
+        function handleSuggestionError(error, pokemonName) {
+            const errorMessageDiv = document.getElementById('error-message');
+            errorMessageDiv.innerHTML = `
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center" role="alert">
+                    <strong class="font-bold">Error:</strong>
+                    <span class="block sm:inline">Pokémon ${pokemonName} could not be found. Please enter a new name.</span>
+                </div>
+            `;
+
+            // Hide the error message after 3 seconds
+            setTimeout(() => {
+                errorMessageDiv.innerHTML = '';
+            }, 3000);
+        }
+
+        function scrollToNewCard(card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }
     </script>
 </body>

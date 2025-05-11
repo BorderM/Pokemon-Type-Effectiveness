@@ -1,468 +1,494 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @keyframes progress {
-            0% { width: 0; }
-            100% { width: 100%; }
-        }
-        .progress-bar {
-            width: 100%;
-            background-color: #3b82f6;
-            height: 10px;
-            border-radius: 9999px;
-            animation: progress 2s linear infinite;
-        }
-        .input-container {
-            position: relative;
-            width: 100%;
-            max-width: 450px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-        }
-        .input-field {
-            background-color: white;
-            border: 1px solid #ccc;
-            padding: 8px;
-            border-radius: 4px;
-            flex-grow: 1;
-            color: black;
-            width: 100%;
-        }
-        .suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background-color: white;
-            border: 1px solid #ccc;
-            width: 100%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 1000;
-            display: none;
-            color: black;
-        }
-        .suggestions ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-        .suggestions li {
-            padding: 8px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        }
-        .suggestions li:last-child {
-            border-bottom: none;
-        }
-        .suggestions li:hover, .suggestions .highlighted {
-            background-color: #BFC2BA;
-        }
-        .highlighted {
-            background-color: #BFC2BA;
-        }
-        .control-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .watermark {
-            position: absolute;
-            top: 0;
-            left: 0;
-            margin: 1rem;
-            font-size: 0.75rem;
-            color: #a0aec0;
-        }
-        .result-card {
-            background-color: #2d2d2d;
-            color: white;
-            width: 500px;
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            word-wrap: break-word;
-            justify-content: space-between;
-            position: relative;
-        }
-        .result-card img {
-            width: 115px;
-            height: 115px;
-            align-self: center;
-			margin-bottom: -1rem;
-			margin-top: -1rem;
-        }
-        .result-card h2 {
-            font-size: 1rem; /* Smaller font size */
-            font-weight: 700;
-            text-align: center;
-        }
-        .result-card p {
-            font-weight: 700;
-            text-align: center;
-            font-size: 0.875rem; /* Smaller font size */
-        }
-        .result-card .content {
-            flex-grow: 1;
-        }
-        .result-card ul li span {
-            font-weight: 700;
-        }
-        .type-badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.5rem;
-            color: white;
-            font-weight: bold;
-            margin: 0.1rem;
-        }
-        .type-normal { background-color: #A8A77A; }
-        .type-fire { background-color: #EE8130; }
-        .type-water { background-color: #6390F0; }
-        .type-electric { background-color: #F7D02C; }
-        .type-grass { background-color: #7AC74C; }
-        .type-ice { background-color: #96D9D6; }
-        .type-fighting { background-color: #C22E28; }
-        .type-poison { background-color: #A33EA1; }
-        .type-ground { background-color: #E2BF65; }
-        .type-flying { background-color: #A98FF3; }
-        .type-psychic { background-color: #F95587; }
-        .type-bug { background-color: #A6B91A; }
-        .type-rock { background-color: #B6A136; }
-        .type-ghost { background-color: #735797; }
-        .type-dragon { background-color: #6F35FC; }
-        .type-dark { background-color: #705746; }
-        .type-steel { background-color: #C0C0C0; }
-        .type-fairy { background-color: #D685AD; }
-        .type-none { background-color: #000000; }
-        .effectiveness-row {
-            padding: 0.5rem 0;
-            display: flex;
-            align-items: flex-start;
-            flex-wrap: wrap;
-        }
-        .effectiveness-label {
-            width: 100px;
-            font-weight: bold;
-        }
-        .effectiveness-content {
-            flex: 1;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .separator {
-            border-top: 2px solid #444;
-            margin: 0rem;
-        }
-        .control-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        #results {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            justify-items: center;
-            margin-top: 200px; /* Adjust this margin to ensure the results start below the fixed header */
-        }
-        .close-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: #f87171;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .fixed-header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background-color: #1a202c;
-            padding: 1rem 0;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 200px; /* Adjusted height to accommodate the progress bar */
-        }
-        .watermark-fixed {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 0.75rem;
-            color: #a0aec0;
-        }
-        .progress-bar-container {
-            width: 100%;
-            max-width: 450px;
-            margin-top: 10px;
-            height: 20px; /* Ensure space is reserved for the progress bar */
-        }
-        .hidden {
-            visibility: hidden; /* Hide the progress bar without collapsing the space */
-        }
-		.error-message-fixed {
-			position: absolute;
-			top: 80px; /* Adjust as needed to position below the search bar */
-			left: 10px;
-			width: 100%;
-			max-width: 450px;
-			z-index: 1001; /* Ensure it is above other elements */
-		}
-    </style>
-    <title>Pokémon Type Effectiveness</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body {
+    height: 100%;
+    margin: 0;
+    background: #0e131f;   /* same as header */
+    }
+    /* Progress bar */
+    @keyframes progress { 0%{width:0}100%{width:100%} }
+    .progress-bar {
+      width:100%; height:10px; border-radius:9999px;
+      background:#3b82f6; animation:progress 2s linear infinite;
+    }
+    .hidden { display:none!important; }
+
+    /* Fixed header */
+    header {
+      position:fixed; top:0; left:0; right:0;
+      background:#1f2937;       /* gray-800 */
+      padding:1rem 0; z-index:1000;
+      display:flex; flex-direction:column;
+      align-items:center; height:200px;
+      box-shadow:0 2px 4px rgba(0,0,0,0.5);
+    }
+    .watermark-fixed {
+      position:absolute; top:10px; left:10px;
+      font-size:.75rem; color:#a0aec0;
+    }
+
+    /* Controls */
+    .control-buttons {
+      display:flex; gap:10px; margin-bottom:10px;
+    }
+
+    /* Input + suggestions */
+    .input-container {
+      position:relative; width:100%; max-width:450px;
+    }
+    .input-field {
+      width:100%; padding:8px;
+      border:none; border-radius:4px;
+      background:#374151;        /* gray-700 – contrast vs header */
+      color:#fff;
+    }
+    .suggestions {
+      position:absolute; top:100%; left:0; width:100%;
+      background:#fff; color:#000;
+      border:1px solid #ccc;
+      box-shadow:0 4px 6px rgba(0,0,0,0.1);
+      display:none; z-index:1001; margin-top:2px;
+    }
+    .suggestions li {
+      list-style:none; padding:8px; cursor:pointer;
+      border-bottom:1px solid #eee;
+    }
+    .suggestions li:last-child { border-bottom:none; }
+    .suggestions li.highlighted,
+    .suggestions li:hover { background:#BFC2BA; }
+
+    /* ─── container / history / main-result ─── */
+    .container {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 220px;               /* keep space for the header */
+    border-top: 1px solid #374151;    /* dark grey separator */
+    background: #0e131f;              /* your original gray-900 */
+    display: flex;
+    gap: 2rem;
+    }
+    /* hide history until you push your first item */
+    #history:empty {
+      display: none;
+    }
+    /* once it has items, float it on top of the left edge */
+    #history {
+    background: #1f2937;    /* same as your main card bg */
+    padding: 1rem;          /* give it some breathing room */
+    width: 180px;
+    max-height: calc(100vh - 240px);
+    overflow-y: auto;
+    padding-right: 1rem;
+    border-right: 1px solid #374151;
+    }
+    /* history cards */
+    .small-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #374151;    /* slightly lighter */
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+    width: 100%;
+    box-sizing: border-box;
+    }
+
+    .small-card .history-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    text-align: left;          /* label flush left */
+    flex: 1;                   /* fill the remaining space */
+    padding: 0.25rem 0;         /* vertical hit-area */
+    font-size: 0.875rem;
+    cursor: pointer;
+    }
+
+    /* give the “×” a pop of color */
+    .small-card .remove-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    line-height: 1;
+    cursor: pointer;
+    }
+    .small-card:hover {
+      background: #374151;
+    }
+
+    /* main-result grows to fill the rest of the flex container */
+    #main-result {
+    position: absolute;
+    top: 220px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    min-height: calc(100vh - 260px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 0;
+    }
+    /* ───── result-card (original size & aesthetic) ───── */
+    .result-card {
+      background:#1f2937; /* gray-800 */
+      color:white;
+      position: relative;
+      padding:1rem;
+      border-radius:.5rem;
+      box-shadow:0 4px 6px rgba(0,0,0,0.1);
+      max-width:500px; width:100%;
+      display:flex; flex-direction:column; align-items:center;
+      /* let it grow naturally—no forced max-height/scroll */
+    }
+    .close-button {
+      position:absolute; top:10px; right:10px;
+      background:#ef4444; /* red-500 */
+      color:white; border:none;
+      border-radius:50%; width:24px; height:24px;
+      cursor:pointer;
+    }
+    .result-card img {
+      width:100px; height:100px; margin-bottom: -1rem; padding-bottom: -1px;
+    }
+    .result-card h2 {
+      margin:0; font-size:1.25rem; font-weight:700;
+      text-align:center; text-transform:capitalize;
+    }
+    .result-card p.type-line {
+      margin:.5rem 0 1rem; font-weight:600; text-align:center;
+    }
+
+    /* Type badges */
+    .type-badge { display:inline-block; padding:.25rem .5rem; border-radius:.3rem; color:#fff; font-weight:bold; margin:.2rem; text-transform:capitalize; }
+    .type-normal  { background: #A8A77A; }
+    .type-fire    { background: #EE8130; }
+    .type-water   { background: #6390F0; }
+    .type-electric{ background: #F7D02C; }
+    .type-grass   { background: #7AC74C; }
+    .type-ice     { background: #96D9D6; }
+    .type-fighting{ background: #C22E28; }
+    .type-poison  { background: #A33EA1; }
+    .type-ground  { background: #E2BF65; }
+    .type-flying  { background: #A98FF3; }
+    .type-psychic { background: #F95587; }
+    .type-bug     { background: #A6B91A; }
+    .type-rock    { background: #B6A136; }
+    .type-ghost   { background: #735797; }
+    .type-dragon  { background: #6F35FC; }
+    .type-dark    { background: #705746; }
+    .type-steel   { background: #C0C0C0; }
+    .type-fairy   { background: #D685AD; }
+    .type-none    { background: #4B5563; }
+
+    .separator {
+      width:100%; height:1px; background:#374151; margin:1rem 0; margin: 0.5rem;
+    }
+    .effectiveness-row {
+      display:flex; width:100%; align-items:flex-start;
+    }
+    .effectiveness-label {
+      width:100px; font-weight:bold; text-transform:capitalize;
+    }
+    .effectiveness-content {
+      flex:1; display:flex; flex-wrap:wrap; gap:.5rem;
+    }
+
+    /* Error message */
+    .error-message-fixed {
+      position:absolute; top:80px; left:10px; right:10px; z-index:1001;
+    }
+  </style>
+  <title>Pokémon Type Effectiveness</title>
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
-    <div class="fixed-header">
-        <div class="watermark-fixed">Created by BorderM</div>
-        <h1 class="text-3xl font-bold text-center mb-2">Pokémon Type Effectiveness</h1>
-        <div class="control-buttons">
-            <button onclick="fetchPokemon()" class="bg-blue-500 text-white p-2 rounded-lg">Search</button>
-            <button onclick="clearResults()" class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
-            <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
-			<a href="/typecalculator" class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
-			<a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
-			<a href="/evolutions" class="bg-orange-500 text-white p-2 rounded-lg">Evolutions</a>
-		</div>
-        <div class="input-container">
-            <input type="text" class="input-field" id="pokemon-input" placeholder="Enter Pokémon Name" oninput="handleInput(event)" onkeydown="handleEnterKey(event)">
-            <ul class="suggestions"></ul>
-        </div>
-        <div id="progress-bar-container" class="progress-bar-container hidden">
-            <div class="progress-bar"></div>
-        </div>
-        <div id="error-message" class="error-message-fixed"></div>
+<body>
+  <header>
+    <div class="watermark-fixed">Created by BorderM</div>
+    <h1 class="text-3xl font-bold mb-2">Pokémon Type Effectiveness</h1>
+    <div class="control-buttons">
+      <button onclick="performSearch()" class="bg-blue-500 text-white p-2 rounded">Search</button>
+      <button onclick="clearHistory()"   class="bg-gray-500 text-white p-2 rounded">Clear</button>
+      <a href="/stats"          class="bg-yellow-500 text-white p-2 rounded">Stats</a>
+      <a href="/typecalculator" class="bg-red-500    text-white p-2 rounded">Type Calcs</a>
+      <a href="/natures"        class="bg-cyan-500   text-white p-2 rounded">Natures</a>
+      <a href="/evolutions"     class="bg-orange-500 text-white p-2 rounded">Evolutions</a>
     </div>
-    <div id="results" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4"></div>
-    <script>
-        const LOCAL_STORAGE_KEY = 'activePokemonData';
-        let selectedIndex = -1;
+    <div class="input-container">
+      <input
+        id="pokemon-input"
+        class="input-field"
+        placeholder="Enter Pokémon Name"
+        oninput="handleInput(event)"
+        onkeydown="handleEnterKey(event)"
+      />
+      <ul id="suggestions" class="suggestions"></ul>
+    </div>
+    <div id="progress-bar-container" class="hidden">
+      <div class="progress-bar"></div>
+    </div>
+    <div id="error-message" class="error-message-fixed"></div>
+  </header>
 
-        function handleInput(event) {
-			const input = event.target;
-			const suggestionsBox = input.parentElement.querySelector('.suggestions');
-			if (input.value.length > 1) {
-				fetch(`/api/pokemon/suggestions?query=${input.value}`)
-					.then(response => response.json())
-					.then(data => {
-						suggestionsBox.style.display = 'block';
-						suggestionsBox.innerHTML = data.suggestions.map(name => `<li onclick="selectSuggestion('${name}')">${name}</li>`).join('');
-						selectedIndex = -1; // Reset the selected index when suggestions are shown
-					});
-			} else {
-				suggestionsBox.style.display = 'none';
-				suggestionsBox.innerHTML = '';
-			}
-		}
+  <div class="container">
+    <aside id="history"></aside>
+    <section id="main-result"></section>
+  </div>
 
-        function selectSuggestion(name) {
-            const input = document.getElementById('pokemon-input');
-            input.value = name;
-            input.parentElement.querySelector('.suggestions').style.display = 'none';
-            fetchPokemon();
-        }
+  <script>
 
-        function handleEnterKey(event) {
-			const suggestionsBox = document.querySelector('.suggestions');
-			const suggestions = suggestionsBox.querySelectorAll('li');
-			if (event.key === 'ArrowDown') {
-				event.preventDefault();
-				if (selectedIndex < suggestions.length - 1) {
-					selectedIndex++;
-					highlightSuggestion(suggestions);
-				}
-			} else if (event.key === 'ArrowUp') {
-				event.preventDefault();
-				if (selectedIndex > 0) {
-					selectedIndex--;
-					highlightSuggestion(suggestions);
-				}
-			} else if (event.key === 'Enter') {
-				event.preventDefault();
-				if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
-					selectSuggestion(suggestions[selectedIndex].textContent);
-				} else if (suggestions.length > 0) {
-					selectSuggestion(suggestions[0].textContent);
-				} else {
-					fetchPokemon();
-				}
-				suggestionsBox.style.display = 'none';
-			}
-		}
+  // — state & persistence —
+  let historyList = [];
+  let currentPokemon = null;
 
-        function highlightSuggestion(suggestions) {
-            suggestions.forEach((suggestion, index) => {
-                if (index === selectedIndex) {
-                    suggestion.classList.add('highlighted');
-                } else {
-                    suggestion.classList.remove('highlighted');
-                }
-            });
-        }
+  function saveState() {
+    localStorage.setItem('pkmnHistory', JSON.stringify(historyList));
+    localStorage.setItem('pkmnCurrent', JSON.stringify(currentPokemon));
+  }
 
-        function clearResults() {
-			const resultsDiv = document.getElementById('results');
-			resultsDiv.innerHTML = '';
-			const input = document.getElementById('pokemon-input');
-			input.value = '';
-			input.focus();
-			document.getElementById('error-message').innerHTML = '';
-			localStorage.removeItem('activePokemonData'); // Clear local storage
-        }
+  function loadState() {
+    const hist = localStorage.getItem('pkmnHistory');
+    if (hist) {
+      historyList = JSON.parse(hist);
+      historyList.forEach(r => renderHistoryEntry(r));
+    }
+    const cur = localStorage.getItem('pkmnCurrent');
+    if (cur) {
+      currentPokemon = JSON.parse(cur);
+      renderMainCard(currentPokemon);
+    }
+  }
 
-        async function fetchPokemon() {
-            const input = document.getElementById('pokemon-input');
-			let pokemonName = input.value.trim();
-            const suggestionsBox = document.querySelector('.suggestions');
-			const suggestions = suggestionsBox.querySelectorAll('li');
-            if (!pokemonName && suggestions.length > 0){
-				pokemonName = suggestions[0].textContent;
-			}
-			
-			if (!pokemonName) return;
-			
-            const resultsDiv = document.getElementById('results');
-            const progressBarContainer = document.getElementById('progress-bar-container');
-            progressBarContainer.classList.remove('hidden');
+  // — scrolling helper —
+  const HEADER_HEIGHT = document.querySelector('header').offsetHeight;
+  function scrollWithGap(el) {
+    const y = el.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: y - HEADER_HEIGHT - 16, behavior: 'smooth' });
+  }
 
-            const response = await fetch(`/api/pokemon/${window.location.pathname.includes('stats') ? 'stats' : 'info'}?name=${pokemonName}`);
-            const data = await response.json();
+  // — render the main result card —
+  function renderMainCard(r) {
+    currentPokemon = r;
+    saveState();
+    const sec = document.getElementById('main-result');
+    sec.innerHTML = '';
+    const card = createCard(r);
+    card.dataset.name = r.name;
+    sec.appendChild(card);
+    scrollWithGap(card);
+  }
 
-            const errorMessageDiv = document.getElementById('error-message');
-            errorMessageDiv.innerHTML = '';
+  // — when you click a history entry —
+  function swapToMain(r) {
+    // 1) remove the clicked one from history
+    removeHistoryEntry(r.name);
 
-            if (response.ok) {
-                data.forEach(result => {
-                    const newCard = createEffectivenessCard(result);
-                    resultsDiv.appendChild(newCard);
-                    scrollToNewCard(newCard);
-                });
-                updateLocalStorage();
-            } else {
-                handleSuggestionError(data.error, pokemonName);
-            }
+    // 2) push the old main into history (if any)
+    if (currentPokemon && currentPokemon.name !== r.name) {
+      historyList.unshift(currentPokemon);
+      renderHistoryEntry(currentPokemon, /*prepend=*/true);
+    }
 
-            input.value = '';
-            input.focus();
-            progressBarContainer.classList.add('hidden');
-        }
+    // 3) now make the clicked one the main card
+    renderMainCard(r);
+  }
 
-        function createEffectivenessCard(result) {
-            const formDiv = document.createElement('div');
-            formDiv.className = "bg-white dark:bg-zinc-700 rounded-lg p-4 shadow-md result-card";
-            formDiv.setAttribute('data-pokemon', JSON.stringify(result));
-            const pokemonName = capitalizeFirstLetter(result.name);
-            const bulbapediaLinkName = pokemonName.split('-')[0]; // Use part of name before first hyphen
-            const bulbapediaLink = `https://bulbapedia.bulbagarden.net/wiki/${bulbapediaLinkName}_(Pok%C3%A9mon)`;
-            formDiv.innerHTML = `
-                <button class="close-button" onclick="removeCard(this)">X</button>
-                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${result.id}.png" alt="${result.form}" class="mx-auto mb-2">
-                <h2 class="text-center mb-2"><a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">${pokemonName}</a></h2>
-                <p class="text-center"><span>Type:</span> ${result.types.map(type => `<span class="type-badge type-${type.toLowerCase()}">${capitalizeFirstLetter(type)}</span>`).join(' ')}</p>
-                <div class="content mt-2">
-                    <p><br></p>
-                    ${createEffectivenessRow('4x Weak', result.effectiveness.four_times_effective)}
-                    <div class="separator"></div>
-                    ${createEffectivenessRow('2x Weak', result.effectiveness.super_effective)}
-                    <div class="separator"></div>
-                    ${createEffectivenessRow('Normal', result.effectiveness.normal_effective)}
-                    <div class="separator"></div>
-                    ${createEffectivenessRow('2x Resistant', result.effectiveness.two_times_resistant)}
-                    <div class="separator"></div>
-                    ${createEffectivenessRow('4x Resistant', result.effectiveness.four_times_resistant)}
-                    <div class="separator"></div>
-                    ${createEffectivenessRow('Immune', result.effectiveness.immune)}
-                </div>
-            `;
-            return formDiv;
-        }
+  // — render a single history button —
+  function renderHistoryEntry(r, prepend = false) {
+    // skip duplicates
+    if (document.querySelector(`#history .small-card[data-name="${r.name}"]`)) return;
 
-        function createEffectivenessRow(label, types) {
-            const formattedTypes = types.length > 0 ? 
-                types.map(type => `<span class="type-badge type-${type.toLowerCase()}">${capitalizeFirstLetter(type)}</span>`).join(' ') :
-                `<span class="type-badge type-none">None</span>`;
-            
-            return `
-                <div class="effectiveness-row">
-                    <span class="effectiveness-label">${label}:</span>
-                    <div class="effectiveness-content">${formattedTypes}</div>
-                </div>
-            `;
-        }
+    const btn = document.createElement('div');
+    btn.className = 'small-card';
+    btn.dataset.name = r.name;
+    btn.innerHTML = `
+      <button class="history-btn">
+        ${r.name.charAt(0).toUpperCase() + r.name.slice(1)}
+        </button>
+        <button class="remove-btn">×</button>
+    `;
 
-        function capitalizeFirstLetter(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
-        }
+    // click on label → swap
+    btn.querySelector('.history-btn').onclick = () => swapToMain(r);
 
-        function removeCard(button) {
-            const card = button.parentElement;
-            card.remove();
-            updateLocalStorage(); // Update local storage when a card is removed
-        }
+    // click on × → just remove
+    btn.querySelector('.remove-btn').onclick = e => {
+      e.stopPropagation();
+      removeHistoryEntry(r.name);
+    };
 
-        function handleSuggestionError(error, pokemonName) {
-            const errorMessageDiv = document.getElementById('error-message');
-            errorMessageDiv.innerHTML = `
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center" role="alert">
-                    <strong class="font-bold">Error:</strong>
-                    <span class="block sm:inline">Pokémon ${pokemonName} could not be found. Please enter a new name.</span>
-                </div>
-            `;
+    const container = document.getElementById('history');
+    if (prepend && container.firstChild) {
+      container.insertBefore(btn, container.firstChild);
+    } else {
+      container.appendChild(btn);
+    }
+  }
 
-            // Hide the error message after 3 seconds
-            setTimeout(() => {
-                errorMessageDiv.innerHTML = '';
-            }, 3000);
-        }
+  function pushToHistory(r) {
+    // skip if already in history or is current
+    if (historyList.some(x => x.name === r.name)) {
+      return;
+    }
+    historyList.unshift(r);
+    renderHistoryEntry(r, /*prepend=*/true);
+    saveState();
+  }
 
-        function scrollToNewCard(card) {
-            card.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }
+  function removeHistoryEntry(name) {
+    historyList = historyList.filter(x => x.name !== name);
+    const btn = document.querySelector(`#history .small-card[data-name="${name}"]`);
+    if (btn) btn.remove();
+    saveState();
+  }
 
-        function navigateToPage(page) {
-            updateLocalStorage();
-            window.location.href = page;
-        }
+  function clearHistory() {
+    historyList = [];
+    currentPokemon = null;
+    document.getElementById('history').innerHTML = '';
+    document.getElementById('main-result').innerHTML = '';
+    localStorage.removeItem('pkmnHistory');
+    localStorage.removeItem('pkmnCurrent');
+  }
 
-        function updateLocalStorage() {
-			const resultsDiv = document.getElementById('results');
-			const activeCards = [];
-			resultsDiv.querySelectorAll('.result-card').forEach(card => {
-				const pokemonData = JSON.parse(card.getAttribute('data-pokemon'));
-				activeCards.push(pokemonData);
-			});
-			localStorage.setItem('activePokemonData', JSON.stringify(activeCards));
-		}
+  // — suggestions & search flow (unchanged) —
+  let selectedIndex = -1;
+  function handleInput(e) {
+    const q = e.target.value.trim();
+    const box = document.getElementById('suggestions');
+    if (q.length > 1) {
+      fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(q)}`)
+        .then(r=>r.json())
+        .then(data=>{
+          box.innerHTML = data.suggestions
+            .map(s=>`<li onclick="selectSuggestion('${s}')">${s}</li>`)
+            .join('');
+          box.style.display = data.suggestions.length ? 'block' : 'none';
+          selectedIndex = -1;
+        });
+    } else {
+      box.style.display = 'none';
+      box.innerHTML = '';
+    }
+  }
+  function handleEnterKey(e) {
+    const box = document.getElementById('suggestions');
+    const items = Array.from(box.querySelectorAll('li'));
+    if (e.key==='ArrowDown'||e.key==='ArrowUp') {
+      e.preventDefault();
+      selectedIndex += e.key==='ArrowDown'?1:-1;
+      selectedIndex = Math.max(0, Math.min(items.length-1, selectedIndex));
+      items.forEach((li,i)=>li.classList.toggle('highlighted', i===selectedIndex));
+    }
+    else if (e.key==='Enter') {
+      e.preventDefault();
+      if (items.length) {
+        const idx = selectedIndex>=0?selectedIndex:0;
+        selectSuggestion(items[idx].textContent);
+      } else {
+        performSearch();
+      }
+      box.style.display='none';
+    }
+  }
+  function selectSuggestion(name) {
+    document.getElementById('pokemon-input').value = name;
+    document.getElementById('suggestions').style.display='none';
+    performSearch();
+  }
 
-        function loadDataFromLocalStorage() {
-			const storedData = localStorage.getItem('activePokemonData');
-			if (storedData) {
-				const resultsDiv = document.getElementById('results');
-				const data = JSON.parse(storedData);
-				data.forEach(result => {
-					const newCard = createEffectivenessCard(result);
-					resultsDiv.appendChild(newCard);
-				});
-			}
-		}
+  function performSearch() {
+    const inp = document.getElementById('pokemon-input');
+    let name  = inp.value.trim();
+    const items = document.querySelectorAll('#suggestions li');
+    if (!name && items.length) name = items[0].textContent;
+    if (!name) return;
+    document.getElementById('suggestions').style.display='none';
+    document.getElementById('progress-bar-container').classList.remove('hidden');
+    fetchPokemon(name.toLowerCase())
+      .finally(() => {
+        document.getElementById('progress-bar-container').classList.add('hidden');
+        inp.value=''; inp.focus();
+      });
+  }
 
-        document.addEventListener('DOMContentLoaded', loadDataFromLocalStorage);
-    </script>
+  async function fetchPokemon(name) {
+  // if it’s already the main card, just scroll to it
+  if (currentPokemon && currentPokemon.name === name) {
+    scrollWithGap(document.querySelector(`.result-card[data-name="${name}"]`));
+    return;
+  }
+  // push the old main into history, if there is one
+  if (currentPokemon) {
+    pushToHistory(currentPokemon);
+  }
+  // fetch & render the new one
+  const ep = location.pathname.includes('stats') ? 'stats' : 'info';
+  const res = await fetch(`/api/pokemon/${ep}?name=${encodeURIComponent(name)}`);
+  const data = await res.json();
+  document.getElementById('error-message').innerHTML = '';
+  if (res.ok) {
+    const r = data[0];
+    renderMainCard(r);
+  } else {
+    document.getElementById('error-message').innerHTML =
+      `<div class="bg-red-600 text-white p-2 rounded">${data.error}</div>`;
+  }
+}
+
+  function createCard(r) {
+    const d = document.createElement('div');
+    d.className = 'result-card';
+    d.dataset.pokemon = JSON.stringify(r);
+    d.innerHTML = `
+      <button class="close-button" onclick="this.parentElement.remove()">×</button>
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.name}">
+      <h2>${r.name}</h2>
+      <p class="type-line">Type: ${r.types.map(
+        t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`
+      ).join(' ')}</p>
+      <div class="separator"></div>
+      ${renderRow('4x Weak', r.effectiveness.four_times_effective)}
+      <div class="separator"></div>
+      ${renderRow('2x Weak', r.effectiveness.super_effective)}
+      <div class="separator"></div>
+      ${renderRow('Normal', r.effectiveness.normal_effective)}
+      <div class="separator"></div>
+      ${renderRow('2x Resistant', r.effectiveness.two_times_resistant)}
+      <div class="separator"></div>
+      ${renderRow('4x Resistant', r.effectiveness.four_times_resistant)}
+      <div class="separator"></div>
+      ${renderRow('Immune', r.effectiveness.immune)}
+    `;
+    return d;
+  }
+
+  function renderRow(label, types) {
+    const items = types.length
+      ? types.map(t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`).join(' ')
+      : `<span class="type-badge type-none">None</span>`;
+    return `
+      <div class="effectiveness-row">
+        <span class="effectiveness-label">${label}:</span>
+        <div class="effectiveness-content">${items}</div>
+      </div>`;
+  }
+
+  window.addEventListener('DOMContentLoaded', loadState);
+</script>
 </body>
 </html>
