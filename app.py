@@ -81,10 +81,17 @@ async def get_pokemon_info():
         if not pokemon_names:
             return jsonify({'error': 'No Pokémon names provided'}), 400
 
-        # Load processed cache if exists, otherwise create an empty list
-        if os.path.exists(PROCESSED_CACHE_FILE):
-            with open(PROCESSED_CACHE_FILE, 'r') as f:
-                processed_data = json.load(f)
+        # Compute the path (works in dev or frozen exe)
+        proc_path = get_resource_path(PROCESSED_CACHE_FILE)
+
+        # Load processed cache if exists, otherwise start with empty list
+        proc_path = get_resource_path(PROCESSED_CACHE_FILE)
+        if os.path.exists(proc_path):
+            try:
+                with open(proc_path, 'r', encoding='utf-8') as f:
+                    processed_data = json.load(f)
+            except json.JSONDecodeError:
+                processed_data = []
         else:
             processed_data = []
 
@@ -96,8 +103,8 @@ async def get_pokemon_info():
             await process_pokemon_data(missing_pokemon, processed_data)
 
         # Load the updated processed cache
-        with open(PROCESSED_CACHE_FILE, 'r') as f:
-            processed_data = json.load(f)
+        with open(proc_path, 'w', encoding='utf-8') as f:
+            json.dump(processed_data, f, indent=2)
 
         matches = []
         for pokemon_name in pokemon_names:
@@ -229,11 +236,13 @@ def parse_evolution_chain(evolution_chain_data, pokemon_name):
 
 async def process_pokemon_data(pokemon_names, processed_data):
     async with await create_aiohttp_session() as session:
-        if not os.path.exists(CACHE_FILE):
-            logger.error("CACHE_FILE not found. Make sure the cache file exists and is correctly formatted.")
+        # load the *raw* cache from dev or frozen bundle:
+        raw_path = get_resource_path(CACHE_FILE)
+        if not os.path.exists(raw_path):
+            logger.error("CACHE_FILE not found at %s", raw_path)
             return
 
-        with open(CACHE_FILE, 'r') as f:
+        with open(raw_path, 'r', encoding='utf-8') as f:
             pokemon_data = json.load(f)
 
         processed_names = {p['name'] for p in processed_data}
