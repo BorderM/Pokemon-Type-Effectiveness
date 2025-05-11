@@ -1,289 +1,325 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .input-container {
-            position: relative;
-            width: 100%;
-            max-width: 450px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-        }
-        .input-field {
-            background-color: white;
-            border: 1px solid #ccc;
-            padding: 8px;
-            border-radius: 4px;
-            flex-grow: 1;
-            color: black;
-            width: 100%;
-        }
-        .control-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .result-card {
-            background-color: #2d2d2d;
-            color: white;
-            height: auto;
-            width: 300px;
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            word-wrap: break-word;
-            justify-content: space-between;
-            position: relative;
-            text-align: center;
-        }
-        .result-card img {
-            width: 115px;
-            height: 115px;
-            align-self: center;
-        }
-        .result-card h2 {
-            font-size: 1.25rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-        }
-        .result-card p {
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-        }
-        .fixed-header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background-color: #1a202c;
-            padding: 1rem 0;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .watermark-fixed {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 0.75rem;
-            color: #a0aec0;
-        }
-        .progress-bar-container {
-            width: 100%;
-            max-width: 450px;
-            margin-top: 10px;
-            height: 20px;
-        }
-        #results {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            margin-top: 20px;
-            padding-top: 150px;
-        }
-        .suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background-color: white;
-            border: 1px solid #ccc;
-            width: 100%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 1000;
-            display: none;       /* hidden by default */
-            color: black;
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            .input-container {
+                position: relative;
+                width: 100%;
+                max-width: 450px;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+            }
+            .input-field {
+                background-color: white;
+                border: 1px solid #ccc;
+                padding: 8px;
+                border-radius: 4px;
+                flex-grow: 1;
+                color: black;
+                width: 100%;
+            }
+            .control-buttons {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+            .result-card {
+                background-color: #2d2d2d;
+                color: white;
+                height: auto;
+                width: 300px;
+                display: flex;
+                flex-direction: column;
+                margin-bottom: 1rem;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                word-wrap: break-word;
+                justify-content: space-between;
+                position: relative;
+                text-align: center;
+            }
+            .result-card img {
+                width: 115px;
+                height: 115px;
+                align-self: center;
+            }
+            .result-card h2 {
+                font-size: 1.25rem;
+                font-weight: bold;
+                margin-bottom: 1rem;
+            }
+            .result-card p {
+                font-size: 1rem;
+                margin-bottom: 0.5rem;
+            }
+            .fixed-header {
+                position: fixed;
+                top: 0;
+                width: 100%;
+                background-color: #1a202c;
+                padding: 1rem 0;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .watermark-fixed {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                font-size: 0.75rem;
+                color: #a0aec0;
+            }
+            .progress-bar-container {
+                width: 100%;
+                max-width: 450px;
+                margin-top: 10px;
+                height: 20px;
+            }
+            #results {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
+                gap: 20px;
+                margin-top: 20px;
+                padding-top: 150px;
+            }
+            .suggestions {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background-color: white;
+                border: 1px solid #ccc;
+                width: 100%;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                display: none; /* hidden by default */
+                color: black;
             }
             .suggestions li {
-            padding: 8px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
+                padding: 8px;
+                cursor: pointer;
+                border-bottom: 1px solid #eee;
             }
             .suggestions li:last-child {
-            border-bottom: none;
+                border-bottom: none;
             }
             .suggestions li.highlighted,
             .suggestions li:hover {
-            background-color: #BFC2BA;
-        }
-    </style>
-    <title>Pokémon Evolution Search</title>
-</head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
-    <div class="fixed-header">
-        <div class="watermark-fixed">Created by BorderM</div>
-        <h1 class="text-3xl font-bold text-center mb-2">Pokémon Evolutions</h1>
-        <div class="control-buttons">
-            <button onclick="fetchPokemonData()" class="bg-blue-500 text-white p-2 rounded-lg">Search</button>
-            <button onclick="clearResults()" class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
-            <a href="/typeeffectiveness" class="bg-green-500 text-white p-2 rounded-lg">Type Effectiveness</a>
-            <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
-            <a href="/typecalculator" class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
-            <a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
-        </div>
-        <div class="input-container">
-            <input type="text" class="input-field" id="pokemon-search" placeholder="Enter Pokémon Name" oninput="handleInput(event)" onkeydown="handleEnter(event)">
-            <ul class="suggestions" id="suggestions"></ul>
-        </div>
-        <div id="progress-bar-container" class="progress-bar-container hidden">
-            <div class="progress-bar"></div>
-        </div>
-        <div id="error-message" class="error-message-fixed"></div>
-    </div>
-    <div id="results"></div>
-    <script>
-        let selectedIndex = -1;
-
-        async function handleInput(event) {
-            const input = event.target;
-            const box   = input.parentElement.querySelector('.suggestions');
-
-            const q = input.value.trim().toLowerCase();
-            if (q.length > 1) {
-            const resp = await fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(q)}`);
-            const data = await resp.json();
-
-            // Populate & show
-            box.innerHTML = data.suggestions
-                .map(name => `<li onclick="selectSuggestion('${name}')">${name}</li>`)
-                .join('');
-            box.style.display = data.suggestions.length ? 'block' : 'none';
-            selectedIndex = -1;
-            } else {
-            box.style.display = 'none';
-            box.innerHTML   = '';
+                background-color: #BFC2BA;
             }
-        }
-        async function fetchPokemonData() {
-            const query = document.getElementById('pokemon-search').value.trim();
-            if (!query) return;
+        </style>
+        <title>Pokémon Evolution Search</title>
+    </head>
+    <body
+        class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen"
+    >
+        <div class="fixed-header">
+            <div class="watermark-fixed">Created by BorderM</div>
+            <h1 class="text-3xl font-bold text-center mb-2">
+                Pokémon Evolutions
+            </h1>
+            <div class="control-buttons">
+                <button
+                    onclick="fetchPokemonData()"
+                    class="bg-blue-500 text-white p-2 rounded-lg"
+                >
+                    Search
+                </button>
+                <button
+                    onclick="clearResults()"
+                    class="bg-gray-500 text-white p-2 rounded-lg"
+                >
+                    Clear
+                </button>
+                <a
+                    href="/typeeffectiveness"
+                    class="bg-green-500 text-white p-2 rounded-lg"
+                    >Type Effectiveness</a
+                >
+                <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg"
+                    >Stats</a
+                >
+                <a
+                    href="/typecalculator"
+                    class="bg-red-500 text-white p-2 rounded-lg"
+                    >Type Calcs</a
+                >
+                <a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg"
+                    >Natures</a
+                >
+            </div>
+            <div class="input-container">
+                <input
+                    type="text"
+                    class="input-field"
+                    id="pokemon-search"
+                    placeholder="Enter Pokémon Name"
+                    oninput="handleInput(event)"
+                    onkeydown="handleEnter(event)"
+                />
+                <ul class="suggestions" id="suggestions"></ul>
+            </div>
+            <div
+                id="progress-bar-container"
+                class="progress-bar-container hidden"
+            >
+                <div class="progress-bar"></div>
+            </div>
+            <div id="error-message" class="error-message-fixed"></div>
+        </div>
+        <div id="results"></div>
+        <script>
+            let selectedIndex = -1;
 
-            const response = await fetch(`/api/pokemon/evolutions?name=${query}`);
-            const data = await response.json();
+            async function handleInput(event) {
+                const input = event.target;
+                const box   = input.parentElement.querySelector('.suggestions');
 
-            if (response.ok) {
-                displayResults(data);
-            } else {
-                alert(data.error || 'An error occurred');
+                const q = input.value.trim().toLowerCase();
+                if (q.length > 1) {
+                const resp = await fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(q)}`);
+                const data = await resp.json();
+
+                // Populate & show
+                box.innerHTML = data.suggestions
+                    .map(name => `<li onclick="selectSuggestion('${name}')">${name}</li>`)
+                    .join('');
+                box.style.display = data.suggestions.length ? 'block' : 'none';
+                selectedIndex = -1;
+                } else {
+                box.style.display = 'none';
+                box.innerHTML   = '';
+                }
             }
-            const input = document.getElementById('pokemon-search');
-            input.value = '';
-            const box = document.getElementById('suggestions');
-            box.style.display = 'none';
-            box.innerHTML = '';
-        }
+            async function fetchPokemonData() {
+                const query = document.getElementById('pokemon-search').value.trim();
+                if (!query) return;
 
-        function capitalize(str) {
-            return str.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-        }
+                const response = await fetch(`/api/pokemon/evolutions?name=${query}`);
+                const data = await response.json();
 
-        function displayResults(data) {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '';
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    alert(data.error || 'An error occurred');
+                }
+                const input = document.getElementById('pokemon-search');
+                input.value = '';
+                const box = document.getElementById('suggestions');
+                box.style.display = 'none';
+                box.innerHTML = '';
+            }
 
-            data.forEach(pokemon => {
-                const card = document.createElement('div');
-                card.className = 'result-card';
-                const evolvesFrom = pokemon.evolves_from ? `<p>Evolves from: ${pokemon.evolves_from}</p>` : '';
-                card.innerHTML = `
-                    <h2>${capitalize(pokemon.name)}</h2>
-                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png" alt="${pokemon.name}">
-                    ${evolvesFrom}
-                    <div id="conditions-${pokemon.name.toLowerCase().replace(' ', '-')}"></div>
-                `;
-                resultsDiv.appendChild(card);
+            function capitalize(str) {
+                return str.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            }
 
-                // Display evolution conditions
-                const conditionsDiv = document.getElementById(`conditions-${pokemon.name.toLowerCase().replace(' ', '-')}`);
-                pokemon.evolution_conditions.forEach(condition => {
-                    Object.keys(condition).forEach(key => {
-                        if (condition[key] !== 'N/A') {
-                            const conditionP = document.createElement('p');
-                            conditionP.innerText = `${key}: ${condition[key]}`;
-                            conditionsDiv.appendChild(conditionP);
-                        }
+            function displayResults(data) {
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '';
+
+                data.forEach(pokemon => {
+                    const card = document.createElement('div');
+                    card.className = 'result-card';
+                    const evolvesFrom = pokemon.evolves_from ? `<p>Evolves from: ${pokemon.evolves_from}</p>` : '';
+                    card.innerHTML = `
+                        <h2>${capitalize(pokemon.name)}</h2>
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png" alt="${pokemon.name}">
+                        ${evolvesFrom}
+                        <div id="conditions-${pokemon.name.toLowerCase().replace(' ', '-')}"></div>
+                    `;
+                    resultsDiv.appendChild(card);
+
+                    // Display evolution conditions
+                    const conditionsDiv = document.getElementById(`conditions-${pokemon.name.toLowerCase().replace(' ', '-')}`);
+                    pokemon.evolution_conditions.forEach(condition => {
+                        Object.keys(condition).forEach(key => {
+                            if (condition[key] !== 'N/A') {
+                                const conditionP = document.createElement('p');
+                                conditionP.innerText = `${key}: ${condition[key]}`;
+                                conditionsDiv.appendChild(conditionP);
+                            }
+                        });
                     });
                 });
-            });
-        }
-
-        function selectSuggestion(name) {
-            const input = document.getElementById('pokemon-search');
-            const box   = document.getElementById('suggestions');
-
-            input.value = name;
-            box.style.display = 'none';
-            box.innerHTML = '';
-            fetchPokemonData();
-        }
-
-        function handleEnter(event) {
-            const box = document.getElementById('suggestions');
-            const items = Array.from(box.querySelectorAll('li'));
-
-            switch (event.key) {
-            case 'ArrowDown':
-                if (selectedIndex < items.length - 1) selectedIndex++;
-                highlightSuggestion(items);
-                event.preventDefault();
-                break;
-            case 'ArrowUp':
-                if (selectedIndex > 0) selectedIndex--;
-                highlightSuggestion(items);
-                event.preventDefault();
-                break;
-            case 'Enter':
-                event.preventDefault();
-                if (selectedIndex >= 0) {
-                selectSuggestion(items[selectedIndex].textContent);
-                } else if (items.length) {
-                selectSuggestion(items[0].textContent);
-                } else {
-                fetchPokemonData();
-                }
-                break;
             }
-        }
 
-        function highlightSuggestion(items) {
-            items.forEach((li, i) =>
-            li.classList.toggle('highlighted', i === selectedIndex)
-            );
-        }
+            function selectSuggestion(name) {
+                const input = document.getElementById('pokemon-search');
+                const box   = document.getElementById('suggestions');
 
-        function clearResults() {
-            document.getElementById('pokemon-search').value = '';
-            document.getElementById('results').innerHTML = '';
-            document.getElementById('suggestions').style.display = 'none';
-            document.getElementById('suggestions').innerHTML = '';
-        }
+                input.value = name;
+                box.style.display = 'none';
+                box.innerHTML = '';
+                fetchPokemonData();
+            }
 
-        function handleSuggestionError(error, pokemonName) {
-            const errorMessageDiv = document.getElementById('error-message');
-            errorMessageDiv.innerHTML = `
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center" role="alert">
-                    <strong class="font-bold">Error:</strong>
-                    <span class="block sm:inline">Pokémon ${pokemonName} could not be found. Please enter a new name.</span>
-                </div>
-            `;
+            function handleEnter(event) {
+                const box = document.getElementById('suggestions');
+                const items = Array.from(box.querySelectorAll('li'));
 
-            // Hide the error message after 3 seconds
-            setTimeout(() => {
-                errorMessageDiv.innerHTML = '';
-            }, 3000);
-        }
+                switch (event.key) {
+                case 'ArrowDown':
+                    if (selectedIndex < items.length - 1) selectedIndex++;
+                    highlightSuggestion(items);
+                    event.preventDefault();
+                    break;
+                case 'ArrowUp':
+                    if (selectedIndex > 0) selectedIndex--;
+                    highlightSuggestion(items);
+                    event.preventDefault();
+                    break;
+                case 'Enter':
+                    event.preventDefault();
+                    if (selectedIndex >= 0) {
+                    selectSuggestion(items[selectedIndex].textContent);
+                    } else if (items.length) {
+                    selectSuggestion(items[0].textContent);
+                    } else {
+                    fetchPokemonData();
+                    }
+                    break;
+                }
+            }
 
-        function scrollToNewCard(card) {
-            card.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }
-    </script>
-</body>
+            function highlightSuggestion(items) {
+                items.forEach((li, i) =>
+                li.classList.toggle('highlighted', i === selectedIndex)
+                );
+            }
+
+            function clearResults() {
+                document.getElementById('pokemon-search').value = '';
+                document.getElementById('results').innerHTML = '';
+                document.getElementById('suggestions').style.display = 'none';
+                document.getElementById('suggestions').innerHTML = '';
+            }
+
+            function handleSuggestionError(error, pokemonName) {
+                const errorMessageDiv = document.getElementById('error-message');
+                errorMessageDiv.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center" role="alert">
+                        <strong class="font-bold">Error:</strong>
+                        <span class="block sm:inline">Pokémon ${pokemonName} could not be found. Please enter a new name.</span>
+                    </div>
+                `;
+
+                // Hide the error message after 3 seconds
+                setTimeout(() => {
+                    errorMessageDiv.innerHTML = '';
+                }, 3000);
+            }
+
+            function scrollToNewCard(card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        </script>
+    </body>
 </html>

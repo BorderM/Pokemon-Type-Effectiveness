@@ -1,499 +1,595 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @keyframes progress {
-            0% { width: 0; }
-            100% { width: 100%; }
-        }
-        .progress-bar {
-            width: 100%;
-            background-color: #3b82f6;
-            height: 10px;
-            border-radius: 9999px;
-            animation: progress 2s linear infinite;
-        }
-        .input-container {
-            position: relative;
-            width: 100%;
-            max-width: 450px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-        }
-        .input-field {
-            background-color: white;
-            border: 1px solid #ccc;
-            padding: 8px;
-            border-radius: 4px;
-            flex-grow: 1;
-            color: black;
-            width: 100%;
-        }
-        .suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background-color: white;
-            border: 1px solid #ccc;
-            width: 100%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 1000;
-            display: none;
-            color: black;
-        }
-        .suggestions ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-        .suggestions li {
-            padding: 8px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        }
-        .suggestions li:last-child {
-            border-bottom: none;
-        }
-        .suggestions li:hover, .suggestions .highlighted {
-            background-color: #BFC2BA;
-        }
-        .highlighted {
-            background-color: #BFC2BA;
-        }
-		.separator {
-            border-top: 2px solid #444;
-            margin: 0rem;
-        }
-        .control-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .result-card {
-            background-color: #2d2d2d;
-            color: white;
-            width: 500px;
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            word-wrap: break-word;
-            justify-content: space-between;
-            position: relative;
-        }
-        .result-card img {
-            width: 115px;
-            height: 115px;
-            align-self: center;
-			margin-bottom: -1rem;
-			margin-top: -1rem;
-        }
-        .result-card h2 {
-            font-size: 1rem; /* Smaller font size */
-            font-weight: 700;
-            text-align: center;
-        }
-        .result-card p {
-            font-weight: 700;
-            text-align: center;
-            font-size: 0.875rem; /* Smaller font size */
-        }
-        .result-card .content {
-            flex-grow: 1;
-        }
-        .result-card ul li span {
-            font-weight: 700;
-        }
-        .type-badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.5rem;
-            color: white;
-            font-weight: bold;
-            margin: 0.1rem;
-        }
-        .type-normal { background-color: #A8A77A; }
-        .type-fire { background-color: #EE8130; }
-        .type-water { background-color: #6390F0; }
-        .type-electric { background-color: #F7D02C; }
-        .type-grass { background-color: #7AC74C; }
-        .type-ice { background-color: #96D9D6; }
-        .type-fighting { background-color: #C22E28; }
-        .type-poison { background-color: #A33EA1; }
-        .type-ground { background-color: #E2BF65; }
-        .type-flying { background-color: #A98FF3; }
-        .type-psychic { background-color: #F95587; }
-        .type-bug { background-color: #A6B91A; }
-        .type-rock { background-color: #B6A136; }
-        .type-ghost { background-color: #735797; }
-        .type-dragon { background-color: #6F35FC; }
-        .type-dark { background-color: #705746; }
-        .type-steel { background-color: #C0C0C0; }
-        .type-fairy { background-color: #D685AD; }
-        .type-none { background-color: #000000; }
-        .stat-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        .stat-label {
-            width: 100px;
-            font-weight: bold;
-        }
-        .stat-value {
-            width: 50px;
-            text-align: right;
-            margin-right: 0.5rem;
-        }
-        .stat-bar-container {
-            flex: 1;
-            height: 20px;
-            background-color: #444;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .stat-bar {
-            height: 10px;
-            border-radius: 5px;
-        }
-        .hp-bar { background-color: #69DC12; }
-        .attack-bar { background-color: #EFCC18; }
-        .defense-bar { background-color: #E86412; }
-        .special-attack-bar { background-color: #14C3F1; }
-        .special-defense-bar { background-color: #4A6ADF; }
-        .speed-bar { background-color: #D51DAD; }
-        .total-bar { background-color: #a0aec0; }
-        .control-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        #results {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            justify-items: center;
-            margin-top: 200px; /* Adjust this margin to ensure the results start below the fixed header */
-        }
-        .close-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: #f87171;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .fixed-header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background-color: #1a202c;
-            padding: 1rem 0;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 200px; /* Adjusted height to accommodate the progress bar */
-        }
-        .watermark-fixed {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 0.75rem;
-            color: #a0aec0;
-        }
-        .progress-bar-container {
-            width: 100%;
-            max-width: 450px;
-            margin-top: 10px;
-            height: 20px; /* Ensure space is reserved for the progress bar */
-        }
-        .hidden {
-            visibility: hidden; /* Hide the progress bar without collapsing the space */
-        }
-		.error-message-fixed {
-			position: absolute;
-			top: 80px; /* Adjust as needed to position below the search bar */
-			left: 10px;
-			width: 100%;
-			max-width: 450px;
-			z-index: 1001; /* Ensure it is above other elements */
-		}
-    </style>
-    <title>Pokémon Stats</title>
-</head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
-    <div class="fixed-header">
-        <div class="watermark-fixed">Created by BorderM</div>
-        <h1 class="text-3xl font-bold text-center mb-2">Pokémon Stats</h1>
-        <div class="control-buttons">
-            <button onclick="fetchPokemon()" class="bg-blue-500 text-white p-2 rounded-lg">Search</button>
-            <button onclick="clearResults()" class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
-            <a href="/typeeffectiveness" class="bg-green-500 text-white p-2 rounded-lg">Type Effectiveness</a>
-			<a href="/typecalculator" class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
-			<a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
-			<a href="/evolutions" class="bg-orange-500 text-white p-2 rounded-lg">Evolutions</a>
-		</div>
-        <div class="input-container">
-            <input type="text" class="input-field" id="pokemon-input" placeholder="Enter Pokémon Name" oninput="handleInput(event)" onkeydown="handleEnterKey(event)">
-            <ul class="suggestions"></ul>
-        </div>
-        <div id="progress-bar-container" class="progress-bar-container hidden">
-            <div class="progress-bar"></div>
-        </div>
-        <div id="error-message" class="error-message-fixed"></div>
-    </div>
-    <div id="results" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4"></div>
-    <script>
-         // Calculate once, at page load, the height of your fixed header
-        const HEADER_HEIGHT = document.querySelector('.fixed-header').offsetHeight;
-
-        /** Scroll `el` into view leaving a 16px gap below the header */
-        function scrollWithGap(el) {
-            const pageY   = window.scrollY || window.pageYOffset;
-            const elY     = el.getBoundingClientRect().top + pageY;
-            const targetY = elY - HEADER_HEIGHT - 16;  // 16px extra breathing room
-
-            window.scrollTo({ top: targetY, behavior: 'smooth' });
-        }
-        const LOCAL_STORAGE_KEY = 'activePokemonData';
-        let selectedIndex = -1;
-
-        function handleInput(event) {
-			const input = event.target;
-			const suggestionsBox = input.parentElement.querySelector('.suggestions');
-			if (input.value.length > 1) {
-				fetch(`/api/pokemon/suggestions?query=${input.value}`)
-					.then(response => response.json())
-					.then(data => {
-						suggestionsBox.style.display = 'block';
-						suggestionsBox.innerHTML = data.suggestions.map(name => `<li onclick="selectSuggestion('${name}')">${name}</li>`).join('');
-						selectedIndex = -1; // Reset the selected index when suggestions are shown
-					});
-			} else {
-				suggestionsBox.style.display = 'none';
-				suggestionsBox.innerHTML = '';
-			}
-		}
-
-        function selectSuggestion(name) {
-            const input = document.getElementById('pokemon-input');
-            input.value = name;
-            input.parentElement.querySelector('.suggestions').style.display = 'none';
-            fetchPokemon();
-        }
-
-        function handleEnterKey(event) {
-			const suggestionsBox = document.querySelector('.suggestions');
-			const suggestions = suggestionsBox.querySelectorAll('li');
-			if (event.key === 'ArrowDown') {
-				event.preventDefault();
-				if (selectedIndex < suggestions.length - 1) {
-					selectedIndex++;
-					highlightSuggestion(suggestions);
-				}
-			} else if (event.key === 'ArrowUp') {
-				event.preventDefault();
-				if (selectedIndex > 0) {
-					selectedIndex--;
-					highlightSuggestion(suggestions);
-				}
-			} else if (event.key === 'Enter') {
-				event.preventDefault();
-				if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
-					selectSuggestion(suggestions[selectedIndex].textContent);
-				} else if (suggestions.length > 0) {
-					selectSuggestion(suggestions[0].textContent);
-				} else {
-					fetchPokemon();
-				}
-				suggestionsBox.style.display = 'none';
-			}
-		}
-
-        function highlightSuggestion(suggestions) {
-            suggestions.forEach((suggestion, index) => {
-                if (index === selectedIndex) {
-                    suggestion.classList.add('highlighted');
-                } else {
-                    suggestion.classList.remove('highlighted');
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            @keyframes progress {
+                0% {
+                    width: 0;
                 }
-            });
-        }
+                100% {
+                    width: 100%;
+                }
+            }
+            .progress-bar {
+                width: 100%;
+                background-color: #3b82f6;
+                height: 10px;
+                border-radius: 9999px;
+                animation: progress 2s linear infinite;
+            }
+            .input-container {
+                position: relative;
+                width: 100%;
+                max-width: 450px;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+            }
+            .input-field {
+                background-color: white;
+                border: 1px solid #ccc;
+                padding: 8px;
+                border-radius: 4px;
+                flex-grow: 1;
+                color: black;
+                width: 100%;
+            }
+            .suggestions {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background-color: white;
+                border: 1px solid #ccc;
+                width: 100%;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                display: none;
+                color: black;
+            }
+            .suggestions ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+            .suggestions li {
+                padding: 8px;
+                cursor: pointer;
+                border-bottom: 1px solid #eee;
+            }
+            .suggestions li:last-child {
+                border-bottom: none;
+            }
+            .suggestions li:hover,
+            .suggestions .highlighted {
+                background-color: #BFC2BA;
+            }
+            .highlighted {
+                background-color: #BFC2BA;
+            }
+            .separator {
+                border-top: 2px solid #444;
+                margin: 0rem;
+            }
+            .control-buttons {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+            .result-card {
+                background-color: #2d2d2d;
+                color: white;
+                width: 500px;
+                display: flex;
+                flex-direction: column;
+                margin-bottom: 1rem;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                word-wrap: break-word;
+                justify-content: space-between;
+                position: relative;
+            }
+            .result-card img {
+                width: 115px;
+                height: 115px;
+                align-self: center;
+                margin-bottom: -1rem;
+                margin-top: -1rem;
+            }
+            .result-card h2 {
+                font-size: 1rem; /* Smaller font size */
+                font-weight: 700;
+                text-align: center;
+            }
+            .result-card p {
+                font-weight: 700;
+                text-align: center;
+                font-size: 0.875rem; /* Smaller font size */
+            }
+            .result-card .content {
+                flex-grow: 1;
+            }
+            .result-card ul li span {
+                font-weight: 700;
+            }
+            .type-badge {
+                display: inline-block;
+                padding: 0.25rem 0.5rem;
+                border-radius: 0.5rem;
+                color: white;
+                font-weight: bold;
+                margin: 0.1rem;
+            }
+            .type-normal {
+                background-color: #A8A77A;
+            }
+            .type-fire {
+                background-color: #EE8130;
+            }
+            .type-water {
+                background-color: #6390F0;
+            }
+            .type-electric {
+                background-color: #F7D02C;
+            }
+            .type-grass {
+                background-color: #7AC74C;
+            }
+            .type-ice {
+                background-color: #96D9D6;
+            }
+            .type-fighting {
+                background-color: #C22E28;
+            }
+            .type-poison {
+                background-color: #A33EA1;
+            }
+            .type-ground {
+                background-color: #E2BF65;
+            }
+            .type-flying {
+                background-color: #A98FF3;
+            }
+            .type-psychic {
+                background-color: #F95587;
+            }
+            .type-bug {
+                background-color: #A6B91A;
+            }
+            .type-rock {
+                background-color: #B6A136;
+            }
+            .type-ghost {
+                background-color: #735797;
+            }
+            .type-dragon {
+                background-color: #6F35FC;
+            }
+            .type-dark {
+                background-color: #705746;
+            }
+            .type-steel {
+                background-color: #C0C0C0;
+            }
+            .type-fairy {
+                background-color: #D685AD;
+            }
+            .type-none {
+                background-color: #000000;
+            }
+            .stat-row {
+                display: flex;
+                align-items: center;
+                margin-bottom: 0.5rem;
+            }
+            .stat-label {
+                width: 100px;
+                font-weight: bold;
+            }
+            .stat-value {
+                width: 50px;
+                text-align: right;
+                margin-right: 0.5rem;
+            }
+            .stat-bar-container {
+                flex: 1;
+                height: 20px;
+                background-color: #444;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+            .stat-bar {
+                height: 10px;
+                border-radius: 5px;
+            }
+            .hp-bar {
+                background-color: #69DC12;
+            }
+            .attack-bar {
+                background-color: #EFCC18;
+            }
+            .defense-bar {
+                background-color: #E86412;
+            }
+            .special-attack-bar {
+                background-color: #14C3F1;
+            }
+            .special-defense-bar {
+                background-color: #4A6ADF;
+            }
+            .speed-bar {
+                background-color: #D51DAD;
+            }
+            .total-bar {
+                background-color: #a0aec0;
+            }
+            .control-buttons {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+            #results {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1rem;
+                justify-items: center;
+                margin-top: 200px; /* Adjust this margin to ensure the results start below the fixed header */
+            }
+            .close-button {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background-color: #f87171;
+                color: white;
+                border: none;
+                border-radius: 50%;
+                width: 24px;
+                height: 24px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .fixed-header {
+                position: fixed;
+                top: 0;
+                width: 100%;
+                background-color: #1a202c;
+                padding: 1rem 0;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                height: 200px; /* Adjusted height to accommodate the progress bar */
+            }
+            .watermark-fixed {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                font-size: 0.75rem;
+                color: #a0aec0;
+            }
+            .progress-bar-container {
+                width: 100%;
+                max-width: 450px;
+                margin-top: 10px;
+                height: 20px; /* Ensure space is reserved for the progress bar */
+            }
+            .hidden {
+                visibility: hidden; /* Hide the progress bar without collapsing the space */
+            }
+            .error-message-fixed {
+                position: absolute;
+                top: 80px; /* Adjust as needed to position below the search bar */
+                left: 10px;
+                width: 100%;
+                max-width: 450px;
+                z-index: 1001; /* Ensure it is above other elements */
+            }
+        </style>
+        <title>Pokémon Stats</title>
+    </head>
+    <body
+        class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen"
+    >
+        <div class="fixed-header">
+            <div class="watermark-fixed">Created by BorderM</div>
+            <h1 class="text-3xl font-bold text-center mb-2">Pokémon Stats</h1>
+            <div class="control-buttons">
+                <button
+                    onclick="fetchPokemon()"
+                    class="bg-blue-500 text-white p-2 rounded-lg"
+                >
+                    Search
+                </button>
+                <button
+                    onclick="clearResults()"
+                    class="bg-gray-500 text-white p-2 rounded-lg"
+                >
+                    Clear
+                </button>
+                <a
+                    href="/typeeffectiveness"
+                    class="bg-green-500 text-white p-2 rounded-lg"
+                    >Type Effectiveness</a
+                >
+                <a
+                    href="/typecalculator"
+                    class="bg-red-500 text-white p-2 rounded-lg"
+                    >Type Calcs</a
+                >
+                <a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg"
+                    >Natures</a
+                >
+                <a
+                    href="/evolutions"
+                    class="bg-orange-500 text-white p-2 rounded-lg"
+                    >Evolutions</a
+                >
+            </div>
+            <div class="input-container">
+                <input
+                    type="text"
+                    class="input-field"
+                    id="pokemon-input"
+                    placeholder="Enter Pokémon Name"
+                    oninput="handleInput(event)"
+                    onkeydown="handleEnterKey(event)"
+                />
+                <ul class="suggestions"></ul>
+            </div>
+            <div
+                id="progress-bar-container"
+                class="progress-bar-container hidden"
+            >
+                <div class="progress-bar"></div>
+            </div>
+            <div id="error-message" class="error-message-fixed"></div>
+        </div>
+        <div
+            id="results"
+            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4"
+        ></div>
+        <script>
+                   // Calculate once, at page load, the height of your fixed header
+                  const HEADER_HEIGHT = document.querySelector('.fixed-header').offsetHeight;
 
-        function clearResults() {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '';
-            const input = document.getElementById('pokemon-input');
-            input.value = '';
-            input.focus();
-            document.getElementById('error-message').innerHTML = '';
-			localStorage.removeItem('activePokemonData'); // Clear local storage
-        }
+                  /** Scroll `el` into view leaving a 16px gap below the header */
+                  function scrollWithGap(el) {
+                      const pageY   = window.scrollY || window.pageYOffset;
+                      const elY     = el.getBoundingClientRect().top + pageY;
+                      const targetY = elY - HEADER_HEIGHT - 16;  // 16px extra breathing room
 
-        async function fetchPokemon() {
-            const input = document.getElementById('pokemon-input');
-            let pokemonName = input.value.trim();
-			const suggestionsBox = document.querySelector('.suggestions');
-			const suggestions = suggestionsBox.querySelectorAll('li');
-			
-			if (!pokemonName && suggestions.length > 0) {
-				pokemonName = suggestions[0].textContent;
-			}
-			
-            if (!pokemonName) return;
+                      window.scrollTo({ top: targetY, behavior: 'smooth' });
+                  }
+                  const LOCAL_STORAGE_KEY = 'activePokemonData';
+                  let selectedIndex = -1;
 
-            const resultsDiv = document.getElementById('results');
-            const progressBarContainer = document.getElementById('progress-bar-container');
-            progressBarContainer.classList.remove('hidden');
-
-            const response = await fetch(`/api/pokemon/${window.location.pathname.includes('stats') ? 'stats' : 'info'}?name=${pokemonName}`);
-            const data = await response.json();
-
-            const errorMessageDiv = document.getElementById('error-message');
-            errorMessageDiv.innerHTML = '';
-
-            if (response.ok) {
-                data.forEach(result => {
-                    const newCard = createStatsCard(result);
-                    resultsDiv.appendChild(newCard);
-                    scrollToNewCard(newCard);
-                });
-                updateLocalStorage();
-            } else {
-                handleSuggestionError(data.error, pokemonName);
+                  function handleInput(event) {
+            	const input = event.target;
+            	const suggestionsBox = input.parentElement.querySelector('.suggestions');
+            	if (input.value.length > 1) {
+            		fetch(`/api/pokemon/suggestions?query=${input.value}`)
+            			.then(response => response.json())
+            			.then(data => {
+            				suggestionsBox.style.display = 'block';
+            				suggestionsBox.innerHTML = data.suggestions.map(name => `<li onclick="selectSuggestion('${name}')">${name}</li>`).join('');
+            				selectedIndex = -1; // Reset the selected index when suggestions are shown
+            			});
+            	} else {
+            		suggestionsBox.style.display = 'none';
+            		suggestionsBox.innerHTML = '';
+            	}
             }
 
-            input.value = '';
-            input.focus();
-            progressBarContainer.classList.add('hidden');
-        }
+                  function selectSuggestion(name) {
+                      const input = document.getElementById('pokemon-input');
+                      input.value = name;
+                      input.parentElement.querySelector('.suggestions').style.display = 'none';
+                      fetchPokemon();
+                  }
 
-        function createStatsCard(result) {
-            const formDiv = document.createElement('div');
-            formDiv.className = "bg-white dark:bg-zinc-700 rounded-lg p-4 shadow-md result-card";
-            formDiv.setAttribute('data-pokemon', JSON.stringify(result));
-            const pokemonName = capitalizeFirstLetter(result.name);
-            const bulbapediaLinkName = pokemonName.split('-')[0]; // Use part of name before first hyphen
-            const bulbapediaLink = `https://bulbapedia.bulbagarden.net/wiki/${bulbapediaLinkName}_(Pok%C3%A9mon)`;
-            formDiv.innerHTML = `
-                <button class="close-button" onclick="removeCard(this)">X</button>
-                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${result.id}.png" alt="${result.form}" class="mx-auto mb-2">
-                <h2 class="text-center mb-2"><a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">${pokemonName}</a></h2>
-                <p class="text-center"><span>Type:</span> ${result.types.map(type => `<span class="type-badge type-${type.toLowerCase()}">${capitalizeFirstLetter(type)}</span>`).join(' ')}</p>
-                <div class="content mt-2">
-                    <div class="stat-row">
-                        <span class="stat-label">HP:</span>
-                        <span class="stat-value">${result.stats.hp}</span>
-                        <div class="stat-bar" style="width: ${result.stats.hp}px; background-color: #69DC12;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Attack:</span>
-                        <span class="stat-value">${result.stats.attack}</span>
-                        <div class="stat-bar" style="width: ${result.stats.attack}px; background-color: #EFCC18;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Defense:</span>
-                        <span class="stat-value">${result.stats.defense}</span>
-                        <div class="stat-bar" style="width: ${result.stats.defense}px; background-color: #E86412;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Sp. Atk:</span>
-                        <span class="stat-value">${result.stats.special_attack}</span>
-                        <div class="stat-bar" style="width: ${result.stats.special_attack}px; background-color: #14C3F1;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Sp. Def:</span>
-                        <span class="stat-value">${result.stats.special_defense}</span>
-                        <div class="stat-bar" style="width: ${result.stats.special_defense}px; background-color: #4A6ADF;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Speed:</span>
-                        <span class="stat-value">${result.stats.speed}</span>
-                        <div class="stat-bar" style="width: ${result.stats.speed}px; background-color: #D51DAD;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Total:</span>
-                        <span class="stat-value">${result.stats.total}</span>
-                    </div>
-                </div>
-            `;
-            return formDiv;
-        }
+                  function handleEnterKey(event) {
+            	const suggestionsBox = document.querySelector('.suggestions');
+            	const suggestions = suggestionsBox.querySelectorAll('li');
+            	if (event.key === 'ArrowDown') {
+            		event.preventDefault();
+            		if (selectedIndex < suggestions.length - 1) {
+            			selectedIndex++;
+            			highlightSuggestion(suggestions);
+            		}
+            	} else if (event.key === 'ArrowUp') {
+            		event.preventDefault();
+            		if (selectedIndex > 0) {
+            			selectedIndex--;
+            			highlightSuggestion(suggestions);
+            		}
+            	} else if (event.key === 'Enter') {
+            		event.preventDefault();
+            		if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+            			selectSuggestion(suggestions[selectedIndex].textContent);
+            		} else if (suggestions.length > 0) {
+            			selectSuggestion(suggestions[0].textContent);
+            		} else {
+            			fetchPokemon();
+            		}
+            		suggestionsBox.style.display = 'none';
+            	}
+            }
 
-        function capitalizeFirstLetter(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
-        }
+                  function highlightSuggestion(suggestions) {
+                      suggestions.forEach((suggestion, index) => {
+                          if (index === selectedIndex) {
+                              suggestion.classList.add('highlighted');
+                          } else {
+                              suggestion.classList.remove('highlighted');
+                          }
+                      });
+                  }
 
-        function removeCard(button) {
-            const card = button.parentElement;
-            card.remove();
-            updateLocalStorage(); // Update local storage when a card is removed
-        }
+                  function clearResults() {
+                      const resultsDiv = document.getElementById('results');
+                      resultsDiv.innerHTML = '';
+                      const input = document.getElementById('pokemon-input');
+                      input.value = '';
+                      input.focus();
+                      document.getElementById('error-message').innerHTML = '';
+            	localStorage.removeItem('activePokemonData'); // Clear local storage
+                  }
 
-        function handleSuggestionError(error, pokemonName) {
-            const errorMessageDiv = document.getElementById('error-message');
-            errorMessageDiv.innerHTML = `
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center" role="alert">
-                    <strong class="font-bold">Error:</strong>
-                    <span class="block sm:inline">Pokémon ${pokemonName} could not be found. Please enter a new name.</span>
-                </div>
-            `;
+                  async function fetchPokemon() {
+                      const input = document.getElementById('pokemon-input');
+                      let pokemonName = input.value.trim();
+            	const suggestionsBox = document.querySelector('.suggestions');
+            	const suggestions = suggestionsBox.querySelectorAll('li');
 
-            // Hide the error message after 3 seconds
-            setTimeout(() => {
-                errorMessageDiv.innerHTML = '';
-            }, 3000);
-        }
+            	if (!pokemonName && suggestions.length > 0) {
+            		pokemonName = suggestions[0].textContent;
+            	}
 
-        function scrollToNewCard(card) {
-            card.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }
+                      if (!pokemonName) return;
 
-        function navigateToPage(page) {
-            updateLocalStorage();
-            window.location.href = page;
-        }
+                      const resultsDiv = document.getElementById('results');
+                      const progressBarContainer = document.getElementById('progress-bar-container');
+                      progressBarContainer.classList.remove('hidden');
 
-        function updateLocalStorage() {
-            const resultsDiv = document.getElementById('results');
-            const activeCards = [];
-            resultsDiv.querySelectorAll('.result-card').forEach(card => {
-                activeCards.push(JSON.parse(card.getAttribute('data-pokemon')));
-            });
-            localStorage.setItem('activePokemonData', JSON.stringify(activeCards));
-        }
+                      const response = await fetch(`/api/pokemon/${window.location.pathname.includes('stats') ? 'stats' : 'info'}?name=${pokemonName}`);
+                      const data = await response.json();
 
-        function loadDataFromLocalStorage() {
-            const stored = localStorage.getItem('activePokemonData');
-            if (!stored) return;
-            const resultsDiv = document.getElementById('results');
-            JSON.parse(stored).forEach(pokemonData => {
-                const card = createStatsCard(pokemonData);
-                resultsDiv.appendChild(card);
-            });
-        }
-        document.addEventListener('DOMContentLoaded', loadDataFromLocalStorage);
-    </script>
-</body>
+                      const errorMessageDiv = document.getElementById('error-message');
+                      errorMessageDiv.innerHTML = '';
+
+                      if (response.ok) {
+                          data.forEach(result => {
+                              const newCard = createStatsCard(result);
+                              resultsDiv.appendChild(newCard);
+                              scrollToNewCard(newCard);
+                          });
+                          updateLocalStorage();
+                      } else {
+                          handleSuggestionError(data.error, pokemonName);
+                      }
+
+                      input.value = '';
+                      input.focus();
+                      progressBarContainer.classList.add('hidden');
+                  }
+
+                  function createStatsCard(result) {
+                      const formDiv = document.createElement('div');
+                      formDiv.className = "bg-white dark:bg-zinc-700 rounded-lg p-4 shadow-md result-card";
+                      formDiv.setAttribute('data-pokemon', JSON.stringify(result));
+                      const pokemonName = capitalizeFirstLetter(result.name);
+                      const bulbapediaLinkName = pokemonName.split('-')[0]; // Use part of name before first hyphen
+                      const bulbapediaLink = `https://bulbapedia.bulbagarden.net/wiki/${bulbapediaLinkName}_(Pok%C3%A9mon)`;
+                      formDiv.innerHTML = `
+                          <button class="close-button" onclick="removeCard(this)">X</button>
+                          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${result.id}.png" alt="${result.form}" class="mx-auto mb-2">
+                          <h2 class="text-center mb-2"><a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">${pokemonName}</a></h2>
+                          <p class="text-center"><span>Type:</span> ${result.types.map(type => `<span class="type-badge type-${type.toLowerCase()}">${capitalizeFirstLetter(type)}</span>`).join(' ')}</p>
+                          <div class="content mt-2">
+                              <div class="stat-row">
+                                  <span class="stat-label">HP:</span>
+                                  <span class="stat-value">${result.stats.hp}</span>
+                                  <div class="stat-bar" style="width: ${result.stats.hp}px; background-color: #69DC12;"></div>
+                              </div>
+                              <div class="separator"></div>
+                              <div class="stat-row">
+                                  <span class="stat-label">Attack:</span>
+                                  <span class="stat-value">${result.stats.attack}</span>
+                                  <div class="stat-bar" style="width: ${result.stats.attack}px; background-color: #EFCC18;"></div>
+                              </div>
+                              <div class="separator"></div>
+                              <div class="stat-row">
+                                  <span class="stat-label">Defense:</span>
+                                  <span class="stat-value">${result.stats.defense}</span>
+                                  <div class="stat-bar" style="width: ${result.stats.defense}px; background-color: #E86412;"></div>
+                              </div>
+                              <div class="separator"></div>
+                              <div class="stat-row">
+                                  <span class="stat-label">Sp. Atk:</span>
+                                  <span class="stat-value">${result.stats.special_attack}</span>
+                                  <div class="stat-bar" style="width: ${result.stats.special_attack}px; background-color: #14C3F1;"></div>
+                              </div>
+                              <div class="separator"></div>
+                              <div class="stat-row">
+                                  <span class="stat-label">Sp. Def:</span>
+                                  <span class="stat-value">${result.stats.special_defense}</span>
+                                  <div class="stat-bar" style="width: ${result.stats.special_defense}px; background-color: #4A6ADF;"></div>
+                              </div>
+                              <div class="separator"></div>
+                              <div class="stat-row">
+                                  <span class="stat-label">Speed:</span>
+                                  <span class="stat-value">${result.stats.speed}</span>
+                                  <div class="stat-bar" style="width: ${result.stats.speed}px; background-color: #D51DAD;"></div>
+                              </div>
+                              <div class="separator"></div>
+                              <div class="stat-row">
+                                  <span class="stat-label">Total:</span>
+                                  <span class="stat-value">${result.stats.total}</span>
+                              </div>
+                          </div>
+                      `;
+                      return formDiv;
+                  }
+
+                  function capitalizeFirstLetter(string) {
+                      return string.charAt(0).toUpperCase() + string.slice(1);
+                  }
+
+                  function removeCard(button) {
+                      const card = button.parentElement;
+                      card.remove();
+                      updateLocalStorage(); // Update local storage when a card is removed
+                  }
+
+                  function handleSuggestionError(error, pokemonName) {
+                      const errorMessageDiv = document.getElementById('error-message');
+                      errorMessageDiv.innerHTML = `
+                          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center" role="alert">
+                              <strong class="font-bold">Error:</strong>
+                              <span class="block sm:inline">Pokémon ${pokemonName} could not be found. Please enter a new name.</span>
+                          </div>
+                      `;
+
+                      // Hide the error message after 3 seconds
+                      setTimeout(() => {
+                          errorMessageDiv.innerHTML = '';
+                      }, 3000);
+                  }
+
+                  function scrollToNewCard(card) {
+                      card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                  }
+
+                  function navigateToPage(page) {
+                      updateLocalStorage();
+                      window.location.href = page;
+                  }
+
+                  function updateLocalStorage() {
+                      const resultsDiv = document.getElementById('results');
+                      const activeCards = [];
+                      resultsDiv.querySelectorAll('.result-card').forEach(card => {
+                          activeCards.push(JSON.parse(card.getAttribute('data-pokemon')));
+                      });
+                      localStorage.setItem('activePokemonData', JSON.stringify(activeCards));
+                  }
+
+                  function loadDataFromLocalStorage() {
+                      const stored = localStorage.getItem('activePokemonData');
+                      if (!stored) return;
+                      const resultsDiv = document.getElementById('results');
+                      JSON.parse(stored).forEach(pokemonData => {
+                          const card = createStatsCard(pokemonData);
+                          resultsDiv.appendChild(card);
+                      });
+                  }
+                  document.addEventListener('DOMContentLoaded', loadDataFromLocalStorage);
+        </script>
+    </body>
 </html>
