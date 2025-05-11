@@ -260,7 +260,7 @@
     <div id="results" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4"></div>
     <script>
          // Calculate once, at page load, the height of your fixed header
-        const HEADER_HEIGHT = document.querySelector('header').offsetHeight;
+        const HEADER_HEIGHT = document.querySelector('.fixed-header').offsetHeight;
 
         /** Scroll `el` into view leaving a 16px gap below the header */
         function scrollWithGap(el) {
@@ -476,27 +476,23 @@
         }
 
         function updateLocalStorage() {
-			const resultsDiv = document.getElementById('results');
-			const activeCards = [];
-			resultsDiv.querySelectorAll('.result-card').forEach(card => {
-				const pokemonData = JSON.parse(card.getAttribute('data-pokemon'));
-				activeCards.push(pokemonData);
-			});
-			localStorage.setItem('activePokemonData', JSON.stringify(activeCards));
-		}
+            const resultsDiv = document.getElementById('results');
+            const activeCards = [];
+            resultsDiv.querySelectorAll('.result-card').forEach(card => {
+                activeCards.push(JSON.parse(card.getAttribute('data-pokemon')));
+            });
+            localStorage.setItem('activePokemonData', JSON.stringify(activeCards));
+        }
 
         function loadDataFromLocalStorage() {
-			const storedData = localStorage.getItem('activePokemonData');
-			if (storedData) {
-				const resultsDiv = document.getElementById('results');
-				const data = JSON.parse(storedData);
-				data.forEach(result => {
-					const newCard = createStatsCard(result);
-					resultsDiv.appendChild(newCard);
-				});
-			}
-		}
-
+            const stored = localStorage.getItem('activePokemonData');
+            if (!stored) return;
+            const resultsDiv = document.getElementById('results');
+            JSON.parse(stored).forEach(pokemonData => {
+                const card = createStatsCard(pokemonData);
+                resultsDiv.appendChild(card);
+            });
+        }
         document.addEventListener('DOMContentLoaded', loadDataFromLocalStorage);
     </script>
 </body>

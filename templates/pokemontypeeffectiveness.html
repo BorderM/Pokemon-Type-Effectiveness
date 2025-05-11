@@ -79,22 +79,53 @@
     }
     /* once it has items, float it on top of the left edge */
     #history {
-    width: 200px;
+    background: #1f2937;    /* same as your main card bg */
+    padding: 1rem;          /* give it some breathing room */
+    width: 180px;
     max-height: calc(100vh - 240px);
     overflow-y: auto;
     padding-right: 1rem;
     border-right: 1px solid #374151;
     }
+    /* history cards */
     .small-card {
-      width: 100%;
-      text-align: left;
-      padding: .5rem;
-      background: #1f2937;
-      color: white;
-      border: none;
-      border-radius: .25rem;
-      cursor: pointer;
-      margin-bottom: .5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #374151;    /* slightly lighter */
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+    width: 100%;
+    box-sizing: border-box;
+    }
+
+    .small-card .history-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    text-align: left;          /* label flush left */
+    flex: 1;                   /* fill the remaining space */
+    padding: 0.25rem 0;         /* vertical hit-area */
+    font-size: 0.875rem;
+    cursor: pointer;
+    }
+
+    /* give the “×” a pop of color */
+    .small-card .remove-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    line-height: 1;
+    cursor: pointer;
     }
     .small-card:hover {
       background: #374151;
@@ -102,11 +133,11 @@
 
     /* main-result grows to fill the rest of the flex container */
     #main-result {
-    position: absolute;    /* taken out of the flex flow */
-    top: 220px;            /* immediately below the header */
-    left: 50%;             
+    position: absolute;
+    top: 220px;
+    left: 50%;
     transform: translateX(-50%);
-    width: 500px;          /* match your .result-card max-width */
+    width: 500px;
     min-height: calc(100vh - 260px);
     display: flex;
     justify-content: center;
@@ -219,254 +250,245 @@
   </div>
 
   <script>
-    // — state & persistence —
-    let historyList = [];
-    let currentPokemon = null;
 
-    function saveState() {
-      localStorage.setItem('pkmnHistory', JSON.stringify(historyList));
-      localStorage.setItem('pkmnCurrent', JSON.stringify(currentPokemon));
+  // — state & persistence —
+  let historyList = [];
+  let currentPokemon = null;
+
+  function saveState() {
+    localStorage.setItem('pkmnHistory', JSON.stringify(historyList));
+    localStorage.setItem('pkmnCurrent', JSON.stringify(currentPokemon));
+  }
+
+  function loadState() {
+    const hist = localStorage.getItem('pkmnHistory');
+    if (hist) {
+      historyList = JSON.parse(hist);
+      historyList.forEach(r => renderHistoryEntry(r));
+    }
+    const cur = localStorage.getItem('pkmnCurrent');
+    if (cur) {
+      currentPokemon = JSON.parse(cur);
+      renderMainCard(currentPokemon);
+    }
+  }
+
+  // — scrolling helper —
+  const HEADER_HEIGHT = document.querySelector('header').offsetHeight;
+  function scrollWithGap(el) {
+    const y = el.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: y - HEADER_HEIGHT - 16, behavior: 'smooth' });
+  }
+
+  // — render the main result card —
+  function renderMainCard(r) {
+    currentPokemon = r;
+    saveState();
+    const sec = document.getElementById('main-result');
+    sec.innerHTML = '';
+    const card = createCard(r);
+    card.dataset.name = r.name;
+    sec.appendChild(card);
+    scrollWithGap(card);
+  }
+
+  // — when you click a history entry —
+  function swapToMain(r) {
+    // 1) remove the clicked one from history
+    removeHistoryEntry(r.name);
+
+    // 2) push the old main into history (if any)
+    if (currentPokemon && currentPokemon.name !== r.name) {
+      historyList.unshift(currentPokemon);
+      renderHistoryEntry(currentPokemon, /*prepend=*/true);
     }
 
-    function loadState() {
-      const hist = localStorage.getItem('pkmnHistory');
-      if (hist) {
-        historyList = JSON.parse(hist);
-        historyList.forEach(r => renderHistoryEntry(r));
-      }
-      const cur = localStorage.getItem('pkmnCurrent');
-      if (cur) {
-        currentPokemon = JSON.parse(cur);
-        renderMainCard(currentPokemon);
-      }
-    }
+    // 3) now make the clicked one the main card
+    renderMainCard(r);
+  }
 
-    // — scrolling helper —
-    const HEADER_HEIGHT = document.querySelector('header').offsetHeight;
-    function scrollWithGap(el) {
-      const y = el.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top: y - HEADER_HEIGHT - 16, behavior: 'smooth' });
-    }
+  // — render a single history button —
+  function renderHistoryEntry(r, prepend = false) {
+    // skip duplicates
+    if (document.querySelector(`#history .small-card[data-name="${r.name}"]`)) return;
 
-    // — main card rendering & swap —
-    function renderMainCard(r) {
-      currentPokemon = r;
-      saveState();
-      const sec = document.getElementById('main-result');
-      sec.innerHTML = '';
-      const card = createCard(r);
-      card.dataset.name = r.name;
-      sec.appendChild(card);
-      scrollWithGap(card);
-    }
+    const btn = document.createElement('div');
+    btn.className = 'small-card';
+    btn.dataset.name = r.name;
+    btn.innerHTML = `
+      <button class="history-btn">
+        ${r.name.charAt(0).toUpperCase() + r.name.slice(1)}
+        </button>
+        <button class="remove-btn">×</button>
+    `;
 
-    function swapToMain(r) {
-      // push the old main into history
-      if (currentPokemon && currentPokemon.name !== r.name) {
-        pushToHistory(currentPokemon);
-      }
-      renderMainCard(r);
-    }
+    // click on label → swap
+    btn.querySelector('.history-btn').onclick = () => swapToMain(r);
 
-    // — history entry rendering & removal —
-    function renderHistoryEntry(r) {
-      // avoid duplicates
-      if (document.querySelector(`#history .small-card[data-name="${r.name}"]`)) return;
+    // click on × → just remove
+    btn.querySelector('.remove-btn').onclick = e => {
+      e.stopPropagation();
+      removeHistoryEntry(r.name);
+    };
 
-      const btn = document.createElement('div');
-      btn.className = 'small-card';
-      btn.dataset.name = r.name;
-      btn.textContent = r.name.charAt(0).toUpperCase() + r.name.slice(1);
+    const container = document.getElementById('history');
+    if (prepend && container.firstChild) {
+      container.insertBefore(btn, container.firstChild);
+    } else {
+      container.appendChild(btn);
+    }
+  }
 
-      // click on the label
-      btn.onclick = () => swapToMain(r);
+  function pushToHistory(r) {
+    // skip if already in history or is current
+    if (historyList.some(x => x.name === r.name)) {
+      return;
+    }
+    historyList.unshift(r);
+    renderHistoryEntry(r, /*prepend=*/true);
+    saveState();
+  }
 
-      // remove-×
-      const x = document.createElement('button');
-      x.textContent = '×';
-      x.className = 'remove-btn';
-      x.onclick = e => {
-        e.stopPropagation();
-        removeHistoryEntry(r.name);
-      };
-      btn.appendChild(x);
+  function removeHistoryEntry(name) {
+    historyList = historyList.filter(x => x.name !== name);
+    const btn = document.querySelector(`#history .small-card[data-name="${name}"]`);
+    if (btn) btn.remove();
+    saveState();
+  }
 
-      document.getElementById('history').appendChild(btn);
-    }
+  function clearHistory() {
+    historyList = [];
+    currentPokemon = null;
+    document.getElementById('history').innerHTML = '';
+    document.getElementById('main-result').innerHTML = '';
+    localStorage.removeItem('pkmnHistory');
+    localStorage.removeItem('pkmnCurrent');
+  }
 
-    function pushToHistory(r) {
-      if (historyList.some(x => x.name === r.name)) return;
-      historyList.push(r);
-      renderHistoryEntry(r);
-      saveState();
-    }
-
-    function removeHistoryEntry(name) {
-      historyList = historyList.filter(x => x.name !== name);
-      const btn = document.querySelector(`#history .small-card[data-name="${name}"]`);
-      if (btn) btn.remove();
-      saveState();
-    }
-
-    function clearHistory() {
-      historyList = [];
-      currentPokemon = null;
-      document.getElementById('history').innerHTML = '';
-      document.getElementById('main-result').innerHTML = '';
-      localStorage.removeItem('pkmnHistory');
-      localStorage.removeItem('pkmnCurrent');
-    }
-
-    /* Suggestions */
-    let selectedIndex = -1;
-    function handleInput(e) {
-      const q = e.target.value.trim();
-      const box = document.getElementById('suggestions');
-      if (q.length > 1) {
-        fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(q)}`)
-          .then(r=>r.json())
-          .then(data=>{
-            box.innerHTML = data.suggestions
-              .map(s=>`<li onclick="selectSuggestion('${s}')">${s}</li>`)
-              .join('');
-            box.style.display = data.suggestions.length ? 'block' : 'none';
-            selectedIndex = -1;
-          });
-      } else {
-        box.style.display = 'none';
-        box.innerHTML = '';
-      }
-    }
-    function handleEnterKey(e) {
-      const box = document.getElementById('suggestions');
-      const items = Array.from(box.querySelectorAll('li'));
-      if (e.key==='ArrowDown'||e.key==='ArrowUp') {
-        e.preventDefault();
-        selectedIndex += e.key==='ArrowDown'?1:-1;
-        selectedIndex = Math.max(0, Math.min(items.length-1, selectedIndex));
-        items.forEach((li,i)=>li.classList.toggle('highlighted', i===selectedIndex));
-      }
-      else if (e.key==='Enter') {
-        e.preventDefault();
-        if (items.length) {
-          const idx = selectedIndex>=0?selectedIndex:0;
-          selectSuggestion(items[idx].textContent);
-        } else {
-          performSearch();
-        }
-        box.style.display='none';
-      }
-    }
-    function selectSuggestion(name) {
-      const inp = document.getElementById('pokemon-input');
-      inp.value = name;
-      document.getElementById('suggestions').style.display='none';
-      performSearch();
-    }
-
-    /* History & Main */
-    function renderMainCard(r) {
-      const sec = document.getElementById('main-result');
-      sec.innerHTML = '';
-      const card = createCard(r);
-      card.dataset.name = r.name;
-      sec.appendChild(card);
-      scrollWithGap(card);
-    }
-    function pushToHistory(r) {
-      if (historyList.some(x=>x.name===r.name)) return;
-      historyList.push(r);
-      const btn = document.createElement('button');
-      btn.textContent = r.name.charAt(0).toUpperCase()+r.name.slice(1);
-      btn.className = 'small-card';
-      btn.onclick = ()=>swapToMain(r);
-      document.getElementById('history').appendChild(btn);
-    }
-    function swapToMain(r) {
-      const cur = document.querySelector('#main-result .result-card');
-      if (cur) pushToHistory(JSON.parse(cur.dataset.pokemon));
-      renderMainCard(r);
-    }
-    function clearHistory() {
-      document.getElementById('history').innerHTML = '';
-      historyList.length = 0;
-      document.getElementById('main-result').innerHTML = '';
-    }
-
-    /* Search flow */
-    function performSearch() {
-      const inp = document.getElementById('pokemon-input');
-      let name  = inp.value.trim();
-      const items = document.querySelectorAll('#suggestions li');
-      if (!name && items.length) name = items[0].textContent;
-      if (!name) return;
-      document.getElementById('suggestions').style.display='none';
-      document.getElementById('progress-bar-container').classList.remove('hidden');
-      fetchPokemon(name.toLowerCase())
-        .finally(() => {
-          document.getElementById('progress-bar-container').classList.add('hidden');
-          inp.value=''; inp.focus();
+  // — suggestions & search flow (unchanged) —
+  let selectedIndex = -1;
+  function handleInput(e) {
+    const q = e.target.value.trim();
+    const box = document.getElementById('suggestions');
+    if (q.length > 1) {
+      fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(q)}`)
+        .then(r=>r.json())
+        .then(data=>{
+          box.innerHTML = data.suggestions
+            .map(s=>`<li onclick="selectSuggestion('${s}')">${s}</li>`)
+            .join('');
+          box.style.display = data.suggestions.length ? 'block' : 'none';
+          selectedIndex = -1;
         });
+    } else {
+      box.style.display = 'none';
+      box.innerHTML = '';
     }
-    async function fetchPokemon(name) {
-      if (document.querySelector(`.result-card[data-name="${name}"]`)) {
-        scrollWithGap(document.querySelector(`.result-card[data-name="${name}"]`));
-        return;
-      }
-      const ep = location.pathname.includes('stats')?'stats':'info';
-      const res = await fetch(`/api/pokemon/${ep}?name=${encodeURIComponent(name)}`);
-      const data = await res.json();
-      document.getElementById('error-message').innerHTML='';
-      if (res.ok) {
-        data.forEach(r=>{
-          const cur = document.querySelector('#main-result .result-card');
-          if (cur) pushToHistory(JSON.parse(cur.dataset.pokemon));
-          renderMainCard(r);
-        });
+  }
+  function handleEnterKey(e) {
+    const box = document.getElementById('suggestions');
+    const items = Array.from(box.querySelectorAll('li'));
+    if (e.key==='ArrowDown'||e.key==='ArrowUp') {
+      e.preventDefault();
+      selectedIndex += e.key==='ArrowDown'?1:-1;
+      selectedIndex = Math.max(0, Math.min(items.length-1, selectedIndex));
+      items.forEach((li,i)=>li.classList.toggle('highlighted', i===selectedIndex));
+    }
+    else if (e.key==='Enter') {
+      e.preventDefault();
+      if (items.length) {
+        const idx = selectedIndex>=0?selectedIndex:0;
+        selectSuggestion(items[idx].textContent);
       } else {
-        document.getElementById('error-message').innerHTML =
-          `<div class="bg-red-600 text-white p-2 rounded">${data.error}</div>`;
+        performSearch();
       }
+      box.style.display='none';
     }
+  }
+  function selectSuggestion(name) {
+    document.getElementById('pokemon-input').value = name;
+    document.getElementById('suggestions').style.display='none';
+    performSearch();
+  }
 
-    /* Build a card */
-    function createCard(r) {
-      const d = document.createElement('div');
-      d.className = 'result-card';
-      d.dataset.pokemon = JSON.stringify(r);
-      d.innerHTML = `
-        <button class="close-button" onclick="this.parentElement.remove()">×</button>
-        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.name}">
-        <h2>${r.name}</h2>
-        <p class="type-line">Type: ${r.types.map(
-          t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`
-        ).join(' ')}</p>
-        <div class="separator"></div>
-        ${renderRow('4x Weak', r.effectiveness.four_times_effective)}
-        <div class="separator"></div>
-        ${renderRow('2x Weak', r.effectiveness.super_effective)}
-        <div class="separator"></div>
-        ${renderRow('Normal', r.effectiveness.normal_effective)}
-        <div class="separator"></div>
-        ${renderRow('2x Resistant', r.effectiveness.two_times_resistant)}
-        <div class="separator"></div>
-        ${renderRow('4x Resistant', r.effectiveness.four_times_resistant)}
-        <div class="separator"></div>
-        ${renderRow('Immune', r.effectiveness.immune)}
-      `;
-      return d;
-    }
-    function renderRow(label, types) {
-      const items = types.length
-        ? types.map(t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`).join(' ')
-        : `<span class="type-badge type-none">None</span>`;
-      return `
-        <div class="effectiveness-row">
-          <span class="effectiveness-label">${label}:</span>
-          <div class="effectiveness-content">${items}</div>
-        </div>`;
-    }
-    window.addEventListener('DOMContentLoaded', loadState);
-  </script>
+  function performSearch() {
+    const inp = document.getElementById('pokemon-input');
+    let name  = inp.value.trim();
+    const items = document.querySelectorAll('#suggestions li');
+    if (!name && items.length) name = items[0].textContent;
+    if (!name) return;
+    document.getElementById('suggestions').style.display='none';
+    document.getElementById('progress-bar-container').classList.remove('hidden');
+    fetchPokemon(name.toLowerCase())
+      .finally(() => {
+        document.getElementById('progress-bar-container').classList.add('hidden');
+        inp.value=''; inp.focus();
+      });
+  }
+
+  async function fetchPokemon(name) {
+  // if it’s already the main card, just scroll to it
+  if (currentPokemon && currentPokemon.name === name) {
+    scrollWithGap(document.querySelector(`.result-card[data-name="${name}"]`));
+    return;
+  }
+  // push the old main into history, if there is one
+  if (currentPokemon) {
+    pushToHistory(currentPokemon);
+  }
+  // fetch & render the new one
+  const ep = location.pathname.includes('stats') ? 'stats' : 'info';
+  const res = await fetch(`/api/pokemon/${ep}?name=${encodeURIComponent(name)}`);
+  const data = await res.json();
+  document.getElementById('error-message').innerHTML = '';
+  if (res.ok) {
+    const r = data[0];
+    renderMainCard(r);
+  } else {
+    document.getElementById('error-message').innerHTML =
+      `<div class="bg-red-600 text-white p-2 rounded">${data.error}</div>`;
+  }
+}
+
+  function createCard(r) {
+    const d = document.createElement('div');
+    d.className = 'result-card';
+    d.dataset.pokemon = JSON.stringify(r);
+    d.innerHTML = `
+      <button class="close-button" onclick="this.parentElement.remove()">×</button>
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.name}">
+      <h2>${r.name}</h2>
+      <p class="type-line">Type: ${r.types.map(
+        t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`
+      ).join(' ')}</p>
+      <div class="separator"></div>
+      ${renderRow('4x Weak', r.effectiveness.four_times_effective)}
+      <div class="separator"></div>
+      ${renderRow('2x Weak', r.effectiveness.super_effective)}
+      <div class="separator"></div>
+      ${renderRow('Normal', r.effectiveness.normal_effective)}
+      <div class="separator"></div>
+      ${renderRow('2x Resistant', r.effectiveness.two_times_resistant)}
+      <div class="separator"></div>
+      ${renderRow('4x Resistant', r.effectiveness.four_times_resistant)}
+      <div class="separator"></div>
+      ${renderRow('Immune', r.effectiveness.immune)}
+    `;
+    return d;
+  }
+
+  function renderRow(label, types) {
+    const items = types.length
+      ? types.map(t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`).join(' ')
+      : `<span class="type-badge type-none">None</span>`;
+    return `
+      <div class="effectiveness-row">
+        <span class="effectiveness-label">${label}:</span>
+        <div class="effectiveness-content">${items}</div>
+      </div>`;
+  }
+
+  window.addEventListener('DOMContentLoaded', loadState);
+</script>
 </body>
 </html>
