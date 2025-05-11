@@ -455,7 +455,7 @@
     d.className = 'result-card';
     d.dataset.pokemon = JSON.stringify(r);
     d.innerHTML = `
-      <button class="close-button" onclick="this.parentElement.remove()">×</button>
+      <button class="close-button" onclick="closeMainCard()">×</button>
       <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.name}">
       <h2>${r.name}</h2>
       <p class="type-line">Type: ${r.types.map(
@@ -487,7 +487,14 @@
         <div class="effectiveness-content">${items}</div>
       </div>`;
   }
-
+    function closeMainCard() {
+        // 1) Wipe out the DOM
+        const sec = document.getElementById('main-result');
+        sec.innerHTML = '';
+        // 2) Clear state & storage
+        currentPokemon = null;
+        localStorage.removeItem('pkmnCurrent');
+    }
   window.addEventListener('DOMContentLoaded', loadState);
 </script>
 </body>
