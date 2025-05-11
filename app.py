@@ -3,6 +3,7 @@ import aiohttp
 import asyncio
 import difflib
 import os
+import sys
 import json
 import ssl
 import certifi
@@ -21,12 +22,12 @@ PROCESSED_CACHE_FILE = 'processed_pokemon_cache.json'
 REQUEST_TIMEOUT = 10  # seconds
 
 def get_resource_path(filename):
-    """Get the absolute path to a resource, works for dev and for PyInstaller."""
-    try:
-        # PyInstaller stores data files in a tmp folder referred to as _MEIPASS
+    if getattr(sys, 'frozen', False):
+        # PyInstaller “one-dir” and “one-file” both unpack to _MEIPASS
         base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
+    else:
+        # script’s directory
+        base_path = os.path.dirname(__file__)
 
     return os.path.join(base_path, filename)
 
