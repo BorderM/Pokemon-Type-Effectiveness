@@ -1,1 +1,100 @@
-[]
+[
+  {
+    "name": "dugtrio",
+    "display_name": "Dugtrio",
+    "form": "dugtrio",
+    "id": 51,
+    "types": [
+      "ground"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "water",
+        "grass",
+        "ice"
+      ],
+      "normal_effective": [
+        "ground",
+        "fairy",
+        "normal",
+        "fighting",
+        "fire",
+        "dark",
+        "steel",
+        "ghost",
+        "bug",
+        "dragon",
+        "psychic",
+        "flying"
+      ],
+      "two_times_resistant": [
+        "poison",
+        "rock"
+      ],
+      "four_times_resistant": [],
+      "immune": [
+        "electric"
+      ]
+    },
+    "stats": {
+      "hp": 35,
+      "attack": 100,
+      "defense": 50,
+      "special_attack": 50,
+      "special_defense": 70,
+      "speed": 120,
+      "total": 425
+    }
+  },
+  {
+    "name": "dugtrio-alola",
+    "display_name": "Dugtrio-alola",
+    "form": "dugtrio-alola",
+    "id": 10106,
+    "types": [
+      "ground",
+      "steel"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "water",
+        "fire",
+        "fighting",
+        "ground"
+      ],
+      "normal_effective": [
+        "ghost",
+        "grass",
+        "ice",
+        "dark"
+      ],
+      "two_times_resistant": [
+        "steel",
+        "bug",
+        "flying",
+        "fairy",
+        "normal",
+        "psychic",
+        "dragon"
+      ],
+      "four_times_resistant": [
+        "rock"
+      ],
+      "immune": [
+        "poison",
+        "electric"
+      ]
+    },
+    "stats": {
+      "hp": 35,
+      "attack": 100,
+      "defense": 60,
+      "special_attack": 50,
+      "special_defense": 70,
+      "speed": 110,
+      "total": 425
+    }
+  }
+]
