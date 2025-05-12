@@ -385,25 +385,57 @@
                 localStorage.setItem('pkmnHistory', JSON.stringify(historyList));
                 localStorage.setItem('pkmnCurrent', JSON.stringify(currentPokemon));
                 localStorage.setItem('pkmnDualMode', JSON.stringify(dualMode));
+                // In 2v2 mode, also remember the right‐hand card
+                if (dualMode) {
+                  const secEl = document.getElementById('main-result');
+                  if (secEl.children.length > 1) {
+                    const secData = JSON.parse(secEl.children[1].dataset.pokemon);
+                    localStorage.setItem('pkmnSecondary', JSON.stringify(secData));
+                  }
+                } else {
+                  localStorage.removeItem('pkmnSecondary');
+                }
               }
 
               function loadState() {
-                const hist = localStorage.getItem('pkmnHistory');
-                if (hist) {
-                  historyList = JSON.parse(hist);
-                  historyList.forEach(r => renderHistoryEntry(r));
+                // 1) restory history
+                const histRaw = localStorage.getItem('pkmnHistory')
+                if (histRaw) {
+                  historyList = JSON.parse(histRaw)
+                  historyList.forEach(r => renderHistoryEntry(r))
                 }
-                const cur = localStorage.getItem('pkmnCurrent');
-                if (cur) {
-                  currentPokemon = JSON.parse(cur);
-                  renderMainCard(currentPokemon);
+                
+                // 2) restore dualMode flag & button text
+                const dmRaw = localStorage.getItem('pkmnDualMode')
+                if (dmRaw !== null) {
+                  dualMode = JSON.parse(dmRaw)
+                  document.getElementById('toggle-mode-btn').textContent = dualMode ? '1v1' : '2v2'
                 }
-                const dm = localStorage.getItem('pkmnDualMode');
-                if (dm === 'true') {
-                  dualMode = true;
-                  document.getElementById('toggle-mode-btn').textContent = '1v1';
+                
+                // 3) clear result area and draw cards in order
+                const sec = document.getElementById('main-result')
+                sec.innerHTML = ''
+
+                // primary slot
+                const curRaw = localStorage.getItem('pkmnCurrent')
+                if (curRaw) {
+                  currentPokemon = JSON.parse(curRaw)
+                  const card1 = createCard(currentPokemon)
+                  card1.dataset.name = currentPokemon.name
+                  sec.appendChild(card1)
                 }
-              }
+
+                // secondary slot if in 2v2
+                if (dualMode) {
+                  const secRaw = localStorage.getItem('pkmnSecondary')
+                  if (secRaw) {
+                    const secondary = JSON.parse(secRaw)
+                    const card2 = createCard(secondary)
+                    card2.dataset.name = secondary.name
+                    sec.appendChild(card2)
+                  }
+                }
+              } 
 
               // — scrolling helper —
               const HEADER_HEIGHT = document.querySelector('header').offsetHeight;
@@ -624,6 +656,7 @@
                       const card = createCard(r);
                       card.dataset.name = r.name;
                       sec.appendChild(card);
+                      saveState();
                     }
                     return;
                   }
@@ -642,6 +675,9 @@
                     card.dataset.name = r.name;
                     sec.appendChild(card);
                   }
+                  const newPrimary = JSON.parse(sec.children[0].dataset.pokemon);
+                  currentPokemon = newPrimary;
+                  saveState();
                   return;
                 }
 
@@ -675,7 +711,7 @@
                 d.className = 'result-card';
                 d.dataset.pokemon = JSON.stringify(r);
                 d.innerHTML = `
-                  <button class="close-button" onclick="closeMainCard()">×</button>
+                  <button class="close-button" onclick="closeCard(this)">×</button>
                   <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.name}">
                   <h2>${r.name}</h2>
                   <p class="type-line">Type: ${r.types.map(
@@ -757,6 +793,52 @@
                 // Persist your new mode + history
                 saveState();
               });
+
+              function closeCard(btn) {
+                const sec  = document.getElementById('main-result');
+                const card = btn.closest('.result-card');
+                // --- 1v1: identical to your old closeMainCard ---
+                if (!dualMode) {
+                  sec.innerHTML = '';
+                  currentPokemon = null;
+                  localStorage.removeItem('pkmnCurrent');
+                  saveState();
+                  return;
+                }
+
+                // --- 2v2: remove just this slot ---
+                // find its index 0 or 1
+                const idx = Array.prototype.indexOf.call(sec.children, card);
+                card.remove();
+
+                if (idx === 0) {
+                  // left slot closed: right automatically shifts into left
+                  // nothing else to do, DOM does that for us when we removed [0]
+                }
+                // if idx===1 then right slot closed: left remains as-is
+
+                // --- now update our JS state & localStorage to reflect
+                //     whatever is now in slot#0 (or none) and slot#1 (or none) ---
+                if (sec.children.length >= 1) {
+                  const newPrimary = JSON.parse(sec.children[0].dataset.pokemon);
+                  currentPokemon = newPrimary;
+                  localStorage.setItem('pkmnCurrent', JSON.stringify(newPrimary));
+                } else {
+                  currentPokemon = null;
+                  localStorage.removeItem('pkmnCurrent');
+                }
+
+                if (sec.children.length === 2) {
+                  const newSecondary = JSON.parse(sec.children[1].dataset.pokemon);
+                  localStorage.setItem('pkmnSecondary', JSON.stringify(newSecondary));
+                } else {
+                  localStorage.removeItem('pkmnSecondary');
+                }
+
+                // persist the rest of your state (history + dualMode)
+                saveState();
+              }
+
               window.addEventListener('DOMContentLoaded', loadState);
         </script>
     </body>
