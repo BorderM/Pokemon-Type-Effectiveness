@@ -170,6 +170,11 @@
             .small-card:hover {
                 background: #374151;
             }
+            .mode-toggle-container {
+              margin-top: 0.5rem;
+              display: flex;
+              justify-content: center;
+            }
 
             /* main-result grows to fill the rest of the flex container */
             #main-result {
@@ -177,12 +182,13 @@
                 top: 220px;
                 left: 50%;
                 transform: translateX(-50%);
-                width: 500px;
+                width: max-content;
                 min-height: calc(100vh - 260px);
                 display: flex;
                 justify-content: center;
                 align-items: flex-start;
                 z-index: 0;
+                gap: 1rem;
             }
             /* ───── result-card (original size & aesthetic) ───── */
             .result-card {
@@ -336,34 +342,12 @@
             <div class="watermark-fixed">Created by BorderM</div>
             <h1 class="text-3xl font-bold mb-2">Pokémon Type Effectiveness</h1>
             <div class="control-buttons">
-                <button
-                    onclick="performSearch()"
-                    class="bg-blue-500 text-white p-2 rounded"
-                >
-                    Search
-                </button>
-                <button
-                    onclick="clearHistory()"
-                    class="bg-gray-500 text-white p-2 rounded"
-                >
-                    Clear
-                </button>
-                <a href="/stats" class="bg-yellow-500 text-white p-2 rounded"
-                    >Stats</a
-                >
-                <a
-                    href="/typecalculator"
-                    class="bg-red-500 text-white p-2 rounded"
-                    >Type Calcs</a
-                >
-                <a href="/natures" class="bg-cyan-500 text-white p-2 rounded"
-                    >Natures</a
-                >
-                <a
-                    href="/evolutions"
-                    class="bg-orange-500 text-white p-2 rounded"
-                    >Evolutions</a
-                >
+                <button onclick="performSearch()"class="bg-blue-500 text-white p-2 rounded">Search</button>
+                <button onclick="clearHistory()"class="bg-gray-500 text-white p-2 rounded">Clear</button>
+                <a href="/stats"class="bg-yellow-500 text-white p-2 rounded">Stats</a>
+                <a href="/typecalculator"class="bg-red-500 text-white p-2 rounded">Type Calcs</a>
+                <a href="/natures"class="bg-cyan-500 text-white p-2 rounded">Natures</a>
+                <a href="/evolutions"class="bg-orange-500 text-white p-2 rounded">Evolutions</a>
             </div>
             <div class="input-container">
                 <input
@@ -374,6 +358,9 @@
                     onkeydown="handleEnterKey(event)"
                 />
                 <ul id="suggestions" class="suggestions"></ul>
+            </div>
+            <div class="mode-toggle-container">
+              <button id="toggle-mode-btn" class="bg-indigo-500 text-white p-2 rounded">2v2</button>
             </div>
             <div id="progress-bar-container" class="hidden">
                 <div class="progress-bar"></div>
@@ -391,10 +378,13 @@
               // — state & persistence —
               let historyList = [];
               let currentPokemon = null;
+              // when false: 1v1 mode (single card). when true: 2v2 mode (two cards)
+              let dualMode = false;
 
               function saveState() {
                 localStorage.setItem('pkmnHistory', JSON.stringify(historyList));
                 localStorage.setItem('pkmnCurrent', JSON.stringify(currentPokemon));
+                localStorage.setItem('pkmnDualMode', JSON.stringify(dualMode));
               }
 
               function loadState() {
@@ -407,6 +397,11 @@
                 if (cur) {
                   currentPokemon = JSON.parse(cur);
                   renderMainCard(currentPokemon);
+                }
+                const dm = localStorage.getItem('pkmnDualMode');
+                if (dm === 'true') {
+                  dualMode = true;
+                  document.getElementById('toggle-mode-btn').textContent = '1v1';
                 }
               }
 
@@ -422,10 +417,17 @@
                 currentPokemon = r;
                 saveState();
                 const sec = document.getElementById('main-result');
+                // in single‐mode we clear; in dual‐mode we just append (and later evict if >2)
+                if (!dualMode) {
                 sec.innerHTML = '';
+                }
                 const card = createCard(r);
                 card.dataset.name = r.name;
                 sec.appendChild(card);
+                // ensure at most 2 cards side‐by‐side
+                if (dualMode && sec.children.length > 2) {
+                sec.removeChild(sec.children[0]);
+                }
                 scrollWithGap(card);
               }
 
@@ -433,15 +435,37 @@
               function swapToMain(r) {
                 // 1) remove the clicked one from history
                 removeHistoryEntry(r.name);
-
-                // 2) push the old main into history (if any)
-                if (currentPokemon && currentPokemon.name !== r.name) {
-                  historyList.unshift(currentPokemon);
-                  renderHistoryEntry(currentPokemon, /*prepend=*/true);
+                
+                const sec = document.getElementById('main-result')
+                // 2v2 mode: replace the right card
+                if (dualMode) {
+                  if (sec.children.length === 0) {
+                    renderMainCard(r);
+                  } else if (sec.children.length === 1) {
+                    //just append as second
+                    const card = createCard(r);
+                    card.dataset.name = r.name;
+                    sec.appendChild(card);
+                  } else {
+                    //two cards: move rightmose to history, then swap in new
+                    const right = sec.children[1];
+                    const data = JSON.parse(right.dataset.pokemon);
+                    pushToHistory(data);
+                    right.remove();
+                    const card = createCard(r);
+                    card.dataset.name = r.name;
+                    sec.appendChild(card);
+                  }
                 }
-
-                // 3) now make the clicked one the main card
-                renderMainCard(r);
+                // 1v1 mode: Original swap order
+                else {
+                  if (currentPokemon && currentPokemon.name !== r.name) {
+                    historyList.unshift(currentPokemon);
+                    renderHistoryEntry(currentPokemon, true);
+                  }
+                  renderMainCard(r);
+                }
+                saveState();
               }
 
               // — render a single history button —
@@ -564,29 +588,87 @@
               }
 
               async function fetchPokemon(name) {
-              // if it’s already the main card, just scroll to it
-              if (currentPokemon && currentPokemon.name === name) {
-                scrollWithGap(document.querySelector(`.result-card[data-name="${name}"]`));
-                return;
+                const sec = document.getElementById('main-result');
+
+                // — if it’s already showing as the main card, just scroll to it —
+                if (currentPokemon && currentPokemon.name === name && !dualMode) {
+                  scrollWithGap(sec.querySelector(`.result-card[data-name="${name}"]`));
+                  return;
+                }
+
+                // — 2v2 MODE: sliding‐window of 2 cards —
+                if (dualMode) {
+                  // 1) Fetch the data
+                  const ep   = location.pathname.includes('stats') ? 'stats' : 'info';
+                  const res  = await fetch(`/api/pokemon/${ep}?name=${encodeURIComponent(name)}`);
+                  const data = await res.json();
+                  document.getElementById('error-message').innerHTML = '';
+
+                  if (!res.ok) {
+                    // Show error and bail
+                    document.getElementById('error-message').innerHTML =
+                      `<div class="bg-red-600 text-white p-2 rounded">${data.error}</div>`;
+                    return;
+                  }
+                  const r = data[0];
+
+                  // 2) Zero cards yet → show first slot only
+                  if (sec.children.length === 0) {
+                    renderMainCard(r);
+                    return;
+                  }
+
+                  // 3) One card → append as the second (if not duplicate)
+                  if (sec.children.length === 1) {
+                    if (sec.children[0].dataset.name !== r.name) {
+                      const card = createCard(r);
+                      card.dataset.name = r.name;
+                      sec.appendChild(card);
+                    }
+                    return;
+                  }
+
+                  // 4) Two cards: slide window
+                  //    a) move leftmost into history
+                  {
+                    const leftCard = sec.children[0];
+                    const leftData = JSON.parse(leftCard.dataset.pokemon);
+                    pushToHistory(leftData);
+                    sec.removeChild(leftCard);
+                  }
+                  //    b) append new one (if not same as the remaining)
+                  if (sec.children[0].dataset.name !== r.name) {
+                    const card = createCard(r);
+                    card.dataset.name = r.name;
+                    sec.appendChild(card);
+                  }
+                  return;
+                }
+
+                // — 1v1 MODE: original single-card behavior —
+                // push the old main into history, if there is one
+                if (currentPokemon) {
+                  pushToHistory(currentPokemon);
+                }
+
+                // fetch & render the new one
+                const epSingle   = location.pathname.includes('stats') ? 'stats' : 'info';
+                const resSingle  = await fetch(`/api/pokemon/${epSingle}?name=${encodeURIComponent(name)}`);
+                const dataSingle = await resSingle.json();
+                document.getElementById('error-message').innerHTML = '';
+
+                if (resSingle.ok) {
+                  const r = dataSingle[0];
+                  // remove from history (in case it was there)
+                  removeHistoryEntry(r.name);
+                  // render single slot
+                  renderMainCard(r);
+                } else {
+                  document.getElementById('error-message').innerHTML =
+                    `<div class="bg-red-600 text-white p-2 rounded">${dataSingle.error}</div>`;
+                }
               }
-              // push the old main into history, if there is one
-              if (currentPokemon) {
-                pushToHistory(currentPokemon);
-              }
-              // fetch & render the new one
-              const ep = location.pathname.includes('stats') ? 'stats' : 'info';
-              const res = await fetch(`/api/pokemon/${ep}?name=${encodeURIComponent(name)}`);
-              const data = await res.json();
-              document.getElementById('error-message').innerHTML = '';
-              if (res.ok) {
-                const r = data[0];
-                removeHistoryEntry(r.name);
-                renderMainCard(r);
-              } else {
-                document.getElementById('error-message').innerHTML =
-                  `<div class="bg-red-600 text-white p-2 rounded">${data.error}</div>`;
-              }
-            }
+
 
               function createCard(r) {
                 const d = document.createElement('div');
@@ -625,14 +707,56 @@
                     <div class="effectiveness-content">${items}</div>
                   </div>`;
               }
-                function closeMainCard() {
-                    // 1) Wipe out the DOM
-                    const sec = document.getElementById('main-result');
-                    sec.innerHTML = '';
-                    // 2) Clear state & storage
-                    currentPokemon = null;
-                    localStorage.removeItem('pkmnCurrent');
+              function closeMainCard() {
+                // 1) Wipe out the DOM
+                const sec = document.getElementById('main-result');
+                sec.innerHTML = '';
+                // 2) Clear state & storage
+                currentPokemon = null;
+                localStorage.removeItem('pkmnCurrent');
+                // 3) Persist everything (historyList + dualMode)
+                saveState();
+              }
+
+              // — 1v1 ⇄ 2v2 toggle button handler —
+              const toggleBtn = document.getElementById('toggle-mode-btn');
+              toggleBtn.addEventListener('click', () => {
+                const sec = document.getElementById('main-result');
+
+                if (!dualMode) {
+                  // switch into 2v2
+                  dualMode = true;
+                  toggleBtn.textContent = '1v1';
+                  // auto-fill slot 2 from history if available
+                  if (historyList.length > 0) {
+                    const nextUp = historyList.shift();
+                    removeHistoryEntry(nextUp.name);
+                    renderMainCard(nextUp);
+                  }
+                } else {
+                  // switch back to 1v1
+                  dualMode = false;
+                  toggleBtn.textContent = '2v2';
+
+                  // if you had two cards, move the right one into history
+                  if (sec.children.length > 1) {
+                    const rightCard = sec.children[1];
+                    const obj = JSON.parse(rightCard.dataset.pokemon);
+                    removeHistoryEntry(obj.name);
+                    historyList.unshift(obj);
+                    renderHistoryEntry(obj, /*prepend=*/true);
+                    rightCard.remove();
+                  }
+                  // then collapse down to exactly one card
+                  if (sec.children.length > 0) {
+                    const firstData = JSON.parse(sec.children[0].dataset.pokemon);
+                    renderMainCard(firstData);
+                  }
                 }
+
+                // Persist your new mode + history
+                saveState();
+              });
               window.addEventListener('DOMContentLoaded', loadState);
         </script>
     </body>
