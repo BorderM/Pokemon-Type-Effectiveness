@@ -382,19 +382,29 @@
               let dualMode = false;
 
               function saveState() {
-                localStorage.setItem('pkmnHistory', JSON.stringify(historyList));
-                localStorage.setItem('pkmnCurrent', JSON.stringify(currentPokemon));
-                localStorage.setItem('pkmnDualMode', JSON.stringify(dualMode));
-                // In 2v2 mode, also remember the right‐hand card
-                if (dualMode) {
-                  const secEl = document.getElementById('main-result');
-                  if (secEl.children.length > 1) {
-                    const secData = JSON.parse(secEl.children[1].dataset.pokemon);
-                    localStorage.setItem('pkmnSecondary', JSON.stringify(secData));
-                  }
+                const secEl = document.getElementById('main-result');
+
+                // Save left card (slot 1)
+                if (secEl.children.length > 0) {
+                  const leftData = JSON.parse(secEl.children[0].dataset.pokemon);
+                  localStorage.setItem('pkmnCurrent', JSON.stringify(leftData));
+                  currentPokemon = leftData; // sync memory
+                } else {
+                  localStorage.removeItem('pkmnCurrent');
+                  currentPokemon = null;
+                }
+
+                // Save right card (slot 2) if in 2v2 mode
+                if (dualMode && secEl.children.length > 1) {
+                  const rightData = JSON.parse(secEl.children[1].dataset.pokemon);
+                  localStorage.setItem('pkmnSecondary', JSON.stringify(rightData));
                 } else {
                   localStorage.removeItem('pkmnSecondary');
                 }
+
+                // Save mode and history
+                localStorage.setItem('pkmnDualMode', JSON.stringify(dualMode));
+                localStorage.setItem('pkmnHistory', JSON.stringify(historyList));
               }
 
               function loadState() {
@@ -435,7 +445,7 @@
                     sec.appendChild(card2)
                   }
                 }
-              } 
+              }
 
               // — scrolling helper —
               const HEADER_HEIGHT = document.querySelector('header').offsetHeight;
@@ -446,7 +456,6 @@
 
               // — render the main result card —
               function renderMainCard(r) {
-                currentPokemon = r;
                 saveState();
                 const sec = document.getElementById('main-result');
                 // in single‐mode we clear; in dual‐mode we just append (and later evict if >2)
@@ -675,8 +684,6 @@
                     card.dataset.name = r.name;
                     sec.appendChild(card);
                   }
-                  const newPrimary = JSON.parse(sec.children[0].dataset.pokemon);
-                  currentPokemon = newPrimary;
                   saveState();
                   return;
                 }
@@ -800,7 +807,6 @@
                 // --- 1v1: identical to your old closeMainCard ---
                 if (!dualMode) {
                   sec.innerHTML = '';
-                  currentPokemon = null;
                   localStorage.removeItem('pkmnCurrent');
                   saveState();
                   return;
@@ -821,7 +827,6 @@
                 //     whatever is now in slot#0 (or none) and slot#1 (or none) ---
                 if (sec.children.length >= 1) {
                   const newPrimary = JSON.parse(sec.children[0].dataset.pokemon);
-                  currentPokemon = newPrimary;
                   localStorage.setItem('pkmnCurrent', JSON.stringify(newPrimary));
                 } else {
                   currentPokemon = null;
