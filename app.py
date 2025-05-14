@@ -145,12 +145,17 @@ async def get_suggestions():
 @app.route('/api/pokemon/evolutions', methods=['GET'])
 async def get_pokemon_evolutions():
     try:
-        pokemon_name = request.args.get('name')
-        if not pokemon_name:
-            return jsonify({'error': 'No Pokémon name provided'}), 400
+        raw_name = request.args.get('name', '').strip().lower()
+        if not raw_name:
+            return jsonify({'error': 'No Pokemon name provided'})
+        
+        # split off any suffix (e.g. "sandshrew-alola" -> base="sandshrew", form="alola")
+        parts = raw_name.split('-', 1)
+        base_name = parts[0]
+        form = parts[1] if len(parts) == 2 else None
 
         async with aiohttp.ClientSession() as session:
-            species_url = f"https://pokeapi.co/api/v2/pokemon-species/{pokemon_name.lower()}"
+            species_url = f"https://pokeapi.co/api/v2/pokemon-species/{base_name}"
             species_data = await fetch(session, species_url)
             if not species_data:
                 return jsonify({'error': 'Failed to fetch species data.'}), 500
@@ -162,9 +167,22 @@ async def get_pokemon_evolutions():
 
             logger.info(f"Evolution chain data: {evolution_chain_data}")
 
-            evolutions = parse_evolution_chain(evolution_chain_data['chain'], pokemon_name.lower())
+            full_chain = parse_evolution_chain(evolution_chain_data['chain'], base_name)
 
-        return jsonify(evolutions)
+            if form == 'alola':
+                filtered = [
+                    e for e in full_chain
+                    if any(cond.get('Item') for cond in e['evolution_conditions'])
+                    or e ['name'].lower() == base_name
+                ]
+            else:
+                filtered = [
+                    e for e in full_chain
+                    if not any(cond.get('Item') for cond in e['evolution_conditions'])
+                    or e['name'].lower() == base_name 
+                ]
+        return jsonify(filtered)
+    
     except Exception as e:
         logger.error(f"Error occurred: {e}", exc_info=True)
         return jsonify({'error': 'An error occurred while processing your request.'}), 500
