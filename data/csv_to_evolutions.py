@@ -2,6 +2,8 @@ import pandas as pd
 import json
 import os
 
+SUFFIXES = ['alola','alolan','galar','galarian','hisui','hisuian','paldea','paldean']
+
 # 1. load CSVs
 base = os.path.dirname(__file__)
 species_df     = pd.read_csv(os.path.join(base, "pokemon_species.csv"))
@@ -69,7 +71,38 @@ for _, row in evo_df.iterrows():
         edges.append(e)
 
 edges = [e for e in edges if e["from"] in form_keys and e["to"] in form_keys]
-         
+
+variant_edges = []
+for suffix in SUFFIXES:
+    suf = "-" + suffix
+    for e in edges:
+        # only if both ends exist as forms
+        if e["from"] in form_keys and (e["from"] + suf) in form_keys \
+        and e["to"] in form_keys   and (e["to"]   + suf) in form_keys:
+            ve = e.copy()
+            ve["from"] = e["from"] + suf
+            ve["to"]   = e["to"]   + suf
+            variant_edges.append(ve)
+edges.extend(variant_edges)
+
+seen = set()
+final = []
+fields = [
+    "from", "to", "trigger", "min_level", "item",
+    "time_of_day", "location", "held_item",
+    "known_move", "known_move_type",
+    "min_happiness", "min_beauty",
+    "relative_physical_stats", "party_species", "party_type",
+    "trade_species", "gender"
+]
+for e in edges:
+    # build a tuple of every relevant field value
+    key = tuple(e.get(f) for f in fields)
+    if key in seen:
+        continue
+    seen.add(key)
+    final.append(e)
+
 # 4. optionally: filter to only those edges whose from/to appear in your forms.json keys
 #    (so you don’t get “pichu → pikachu” if you haven’t included that form)
 # form_keys = load your data/forms.json keys here...
