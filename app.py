@@ -11,6 +11,8 @@ import logging
 from aiohttp import ClientTimeout
 from asgiref.wsgi import WsgiToAsgi
 
+SUFFIXES = ['alola','alolan','galar','galarian','hisui','hisuian','paldea','paldean']
+
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
@@ -30,6 +32,15 @@ def get_resource_path(filename):
         base_path = os.path.dirname(__file__)
 
     return os.path.join(base_path, filename)
+
+FORMS_PATH = get_resource_path(os.path.join('data', 'forms.json'))
+EVOLUTIONS_PATH = get_resource_path(os.path.join('data', 'evolutions.json'))
+
+with open(FORMS_PATH, 'r', encoding='utf-8') as f:
+    FORMS = json.load(f)
+
+with open(EVOLUTIONS_PATH, 'r', encoding='utf-8') as f:
+    EVOLUTIONS = json.load(f)
 
 async def create_aiohttp_session():
     ssl_context = ssl.create_default_context(cafile=certifi.where())
@@ -130,6 +141,20 @@ async def get_pokemon_info():
 async def get_pokemon_stats():
     return await get_pokemon_info()
 
+@app.route('/api/pokemon/suggestions')
+def suggest():
+    q = request.args.get('query','').lower()
+    hits = []
+    for f in FORMS:
+        fn = (f.get('form_name') or '').lower()
+        if fn.endswith(' size') or fn in ('male','female'):
+            continue
+        last = f['key'].split('-')[-1]
+        if not fn or last in SUFFIXES:
+            if f['key'].startswith(q):
+                hits.append(f['key'])
+    return jsonify({'suggestions': sorted(hits)})
+
 @app.route('/api/pokemon/suggestions', methods=['GET'])
 async def get_suggestions():
     query = request.args.get('query', '').lower()
@@ -143,49 +168,57 @@ async def get_suggestions():
     return jsonify({'suggestions': suggestions[:10]})
 
 @app.route('/api/pokemon/evolutions', methods=['GET'])
-async def get_pokemon_evolutions():
-    try:
-        raw_name = request.args.get('name', '').strip().lower()
-        if not raw_name:
-            return jsonify({'error': 'No Pokemon name provided'})
-        
-        # split off any suffix (e.g. "sandshrew-alola" -> base="sandshrew", form="alola")
-        parts = raw_name.split('-', 1)
-        base_name = parts[0]
-        form = parts[1] if len(parts) == 2 else None
+def get_pokemon_evolutions():
+    raw = request.args.get('name', '').strip().lower()
+    if not raw:
+        return jsonify([])
 
-        async with aiohttp.ClientSession() as session:
-            species_url = f"https://pokeapi.co/api/v2/pokemon-species/{base_name}"
-            species_data = await fetch(session, species_url)
-            if not species_data:
-                return jsonify({'error': 'Failed to fetch species data.'}), 500
+    # 1) validate
+    keys = {f['key'] for f in FORMS}
+    if raw not in keys:
+        return jsonify({'error': 'Unknown Pokémon'}), 404
 
-            evolution_chain_url = species_data['evolution_chain']['url']
-            evolution_chain_data = await fetch(session, evolution_chain_url)
-            if not evolution_chain_data:
-                return jsonify({'error': 'Failed to fetch evolution chain data.'}), 500
+    # 2) find the ultimate root of this chain
+    def find_root(name):
+        # find any parents that evolve → name
+        parents = [e['from'] for e in EVOLUTIONS if e['to'] == name]
+        if not parents:
+            return name
+        # if multiple parents, pick the first (most lines are linear anyway)
+        return find_root(parents[0])
 
-            logger.info(f"Evolution chain data: {evolution_chain_data}")
+    root = find_root(raw)
 
-            full_chain = parse_evolution_chain(evolution_chain_data['chain'], base_name)
+    # 3) your existing build_chain
+    def build_chain(name, evolves_from=None):
+        form = next(f for f in FORMS if f['key'] == name)
+        node = {
+            'name': name,
+            'display_name': form['species'].title() + (f" ({form['form_name'].title()})" if form['form_name'] else ''),
+            'sprite_url': form['sprite_url'],
+            'id': form['pokeapi_id'],
+            'evolves_from': evolves_from.title() if evolves_from else None,
+            'evolution_conditions': []
+        }
 
-            if form == 'alola':
-                filtered = [
-                    e for e in full_chain
-                    if any(cond.get('Item') for cond in e['evolution_conditions'])
-                    or e ['name'].lower() == base_name
-                ]
-            else:
-                filtered = [
-                    e for e in full_chain
-                    if not any(cond.get('Item') for cond in e['evolution_conditions'])
-                    or e['name'].lower() == base_name 
-                ]
-        return jsonify(filtered)
-    
-    except Exception as e:
-        logger.error(f"Error occurred: {e}", exc_info=True)
-        return jsonify({'error': 'An error occurred while processing your request.'}), 500
+        if evolves_from:
+            edges = [e for e in EVOLUTIONS if e['from'] == evolves_from.lower() and e['to'] == name]
+            node['evolution_conditions'] = get_evolution_conditions(edges)
+
+        # recurse once per child
+        all_form_keys = {f['key'] for f in FORMS}
+        next_forms = sorted(
+            {e['to'] for e in EVOLUTIONS if e['from'] == name and e['to'] in all_form_keys}
+        )
+
+        chain = [node]
+        for child in next_forms:
+            chain.extend(build_chain(child, name))
+        return chain
+
+    # 4) build from the root, so you always include ancestors
+    full_chain = build_chain(root)
+    return jsonify(full_chain)
 
 def capitalize_pokemon_name(name):
     return ' '.join([word.capitalize() for word in name.split('-')])
@@ -194,36 +227,36 @@ def get_evolution_conditions(evolution_details):
     conditions = []
     for detail in evolution_details:
         condition = {}
-        if detail.get('item'):
-            condition['Item'] = detail['item']['name']
         if detail.get('trigger'):
-            condition['Trigger'] = detail['trigger']['name']
+            condition['Triggered by'] = detail['trigger'].replace('-', ' ').title()
+        if detail.get('item'):
+            condition['Item'] = detail['item'].replace('-', ' ').title()
         if detail.get('min_level') is not None:
-            condition['Min Level'] = detail['min_level']
+            condition['Minimum Level'] = detail['min_level']
         if detail.get('time_of_day'):
-            condition['Time of Day'] = detail['time_of_day']
+            condition['Time of Day'] = detail['time_of_day'].replace('-', ' ').title()
         if detail.get('location'):
-            condition['Location'] = detail['location']['name']
+            condition['Location'] = detail['location'].replace('-', ' ').title()
         if detail.get('held_item'):
-            condition['Held Item'] = detail['held_item']['name']
+            condition['Held Item'] = detail['held_item'].replace('-', ' ').title()
         if detail.get('known_move'):
-            condition['Known Move'] = detail['known_move']['name']
+            condition['Known Move'] = detail['known_move'].replace('-', ' ').title()
         if detail.get('known_move_type'):
-            condition['Known Move Type'] = detail['known_move_type']['name']
+            condition['Known Move Type'] = detail['known_move_type'].replace('-', ' ').title()
         if detail.get('min_happiness') is not None:
-            condition['Min Happiness'] = detail['min_happiness']
+            condition['Minimum Happiness'] = detail['min_happiness']
         if detail.get('min_beauty') is not None:
-            condition['Min Beauty'] = detail['min_beauty']
-        if detail.get('min_affection') is not None:
-            condition['Min Affection'] = detail['min_affection']
+            condition['Minimum Beauty'] = detail['min_beauty']
         if detail.get('party_species'):
-            condition['Party Species'] = detail['party_species']['name']
+            condition['Party Species'] = detail['party_species'].replace('-', ' ').title()
         if detail.get('party_type'):
-            condition['Party Type'] = detail['party_type']['name']
+            condition['Party Type'] = detail['party_type'].replace('-', ' ').title()
         if detail.get('relative_physical_stats') is not None:
             condition['Relative Physical Stats'] = detail['relative_physical_stats']
         if detail.get('trade_species'):
-            condition['Trade Species'] = detail['trade_species']['name']
+            condition['Trade Species'] = detail['trade_species'].replace('-', ' ').title()
+        if detail.get('gender'):
+            condition['Gender'] = detail['gender'].replace('-', ' ').title()
         
         if condition:  # Only append non-empty condition dictionaries
             conditions.append(condition)

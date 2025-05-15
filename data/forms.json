@@ -4739,13 +4739,6 @@
     "pokeapi_id": 677
   },
   {
-    "key": "meowstic-male",
-    "species": "meowstic-male",
-    "form_name": "male",
-    "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/678.png",
-    "pokeapi_id": 678
-  },
-  {
     "key": "honedge",
     "species": "honedge",
     "form_name": "",
@@ -6125,13 +6118,6 @@
     "pokeapi_id": 875
   },
   {
-    "key": "indeedee-male",
-    "species": "indeedee-male",
-    "form_name": "male",
-    "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/876.png",
-    "pokeapi_id": 876
-  },
-  {
     "key": "morpeko-full-belly",
     "species": "morpeko-full-belly",
     "form_name": "full-belly",
@@ -6305,13 +6291,6 @@
     "form_name": "",
     "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/901.png",
     "pokeapi_id": 901
-  },
-  {
-    "key": "basculegion-male",
-    "species": "basculegion-male",
-    "form_name": "male",
-    "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/902.png",
-    "pokeapi_id": 902
   },
   {
     "key": "sneasler",
@@ -7341,13 +7320,6 @@
     "form_name": "resolute",
     "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10024.png",
     "pokeapi_id": 10024
-  },
-  {
-    "key": "meowstic-female",
-    "species": "meowstic-female",
-    "form_name": "female",
-    "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10025.png",
-    "pokeapi_id": 10025
   },
   {
     "key": "aegislash-blade",
@@ -8470,13 +8442,6 @@
     "pokeapi_id": 10185
   },
   {
-    "key": "indeedee-female",
-    "species": "indeedee-female",
-    "form_name": "female",
-    "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10186.png",
-    "pokeapi_id": 10186
-  },
-  {
     "key": "morpeko-hangry",
     "species": "morpeko-hangry",
     "form_name": "hangry",
@@ -8904,13 +8869,6 @@
     "pokeapi_id": 10247
   },
   {
-    "key": "basculegion-female",
-    "species": "basculegion-female",
-    "form_name": "female",
-    "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10248.png",
-    "pokeapi_id": 10248
-  },
-  {
     "key": "enamorus-therian",
     "species": "enamorus-therian",
     "form_name": "therian",
@@ -8944,13 +8902,6 @@
     "form_name": "paldea",
     "sprite_url": null,
     "pokeapi_id": 10253
-  },
-  {
-    "key": "oinkologne-female",
-    "species": "oinkologne-female",
-    "form_name": "female",
-    "sprite_url": null,
-    "pokeapi_id": 10254
   },
   {
     "key": "dudunsparce-three-segment",
@@ -9112,5 +9063,12 @@
     "form_name": "stellar",
     "sprite_url": null,
     "pokeapi_id": 10277
+  },
+  {
+    "key": "raticate-totem",
+    "species": "raticate-totem",
+    "form_name": "",
+    "sprite_url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10093.png",
+    "pokeapi_id": 10093
   }
 ]

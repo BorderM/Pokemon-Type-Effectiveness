@@ -229,27 +229,34 @@
                     const card = document.createElement('div');
                     card.className = 'result-card';
                     const evolvesFrom = pokemon.evolves_from ? `<p>Evolves from: ${pokemon.evolves_from}</p>` : '';
+                    let triggerHtml = '';
+                    pokemon.evolution_conditions.forEach(cond => {
+                        if (cond['Triggered by']) {
+                            triggerHtml += `<p>Triggered by: ${cond['Triggered by']}</p>`;
+                        }
+                    });
                     card.innerHTML = `
                         <h2>${capitalize(pokemon.name)}</h2>
-                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png" alt="${pokemon.name}">
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png"
+                            alt="${pokemon.name}">
                         ${evolvesFrom}
-                        <div id="conditions-${pokemon.name.toLowerCase().replace(' ', '-')}"></div>
+                        ${triggerHtml}
+                        <div id="conditions-${pokemon.name.toLowerCase().replace(/ /g, '-')}" ></div>
                     `;
                     resultsDiv.appendChild(card);
 
                     // Display evolution conditions
-                    const conditionsDiv = document.getElementById(`conditions-${pokemon.name.toLowerCase().replace(' ', '-')}`);
+                    const conditionsDiv = document.getElementById(`conditions-${pokemon.name.toLowerCase().replace(/ /g, '-')}`);
                     pokemon.evolution_conditions.forEach(condition => {
-                        Object.keys(condition).forEach(key => {
-                            if (condition[key] !== 'N/A') {
-                                const conditionP = document.createElement('p');
-                                conditionP.innerText = `${key}: ${condition[key]}`;
-                                conditionsDiv.appendChild(conditionP);
-                            }
+                        Object.entries(condition).forEach(([key, val]) => {
+                            if (key === 'Triggered by' || val === 'N/A') return;
+                            const p = document.createElement('p');
+                            p.innerText = `${key}: ${val}`;
+                            conditionsDiv.appendChild(p);
+                        });
                         });
                     });
-                });
-            }
+                }
 
             function selectSuggestion(name) {
                 const input = document.getElementById('pokemon-search');

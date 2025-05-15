@@ -1,0 +1,158 @@
+sandshrew-alola:
+  - to: sandslash-alola
+    trigger: use-item
+    item: ice-stone
+
+rattata-alola:
+  - to: raticate-alola
+    trigger: level-up
+    min_level: 20
+    time_of_day: night
+
+vulpix-alola:
+  - to: ninetales-alola
+    trigger: use-item
+    item: ice-stone
+
+meowth-alola:
+  - to: persian-alola
+    trigger: level-up
+    min-happiness: 160
+
+meowth-galar:
+  - to: perrserker
+    trigger: level-up
+    min_level: 28
+
+slowpoke-galar:
+  - to: slowbro-galar
+    trigger: use-item
+    item: galarica-cuff
+  - to: slowking-galar
+    trigger: use-item
+    item: galarica-wreath
+
+farfetch'd-galar:
+  - to: sirfetch'd
+    trigger: three-critical-hits
+    note: "This is to be done without losing or running from the battle."
+
+voltorb-hisui:
+  - to: electrode-hisui
+    trigger: use-item
+    item: leaf-stone
+
+mr-mime-galar:
+  - to: mr-rime
+    trigger: level-up
+    min_level: 42
+
+wooper-paldea:
+  - to: clodsire
+    trigger: level-up
+    min_level: 20
+  
+qwilfish-hisui: 
+  - to: overqwil
+    trigger: level-up
+    known_move: barb-barrage
+
+sneasel-hisui:
+  - to: sneasler
+    trigger: level-up
+    held_item: razor-claw
+    time_of_day: day
+
+sneasel:
+  - to: weavile
+    trigger: level-up
+    held_item: razor-claw
+    time_of_day: night
+    
+corsola-galar:
+  - to: cursola
+    trigger: level-up
+    min_level: 38
+
+linoone-galar: 
+  - to: obstagoon
+    trigger: level-up
+    min_level: 35
+    time_of_day: night
+
+darumaka-galar:
+  - to: darmanitan-galar
+    trigger: use-item
+    item: ice-stone
+
+yamask-galar:
+  - to: runerigus
+    trigger: take-damage
+    note: "Must travel under the large rock in Dusty Bowl with Yamask at 49+ HP taken without fainting."
+
+cubone:
+  - to: marowak-alola
+    trigger: level-up
+    min_level: 28
+    time_of_day: night
+
+dartrix:
+  - to: decidueye-hisuian
+    trigger: level-up
+    min_level: 36
+
+# Pikachu → Alolan Raichu via Thunder Stone (only in Alola)
+pikachu:
+  - to: raichu-alola
+    trigger: use-item
+    item: thunder-stone
+    note: "Only evolves into Alolan Raichu in the Alola region."
+
+# Exeggcute → Alolan Exeggutor via Leaf Stone (only in Alola)
+exeggcute:
+  - to: exeggutor-alola
+    trigger: use-item
+    item: leaf-stone
+    note: "Only evolves into Alolan Exeggutor in the Alola region."
+
+# Cubone → Alolan Marowak at lvl 28 + night (only in Alola)
+cubone:
+  - to: marowak-alola
+    trigger: level-up
+    min_level: 28
+    time_of_day: night
+    note: "Only evolves into Alolan Marowak in the Alola region."
+
+# Koffing → Galarian Weezing at same level (only in Galar)
+koffing:
+  - to: weezing-galar
+    trigger: level-up
+    min_level: 35
+    note: "Only evolves into Galarian Weezing in the Galar region."
+
+# Mime Jr. → Galarian Mr. Mime by same method as base (only in Galar)
+mime-jr:
+  - to: mr-mime-galar
+    trigger: level-up
+    known_move: mimic
+    note: "Only evolves into Galarian Mr. Mime in the Galar region."
+
+# Petilil → Hisuian Lilligant via Sun Stone (only in Hisui)
+petilil:
+  - to: lilligant-hisuian
+    trigger: use-item
+    item: sun-stone
+    note: "Only evolves into Hisuian Lilligant in the Hisui region."
+
+# Rufflet → Hisuian Braviary at level 54 (only in Hisui)
+rufflet:
+  - to: braviary-hisuian
+    trigger: level-up
+    min_level: 54
+    note: "Only evolves into Hisuian Braviary in the Hisui region."
+
+goomy:
+  - to: sliggoo-hisuian
+    trigger: level-up
+    min_level: 40
+    note: "Only evolves into Hisuian Sliggoo in the Hisui region."

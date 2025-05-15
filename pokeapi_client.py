@@ -30,7 +30,6 @@ def fetch_form_metadata(form_name):
     except Exception:
         return {'form_name': '', 'sprite_url': None}
 
-
 def fetch_evolution_chain(chain_id):
     """Fetch an EvolutionChain by its ID."""
     return evolution_chain(chain_id)
@@ -39,12 +38,13 @@ def fetch_evolution_chain(chain_id):
 def flatten_chain(chain_link):
     """
     Walk evolution chain recursively to produce a list of edges.
-    Supports fields: trigger, min_level, item, min_happiness, min_beauty, min_affection,
-    time_of_day, location, held_item, known_move, known_move_type, party_species,
-    party_type, relative_physical_stats, trade_species.
+    Supports fields: trigger, min_level, item, min_happiness, min_beauty,
+    gender, time_of_day, location, held_item, known_move, known_move_type,
+    party_species, party_type, relative_physical_stats, trade_species.
     """
     edges = []
     base = chain_link.species.name
+    gender_map = {1: 'female', 2: 'male'}
     for evo in chain_link.evolves_to:
         target = evo.species.name
         for d in evo.evolution_details:
@@ -56,7 +56,7 @@ def flatten_chain(chain_link):
                 'item': getattr(d.item, 'name', None),
                 'min_happiness': d.min_happiness,
                 'min_beauty': d.min_beauty,
-                'min_affection': d.min_affection,
+                'gender': gender_map.get(d.gender),
                 'time_of_day': d.time_of_day or None,
                 'location': getattr(d.location, 'name', None),
                 'held_item': getattr(d.held_item, 'name', None),
