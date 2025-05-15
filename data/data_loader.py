@@ -17,12 +17,12 @@ HEADERS = {
 SUFFIXES = ['alola','alolan','galar','galarian','hisui','hisuian','paldea','paldean']
 suffix_re = re.compile(r'^(.+)-(' + '|'.join(SUFFIXES) + r')$')
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
-CACHE_PATH = os.path.join(ROOT_DIR, 'pokemon_cache.json')
-OVERRIDES_PATH = os.path.join(ROOT_DIR, 'overrides.yml')
-OUTPUT_DIR = os.path.join(ROOT_DIR, 'data')
+SCRIPT_DIR   = os.path.dirname(__file__)
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir))
+CACHE_PATH = os.path.join(PROJECT_ROOT, 'pokemon_cache.json')
+DATA_DIR       = os.path.join(PROJECT_ROOT, 'data')
+OVERRIDES_PATH = os.path.join(DATA_DIR, 'overrides.yml')
+OUTPUT_DIR     = DATA_DIR
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def fetch_pokemondb_evolutions(species):
@@ -129,17 +129,19 @@ print(f"Wrote {len(forms)} forms to data/forms.json")
 #2. Build evolutions.json by fetching *every* form’s species JSON
 print("Building evolution chains from PokeAPI JSON per form…")
 all_edges = []
-form_keys = {f['key'] for f in forms}
+# only call the API for your true base forms (no hyphens)
+base_keys = sorted(k for k in {f['key'] for f in forms} if '-' not in k)
 
-# Loop over each form key (sandshrew, sandshrew-alola, etc.)
-for key in sorted(form_keys):
+for key in base_keys:
     url = f"{POKEAPI_BASE_URL}/pokemon-species/{key}"
     try:
         resp = requests.get(url, timeout=10)
         resp.raise_for_status()
         sp = resp.json()
     except Exception as ex:
-        print(f"  ✗ {key}: {ex}")
+        # you can even silence these if you like:
+        #   continue
+        print(f"  [skipping API fetch for {key}]: {ex}")
         continue
 
     chain_url = sp.get("evolution_chain", {}).get("url")
@@ -155,11 +157,25 @@ for key in sorted(form_keys):
 # 3. Apply overrides for unique methods
 overrides = yaml.safe_load(open(OVERRIDES_PATH)) or {}
 
-# 3a. Drop only API edges matching explicit overrides
+# 3a. Drop API edges that exactly match any override entry
+def edge_matches_override(edge, override):
+    # override has keys: 'to', plus any of trigger, min_level, item, ...
+    if edge['to'] != override['to']:
+        return False
+    # for every field in the override, the edge must match
+    for field, val in override.items():
+        if field == 'to':  # we've already matched this
+            continue
+        # Normalize None vs missing
+        if edge.get(field) != val:
+            return False
+    return True
+
 cleaned = []
 for e in all_edges:
     methods = overrides.get(e['from'], [])
-    if any(m['to'] == e['to'] for m in methods):
+    # if **any** override method fully matches this edge, drop it
+    if any(edge_matches_override(e, m) for m in methods):
         continue
     cleaned.append(e)
 all_edges = cleaned
@@ -175,9 +191,26 @@ for from_key, methods in overrides.items():
             edge[field] = m.get(field)
         all_edges.append(edge)
 
-# 4. Deduplicate and ensure all edge keys
-print("Deduplicating edges...")
-seen = set()
+print("Deduplicating edges with priority…")
+
+# assign a priority to each trigger type
+priority = {
+    'level-up':   4,
+    'use-item':   3,
+    'trade':      2,
+    'other':      1
+}
+
+# build a map from (from, to) → best edge so far
+best = {}
+for e in all_edges:
+    key = (e['from'], e['to'])
+    score = priority.get(e.get('trigger'), 0)
+    # if we haven't seen this pair yet, or this edge is higher-priority, replace
+    if key not in best or score > priority.get(best[key]['trigger'], 0):
+        best[key] = e
+
+# now collect, fill defaults, and write out
 final_edges = []
 fields = [
     'from','to','trigger','item','min_level',
@@ -187,26 +220,10 @@ fields = [
     'relative_physical_stats','party_species','party_type',
     'trade_species','gender'
 ]
-for e in all_edges:
-    key = tuple(e.get(f) for f in fields)
-    if key in seen:
-        continue
-    seen.add(key)
+for e in best.values():
     for f in fields + ['note']:
         e.setdefault(f, None)
     final_edges.append(e)
-
-# 4a. Propagate variant edges up to base species
-to_add = []
-for e in final_edges:
-    frm = e['from']
-    if '-' in frm:
-        base = frm.split('-',1)[0]
-        if not any(x['from']==base and x['to']==e['to'] for x in final_edges):
-            cp = e.copy()
-            cp['from'] = base
-            to_add.append(cp)
-final_edges.extend(to_add)
 
 with open(os.path.join(OUTPUT_DIR, 'evolutions.json'), 'w') as f:
     json.dump(final_edges, f, indent=2)

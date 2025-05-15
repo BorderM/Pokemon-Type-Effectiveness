@@ -3253,5 +3253,640 @@
       "speed": 96,
       "total": 476
     }
+  },
+  {
+    "name": "pachirisu",
+    "display_name": "Pachirisu",
+    "form": "pachirisu",
+    "id": 417,
+    "types": [
+      "electric"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "ground"
+      ],
+      "normal_effective": [
+        "ghost",
+        "fire",
+        "psychic",
+        "dragon",
+        "dark",
+        "fighting",
+        "grass",
+        "rock",
+        "bug",
+        "ice",
+        "fairy",
+        "water",
+        "poison",
+        "normal"
+      ],
+      "two_times_resistant": [
+        "flying",
+        "steel",
+        "electric"
+      ],
+      "four_times_resistant": [],
+      "immune": []
+    },
+    "stats": {
+      "hp": 60,
+      "attack": 45,
+      "defense": 70,
+      "special_attack": 45,
+      "special_defense": 90,
+      "speed": 95,
+      "total": 405
+    }
+  },
+  {
+    "name": "dedenne",
+    "display_name": "Dedenne",
+    "form": "dedenne",
+    "id": 702,
+    "types": [
+      "electric",
+      "fairy"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "ground",
+        "poison"
+      ],
+      "normal_effective": [
+        "ghost",
+        "fire",
+        "psychic",
+        "steel",
+        "grass",
+        "rock",
+        "ice",
+        "fairy",
+        "water",
+        "normal"
+      ],
+      "two_times_resistant": [
+        "flying",
+        "electric",
+        "fighting",
+        "dark",
+        "bug"
+      ],
+      "four_times_resistant": [],
+      "immune": [
+        "dragon"
+      ]
+    },
+    "stats": {
+      "hp": 67,
+      "attack": 58,
+      "defense": 57,
+      "special_attack": 81,
+      "special_defense": 67,
+      "speed": 101,
+      "total": 431
+    }
+  },
+  {
+    "name": "ampharos",
+    "display_name": "Ampharos",
+    "form": "ampharos",
+    "id": 181,
+    "types": [
+      "electric"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "ground"
+      ],
+      "normal_effective": [
+        "ghost",
+        "fire",
+        "psychic",
+        "dragon",
+        "dark",
+        "fighting",
+        "grass",
+        "rock",
+        "bug",
+        "ice",
+        "fairy",
+        "water",
+        "poison",
+        "normal"
+      ],
+      "two_times_resistant": [
+        "flying",
+        "steel",
+        "electric"
+      ],
+      "four_times_resistant": [],
+      "immune": []
+    },
+    "stats": {
+      "hp": 90,
+      "attack": 75,
+      "defense": 85,
+      "special_attack": 115,
+      "special_defense": 90,
+      "speed": 55,
+      "total": 510
+    }
+  },
+  {
+    "name": "ampharos-mega",
+    "display_name": "Ampharos-mega",
+    "form": "ampharos-mega",
+    "id": 10045,
+    "types": [
+      "electric",
+      "dragon"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "ground",
+        "dragon",
+        "ice",
+        "fairy"
+      ],
+      "normal_effective": [
+        "ghost",
+        "psychic",
+        "dark",
+        "fighting",
+        "rock",
+        "bug",
+        "poison",
+        "normal"
+      ],
+      "two_times_resistant": [
+        "flying",
+        "water",
+        "steel",
+        "grass",
+        "fire"
+      ],
+      "four_times_resistant": [
+        "electric"
+      ],
+      "immune": []
+    },
+    "stats": {
+      "hp": 90,
+      "attack": 95,
+      "defense": 105,
+      "special_attack": 165,
+      "special_defense": 110,
+      "speed": 45,
+      "total": 610
+    }
+  },
+  {
+    "name": "articuno",
+    "display_name": "Articuno",
+    "form": "articuno",
+    "id": 144,
+    "types": [
+      "ice",
+      "flying"
+    ],
+    "effectiveness": {
+      "four_times_effective": [
+        "rock"
+      ],
+      "super_effective": [
+        "steel",
+        "fire",
+        "electric"
+      ],
+      "normal_effective": [
+        "poison",
+        "dragon",
+        "flying",
+        "water",
+        "dark",
+        "fairy",
+        "psychic",
+        "ghost",
+        "ice",
+        "normal",
+        "fighting"
+      ],
+      "two_times_resistant": [
+        "grass",
+        "bug"
+      ],
+      "four_times_resistant": [],
+      "immune": [
+        "ground"
+      ]
+    },
+    "stats": {
+      "hp": 90,
+      "attack": 85,
+      "defense": 100,
+      "special_attack": 95,
+      "special_defense": 125,
+      "speed": 85,
+      "total": 580
+    }
+  },
+  {
+    "name": "articuno-galar",
+    "display_name": "Articuno-galar",
+    "form": "articuno-galar",
+    "id": 10169,
+    "types": [
+      "psychic",
+      "flying"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "ghost",
+        "dark",
+        "rock",
+        "electric",
+        "ice"
+      ],
+      "normal_effective": [
+        "poison",
+        "dragon",
+        "flying",
+        "water",
+        "fairy",
+        "fire",
+        "steel",
+        "bug",
+        "normal"
+      ],
+      "two_times_resistant": [
+        "psychic",
+        "grass"
+      ],
+      "four_times_resistant": [
+        "fighting"
+      ],
+      "immune": [
+        "ground"
+      ]
+    },
+    "stats": {
+      "hp": 90,
+      "attack": 85,
+      "defense": 85,
+      "special_attack": 125,
+      "special_defense": 100,
+      "speed": 95,
+      "total": 580
+    }
+  },
+  {
+    "name": "sandslash",
+    "display_name": "Sandslash",
+    "form": "sandslash",
+    "id": 28,
+    "types": [
+      "ground"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "water",
+        "grass",
+        "ice"
+      ],
+      "normal_effective": [
+        "normal",
+        "psychic",
+        "fighting",
+        "steel",
+        "dragon",
+        "fairy",
+        "flying",
+        "bug",
+        "fire",
+        "ground",
+        "ghost",
+        "dark"
+      ],
+      "two_times_resistant": [
+        "poison",
+        "rock"
+      ],
+      "four_times_resistant": [],
+      "immune": [
+        "electric"
+      ]
+    },
+    "stats": {
+      "hp": 75,
+      "attack": 100,
+      "defense": 110,
+      "special_attack": 45,
+      "special_defense": 55,
+      "speed": 65,
+      "total": 450
+    }
+  },
+  {
+    "name": "sandslash-alola",
+    "display_name": "Sandslash-alola",
+    "form": "sandslash-alola",
+    "id": 10102,
+    "types": [
+      "ice",
+      "steel"
+    ],
+    "effectiveness": {
+      "four_times_effective": [
+        "fighting",
+        "fire"
+      ],
+      "super_effective": [
+        "ground"
+      ],
+      "normal_effective": [
+        "rock",
+        "electric",
+        "water",
+        "steel",
+        "ghost",
+        "dark"
+      ],
+      "two_times_resistant": [
+        "flying",
+        "grass",
+        "dragon",
+        "fairy",
+        "normal",
+        "bug",
+        "psychic"
+      ],
+      "four_times_resistant": [
+        "ice"
+      ],
+      "immune": [
+        "poison"
+      ]
+    },
+    "stats": {
+      "hp": 75,
+      "attack": 100,
+      "defense": 120,
+      "special_attack": 25,
+      "special_defense": 65,
+      "speed": 65,
+      "total": 450
+    }
+  },
+  {
+    "name": "froslass",
+    "display_name": "Froslass",
+    "form": "froslass",
+    "id": 478,
+    "types": [
+      "ice",
+      "ghost"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "rock",
+        "steel",
+        "fire",
+        "ghost",
+        "dark"
+      ],
+      "normal_effective": [
+        "psychic",
+        "electric",
+        "water",
+        "dragon",
+        "fairy",
+        "flying",
+        "grass",
+        "ground"
+      ],
+      "two_times_resistant": [
+        "ice",
+        "poison",
+        "bug"
+      ],
+      "four_times_resistant": [],
+      "immune": [
+        "fighting",
+        "normal"
+      ]
+    },
+    "stats": {
+      "hp": 70,
+      "attack": 80,
+      "defense": 70,
+      "special_attack": 80,
+      "special_defense": 70,
+      "speed": 110,
+      "total": 480
+    }
+  },
+  {
+    "name": "jynx",
+    "display_name": "Jynx",
+    "form": "jynx",
+    "id": 124,
+    "types": [
+      "ice",
+      "psychic"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "rock",
+        "steel",
+        "fire",
+        "bug",
+        "ghost",
+        "dark"
+      ],
+      "normal_effective": [
+        "normal",
+        "electric",
+        "fighting",
+        "water",
+        "poison",
+        "dragon",
+        "fairy",
+        "flying",
+        "grass",
+        "ground"
+      ],
+      "two_times_resistant": [
+        "ice",
+        "psychic"
+      ],
+      "four_times_resistant": [],
+      "immune": []
+    },
+    "stats": {
+      "hp": 65,
+      "attack": 50,
+      "defense": 35,
+      "special_attack": 115,
+      "special_defense": 95,
+      "speed": 95,
+      "total": 455
+    }
+  },
+  {
+    "name": "lapras",
+    "display_name": "Lapras",
+    "form": "lapras",
+    "id": 131,
+    "types": [
+      "water",
+      "ice"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "grass",
+        "electric",
+        "rock",
+        "fighting"
+      ],
+      "normal_effective": [
+        "ground",
+        "dragon",
+        "ghost",
+        "steel",
+        "fairy",
+        "fire",
+        "bug",
+        "poison",
+        "psychic",
+        "normal",
+        "dark",
+        "flying"
+      ],
+      "two_times_resistant": [
+        "water"
+      ],
+      "four_times_resistant": [
+        "ice"
+      ],
+      "immune": []
+    },
+    "stats": {
+      "hp": 130,
+      "attack": 85,
+      "defense": 80,
+      "special_attack": 85,
+      "special_defense": 95,
+      "speed": 60,
+      "total": 535
+    }
+  },
+  {
+    "name": "lapras-gmax",
+    "display_name": "Lapras-gmax",
+    "form": "lapras-gmax",
+    "id": 10204,
+    "types": [
+      "water",
+      "ice"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "grass",
+        "electric",
+        "rock",
+        "fighting"
+      ],
+      "normal_effective": [
+        "ground",
+        "dragon",
+        "ghost",
+        "steel",
+        "fairy",
+        "fire",
+        "bug",
+        "poison",
+        "psychic",
+        "normal",
+        "dark",
+        "flying"
+      ],
+      "two_times_resistant": [
+        "water"
+      ],
+      "four_times_resistant": [
+        "ice"
+      ],
+      "immune": []
+    },
+    "stats": {
+      "hp": 130,
+      "attack": 85,
+      "defense": 80,
+      "special_attack": 85,
+      "special_defense": 95,
+      "speed": 60,
+      "total": 535
+    }
+  },
+  {
+    "name": "toucannon",
+    "display_name": "Toucannon",
+    "form": "toucannon",
+    "id": 733,
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "effectiveness": {
+      "four_times_effective": [],
+      "super_effective": [
+        "rock",
+        "electric",
+        "ice"
+      ],
+      "normal_effective": [
+        "psychic",
+        "flying",
+        "dragon",
+        "fire",
+        "dark",
+        "normal",
+        "steel",
+        "fairy",
+        "fighting",
+        "water",
+        "poison"
+      ],
+      "two_times_resistant": [
+        "bug",
+        "grass"
+      ],
+      "four_times_resistant": [],
+      "immune": [
+        "ghost",
+        "ground"
+      ]
+    },
+    "stats": {
+      "hp": 80,
+      "attack": 120,
+      "defense": 75,
+      "special_attack": 75,
+      "special_defense": 75,
+      "speed": 60,
+      "total": 485
+    }
   }
 ]

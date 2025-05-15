@@ -17,7 +17,7 @@ vulpix-alola:
 meowth-alola:
   - to: persian-alola
     trigger: level-up
-    min-happiness: 160
+    min_happiness: 160
 
 meowth-galar:
   - to: perrserker
@@ -62,23 +62,11 @@ sneasel-hisui:
     trigger: level-up
     held_item: razor-claw
     time_of_day: day
-
-sneasel:
-  - to: weavile
-    trigger: level-up
-    held_item: razor-claw
-    time_of_day: night
     
 corsola-galar:
   - to: cursola
     trigger: level-up
     min_level: 38
-
-linoone-galar: 
-  - to: obstagoon
-    trigger: level-up
-    min_level: 35
-    time_of_day: night
 
 darumaka-galar:
   - to: darmanitan-galar
@@ -90,32 +78,24 @@ yamask-galar:
     trigger: take-damage
     note: "Must travel under the large rock in Dusty Bowl with Yamask at 49+ HP taken without fainting."
 
-cubone:
-  - to: marowak-alola
-    trigger: level-up
-    min_level: 28
-    time_of_day: night
-
 dartrix:
   - to: decidueye-hisuian
     trigger: level-up
     min_level: 36
+    note: "Only evolves into Hisuian Decidueye in the Hisui region."
 
-# Pikachu → Alolan Raichu via Thunder Stone (only in Alola)
 pikachu:
   - to: raichu-alola
     trigger: use-item
     item: thunder-stone
     note: "Only evolves into Alolan Raichu in the Alola region."
 
-# Exeggcute → Alolan Exeggutor via Leaf Stone (only in Alola)
 exeggcute:
   - to: exeggutor-alola
     trigger: use-item
     item: leaf-stone
     note: "Only evolves into Alolan Exeggutor in the Alola region."
 
-# Cubone → Alolan Marowak at lvl 28 + night (only in Alola)
 cubone:
   - to: marowak-alola
     trigger: level-up
@@ -123,28 +103,24 @@ cubone:
     time_of_day: night
     note: "Only evolves into Alolan Marowak in the Alola region."
 
-# Koffing → Galarian Weezing at same level (only in Galar)
 koffing:
   - to: weezing-galar
     trigger: level-up
     min_level: 35
     note: "Only evolves into Galarian Weezing in the Galar region."
 
-# Mime Jr. → Galarian Mr. Mime by same method as base (only in Galar)
 mime-jr:
   - to: mr-mime-galar
     trigger: level-up
     known_move: mimic
     note: "Only evolves into Galarian Mr. Mime in the Galar region."
 
-# Petilil → Hisuian Lilligant via Sun Stone (only in Hisui)
 petilil:
   - to: lilligant-hisuian
     trigger: use-item
     item: sun-stone
     note: "Only evolves into Hisuian Lilligant in the Hisui region."
 
-# Rufflet → Hisuian Braviary at level 54 (only in Hisui)
 rufflet:
   - to: braviary-hisuian
     trigger: level-up
@@ -156,3 +132,66 @@ goomy:
     trigger: level-up
     min_level: 40
     note: "Only evolves into Hisuian Sliggoo in the Hisui region."
+
+diglett-alola:
+  - to: dugtrio-alola
+    trigger: level-up
+    min_level: 26
+
+growlithe-hisui:
+  - to: arcanine-hisui
+    trigger: use-item
+    item: fire-stone
+
+geodude-alola:
+  - to: graveler-alola
+    trigger: level-up
+    min_level: 25
+
+graveler-alola:
+  - to: golem-alola
+    trigger: trade
+    note: "Some versions have link items to fake a trade to evolve"
+
+ponyta-galar:
+  - to: rapidash-galar
+    trigger: level-up
+    min_level: 40
+
+grimer-alola:
+  - to: muk-alola
+    trigger: level-up
+    min_level: 38
+
+quilava:
+  - to: typhlosion-hisui
+    trigger: level-up
+    min_level: 36
+    note: "Only evolves into Hisuian Typhlosion in the Hisui region."
+
+zorua-hisui:
+  - to: zoroark-hisui
+    trigger: level-up
+    min_level: 30
+
+bergmite:
+  - to: avalugg-hisui
+    trigger: level-up
+    min_level: 37
+
+zigzagoon-galar:
+  - to: linoone-galar
+    trigger: level-up
+    min_level: 20
+
+linoone-galar: 
+  - to: obstagoon
+    trigger: level-up
+    min_level: 35
+    time_of_day: night
+
+dewott:
+  - to: samurott-hisui
+    trigger: level-up
+    min_level: 36
+    note: "Only evolves into Hisuian Samurott in the Hisui region."
