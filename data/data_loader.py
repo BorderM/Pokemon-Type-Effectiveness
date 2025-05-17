@@ -47,11 +47,13 @@ def fetch_pokemondb_evolutions(species):
             level = None
             item  = None
             m_lvl = re.search(r"level\s*(\d+)", note or "", re.I)
-            m_it  = re.search(r"(Ice|Moon|Thunder|Fire|Leaf) Stone", note or "", re.I)
+            m_it = re.search(r"use-item\s*:\s*([\w\s'-]+)", note or "", re.I)
+            if m_it:
+                # group(1) is everything after the colon
+                item = m_it.group(1).strip().lower().replace(" ", "-")
             if m_lvl:
                 level = int(m_lvl.group(1))
-            if m_it:
-                item = m_it.group(0).lower().replace(" ", "-")
+
 
             chains.append({
                 "from":      frm,
@@ -99,7 +101,7 @@ for entry in cache_entries:
         'key': key,
         'species': species,
         'form_name': form_name,
-        'sprite_url': meta['sprite_url'],
+        'sprite_url': meta['sprite_url'] or f"/static/sprites/{key}.png",
         'pokeapi_id': pid
     })
     form_keys.add(key)
@@ -126,12 +128,11 @@ with open(os.path.join(OUTPUT_DIR, 'forms.json'), 'w') as f:
     json.dump(forms, f, indent=2)
 print(f"Wrote {len(forms)} forms to data/forms.json")
 
-#2. Build evolutions.json by fetching *every* form’s species JSON
-print("Building evolution chains from PokeAPI JSON per form…")
-all_edges = []
-# only call the API for your true base forms (no hyphens)
-base_keys = sorted(k for k in {f['key'] for f in forms} if '-' not in k)
+print("Building evolution chains from PokeAPI JSON…")
+all_edges   = []
+base_keys   = sorted(k for k in {f['key'] for f in forms} if '-' not in k)
 
+# — 2a) PokeAPI chains for true base forms —
 for key in base_keys:
     url = f"{POKEAPI_BASE_URL}/pokemon-species/{key}"
     try:
@@ -139,18 +140,30 @@ for key in base_keys:
         resp.raise_for_status()
         sp = resp.json()
     except Exception as ex:
-        # you can even silence these if you like:
-        #   continue
         print(f"  [skipping API fetch for {key}]: {ex}")
         continue
 
+    # extract the chain ID from the species JSON
     chain_url = sp.get("evolution_chain", {}).get("url")
     if not chain_url:
         continue
     cid = int(chain_url.rstrip("/").split("/")[-1])
 
-    # flatten the chain and keep only edges for forms you actually have
+    # flatten and collect only the form-keys you actually loaded
     for e in flatten_chain(fetch_evolution_chain(cid).chain):
+        if e["from"] in form_keys and e["to"] in form_keys:
+            all_edges.append(e)
+
+print("Supplementing with PokéDatabase evolutions (special cases)…")
+# — 2b) PokéDatabase scrapes for every base species —
+for species in base_keys:
+    try:
+        db_chains = fetch_pokemondb_evolutions(species)
+    except Exception as ex:
+        print(f"  [skipping PokéDB for {species}]: {ex}")
+        continue
+
+    for e in db_chains:
         if e["from"] in form_keys and e["to"] in form_keys:
             all_edges.append(e)
 

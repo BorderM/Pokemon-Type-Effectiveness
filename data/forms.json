@@ -6387,7 +6387,7 @@
     "key": "oinkologne",
     "species": "oinkologne",
     "form_name": "",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/oinkologne.png",
     "pokeapi_id": 916
   },
   {
@@ -6450,7 +6450,7 @@
     "key": "maushold",
     "species": "maushold",
     "form_name": "",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/maushold.png",
     "pokeapi_id": 925
   },
   {
@@ -6492,7 +6492,7 @@
     "key": "squawkabilly",
     "species": "squawkabilly",
     "form_name": "",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/squawkabilly.png",
     "pokeapi_id": 931
   },
   {
@@ -6723,7 +6723,7 @@
     "key": "palafin",
     "species": "palafin",
     "form_name": "",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/palafin.png",
     "pokeapi_id": 964
   },
   {
@@ -6821,7 +6821,7 @@
     "key": "tatsugiri",
     "species": "tatsugiri",
     "form_name": "",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/tatsugiri.png",
     "pokeapi_id": 978
   },
   {
@@ -6849,7 +6849,7 @@
     "key": "dudunsparce",
     "species": "dudunsparce",
     "form_name": "",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/dudunsparce.png",
     "pokeapi_id": 982
   },
   {
@@ -8039,14 +8039,14 @@
     "key": "lurantis-totem",
     "species": "lurantis-totem",
     "form_name": "totem",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/lurantis-totem.png",
     "pokeapi_id": 10128
   },
   {
     "key": "salazzle-totem",
     "species": "salazzle-totem",
     "form_name": "totem",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/salazzle-totem.png",
     "pokeapi_id": 10129
   },
   {
@@ -8214,14 +8214,14 @@
     "key": "araquanid-totem",
     "species": "araquanid-totem",
     "form_name": "totem",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/araquanid-totem.png",
     "pokeapi_id": 10153
   },
   {
     "key": "togedemaru-totem",
     "species": "togedemaru-totem",
     "form_name": "totem",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/togedemaru-totem.png",
     "pokeapi_id": 10154
   },
   {
@@ -8249,14 +8249,14 @@
     "key": "pikachu-starter",
     "species": "pikachu-starter",
     "form_name": "starter",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/pikachu-starter.png",
     "pokeapi_id": 10158
   },
   {
     "key": "eevee-starter",
     "species": "eevee-starter",
     "form_name": "starter",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/eevee-starter.png",
     "pokeapi_id": 10159
   },
   {
@@ -8410,21 +8410,21 @@
     "key": "zygarde-10",
     "species": "zygarde-10",
     "form_name": "10",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/zygarde-10.png",
     "pokeapi_id": 10181
   },
   {
     "key": "cramorant-gulping",
     "species": "cramorant-gulping",
     "form_name": "gulping",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/cramorant-gulping.png",
     "pokeapi_id": 10182
   },
   {
     "key": "cramorant-gorging",
     "species": "cramorant-gorging",
     "form_name": "gorging",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/cramorant-gorging.png",
     "pokeapi_id": 10183
   },
   {
@@ -8879,189 +8879,189 @@
     "key": "tauros-paldea-combat-breed",
     "species": "tauros-paldea-combat-breed",
     "form_name": "paldea-combat-breed",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/tauros-paldea-combat-breed.png",
     "pokeapi_id": 10250
   },
   {
     "key": "tauros-paldea-blaze-breed",
     "species": "tauros-paldea-blaze-breed",
     "form_name": "paldea-blaze-breed",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/tauros-paldea-blaze-breed.png",
     "pokeapi_id": 10251
   },
   {
     "key": "tauros-paldea-aqua-breed",
     "species": "tauros-paldea-aqua-breed",
     "form_name": "paldea-aqua-breed",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/tauros-paldea-aqua-breed.png",
     "pokeapi_id": 10252
   },
   {
     "key": "wooper-paldea",
     "species": "wooper",
     "form_name": "paldea",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/wooper-paldea.png",
     "pokeapi_id": 10253
   },
   {
     "key": "dudunsparce-three-segment",
     "species": "dudunsparce-three-segment",
     "form_name": "three-segment",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/dudunsparce-three-segment.png",
     "pokeapi_id": 10255
   },
   {
     "key": "palafin-hero",
     "species": "palafin-hero",
     "form_name": "hero",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/palafin-hero.png",
     "pokeapi_id": 10256
   },
   {
     "key": "maushold-family-of-three",
     "species": "maushold-family-of-three",
     "form_name": "family-of-three",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/maushold-family-of-three.png",
     "pokeapi_id": 10257
   },
   {
     "key": "tatsugiri-droopy",
     "species": "tatsugiri-droopy",
     "form_name": "droopy",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/tatsugiri-droopy.png",
     "pokeapi_id": 10258
   },
   {
     "key": "tatsugiri-stretchy",
     "species": "tatsugiri-stretchy",
     "form_name": "stretchy",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/tatsugiri-stretchy.png",
     "pokeapi_id": 10259
   },
   {
     "key": "squawkabilly-blue-plumage",
     "species": "squawkabilly-blue-plumage",
     "form_name": "blue-plumage",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/squawkabilly-blue-plumage.png",
     "pokeapi_id": 10260
   },
   {
     "key": "squawkabilly-yellow-plumage",
     "species": "squawkabilly-yellow-plumage",
     "form_name": "yellow-plumage",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/squawkabilly-yellow-plumage.png",
     "pokeapi_id": 10261
   },
   {
     "key": "squawkabilly-white-plumage",
     "species": "squawkabilly-white-plumage",
     "form_name": "white-plumage",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/squawkabilly-white-plumage.png",
     "pokeapi_id": 10262
   },
   {
     "key": "gimmighoul-roaming",
     "species": "gimmighoul-roaming",
     "form_name": "roaming",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/gimmighoul-roaming.png",
     "pokeapi_id": 10263
   },
   {
     "key": "koraidon-limited-build",
     "species": "koraidon-limited-build",
     "form_name": "limited-build",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/koraidon-limited-build.png",
     "pokeapi_id": 10264
   },
   {
     "key": "koraidon-sprinting-build",
     "species": "koraidon-sprinting-build",
     "form_name": "sprinting-build",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/koraidon-sprinting-build.png",
     "pokeapi_id": 10265
   },
   {
     "key": "koraidon-swimming-build",
     "species": "koraidon-swimming-build",
     "form_name": "swimming-build",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/koraidon-swimming-build.png",
     "pokeapi_id": 10266
   },
   {
     "key": "koraidon-gliding-build",
     "species": "koraidon-gliding-build",
     "form_name": "gliding-build",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/koraidon-gliding-build.png",
     "pokeapi_id": 10267
   },
   {
     "key": "miraidon-low-power-mode",
     "species": "miraidon-low-power-mode",
     "form_name": "low-power-mode",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/miraidon-low-power-mode.png",
     "pokeapi_id": 10268
   },
   {
     "key": "miraidon-drive-mode",
     "species": "miraidon-drive-mode",
     "form_name": "drive-mode",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/miraidon-drive-mode.png",
     "pokeapi_id": 10269
   },
   {
     "key": "miraidon-aquatic-mode",
     "species": "miraidon-aquatic-mode",
     "form_name": "aquatic-mode",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/miraidon-aquatic-mode.png",
     "pokeapi_id": 10270
   },
   {
     "key": "miraidon-glide-mode",
     "species": "miraidon-glide-mode",
     "form_name": "glide-mode",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/miraidon-glide-mode.png",
     "pokeapi_id": 10271
   },
   {
     "key": "ursaluna-bloodmoon",
     "species": "ursaluna-bloodmoon",
     "form_name": "bloodmoon",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/ursaluna-bloodmoon.png",
     "pokeapi_id": 10272
   },
   {
     "key": "ogerpon-wellspring-mask",
     "species": "ogerpon-wellspring-mask",
     "form_name": "wellspring-mask",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/ogerpon-wellspring-mask.png",
     "pokeapi_id": 10273
   },
   {
     "key": "ogerpon-hearthflame-mask",
     "species": "ogerpon-hearthflame-mask",
     "form_name": "hearthflame-mask",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/ogerpon-hearthflame-mask.png",
     "pokeapi_id": 10274
   },
   {
     "key": "ogerpon-cornerstone-mask",
     "species": "ogerpon-cornerstone-mask",
     "form_name": "cornerstone-mask",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/ogerpon-cornerstone-mask.png",
     "pokeapi_id": 10275
   },
   {
     "key": "terapagos-terastal",
     "species": "terapagos-terastal",
     "form_name": "terastal",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/terapagos-terastal.png",
     "pokeapi_id": 10276
   },
   {
     "key": "terapagos-stellar",
     "species": "terapagos-stellar",
     "form_name": "stellar",
-    "sprite_url": null,
+    "sprite_url": "/static/sprites/terapagos-stellar.png",
     "pokeapi_id": 10277
   },
   {

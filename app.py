@@ -10,6 +10,12 @@ import certifi
 import logging
 from aiohttp import ClientTimeout
 from asgiref.wsgi import WsgiToAsgi
+from data.FormCollapse import (
+    FORM_COLLAPSE_MAP,
+    normalize_form_key,
+    resolve_form_key,
+    FORMS_BY_BASE,
+)
 
 SUFFIXES = ['alola','alolan','galar','galarian','hisui','hisuian','paldea','paldean']
 
@@ -42,6 +48,63 @@ with open(FORMS_PATH, 'r', encoding='utf-8') as f:
 with open(EVOLUTIONS_PATH, 'r', encoding='utf-8') as f:
     EVOLUTIONS = json.load(f)
 
+
+# fast lookup by form key (e.g. “vulpix”, “vulpix-alola”)
+FORM_BY_KEY = { f['key']: f for f in FORMS }
+
+# group forms by species name
+FORMS_BY_SPECIES = {}
+for f in FORMS:
+    FORMS_BY_SPECIES.setdefault(f['species'], []).append(f)
+
+def get_direct_evolutions(form_key):
+    """
+    Returns all the evolution-edges that apply to exactly this form_key,
+    while filtering out evolutions that belong to regional forms when
+    invoked on a regular form, except when there are multiple evolutions
+    to the same species (in which case all are shown).
+    """
+    src = FORM_BY_KEY[form_key]
+    # collect all outgoing edges from this exact form
+    outgoing = [e.copy() for e in EVOLUTIONS if e['from'] == form_key]
+
+    # get all forms of this species
+    species_forms = FORMS_BY_SPECIES[src['species']]
+    # if only one form exists, return all its edges
+    if len(species_forms) <= 1:
+        return outgoing
+    # if user searched a non-regular form, show all its edges
+    if src['form_name']:
+        return outgoing
+
+    # for regular form in a multi-form species, filter out any evolution
+    # that also appears for a non-regular form (i.e., region-specific evolutions)
+    non_regular_keys = [f['key'] for f in species_forms if f['form_name']]
+    filtered = []
+    for e in outgoing:
+        # if a non-regular form also evolves to the same target, skip this edge
+        if any(any(e2['from'] == nr and e2['to'] == e['to'] for e2 in EVOLUTIONS) for nr in non_regular_keys):
+            continue
+        filtered.append(e)
+
+    # group by target species to handle multiple evolutions to same species
+    by_species = {}
+    for e in filtered:
+        tgt = FORM_BY_KEY[e['to']]
+        by_species.setdefault(tgt['species'], []).append(e)
+
+    # build final list: single edge kept, multiple edges all kept
+    result = []
+    for edges in by_species.values():
+        if len(edges) == 1:
+            result.append(edges[0])
+        else:
+            result.extend(edges)
+    return result
+
+# Replace the old get_direct_evolutions in app.py with this updated version.
+
+
 async def create_aiohttp_session():
     ssl_context = ssl.create_default_context(cafile=certifi.where())
     timeout = ClientTimeout(total=REQUEST_TIMEOUT)
@@ -67,11 +130,11 @@ def index():
 
 @app.route('/typeeffectiveness')
 def type_effectiveness():
-    return render_template('pokemontypeeffectiveness.html')
+    return render_template('pokemontypeeffectiveness.html', collapse_map=json.dumps(FORM_COLLAPSE_MAP))
 
 @app.route('/stats')
 def stats():
-    return render_template('pokemonstats.html')
+    return render_template('pokemonstats.html', collapse_map=json.dumps(FORM_COLLAPSE_MAP))
 
 @app.route('/typecalculator')
 def type_calculator():
@@ -87,138 +150,116 @@ def evolution():
 
 @app.route('/api/pokemon/info', methods=['GET'])
 async def get_pokemon_info():
+    raw      = request.args.get('name','').strip().lower()
+    real_key = resolve_form_key(raw, FORM_BY_KEY, FORMS_BY_BASE, SUFFIXES)
+    if not real_key:
+        return jsonify({'error':'Unknown Pokémon'}), 404
+
+    # load or init cache
+    proc = get_resource_path(PROCESSED_CACHE_FILE)
     try:
-        pokemon_names = request.args.getlist('name')
-        if not pokemon_names:
-            return jsonify({'error': 'No Pokémon names provided'}), 400
+        with open(proc, 'r', encoding='utf-8') as f:
+            processed = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        processed = []
 
-        # Compute the path (works in dev or frozen exe)
-        proc_path = get_resource_path(PROCESSED_CACHE_FILE)
+    # fetch if needed
+    if real_key not in {p['name'] for p in processed}:
+        await process_pokemon_data([real_key], processed)
+        with open(proc, 'w', encoding='utf-8') as f:
+            json.dump(processed, f, indent=2)
 
-        # Load processed cache if exists, otherwise start with empty list
-        proc_path = get_resource_path(PROCESSED_CACHE_FILE)
-        if os.path.exists(proc_path):
-            try:
-                with open(proc_path, 'r', encoding='utf-8') as f:
-                    processed_data = json.load(f)
-            except json.JSONDecodeError:
-                processed_data = []
-        else:
-            processed_data = []
+    # find it
+    match = next((p for p in processed if p['name']==real_key), None)
+    if not match:
+        return jsonify({'error':'Not found'}), 404
 
-        # Check for missing Pokémon in the cache
-        processed_names = {p['name'] for p in processed_data}
-        missing_pokemon = [name for name in pokemon_names if name.lower() not in processed_names]
+    # attach cosmetic sprites
+    variants = [k for k,v in FORM_COLLAPSE_MAP.items() if v==real_key] + [real_key]
+    match['sprites'] = [
+        FORM_BY_KEY[k]['sprite_url'] for k in set(variants) if k in FORM_BY_KEY
+    ]
 
-        if missing_pokemon:
-            await process_pokemon_data(missing_pokemon, processed_data)
+    # — NEW: if we collapsed “raw” → “real_key”, strip off form-suffix:
+    if real_key != raw:
+        base = real_key.split('-',1)[0]
+        match['display_name'] = base.title()
 
-        # Load the updated processed cache
-        with open(proc_path, 'w', encoding='utf-8') as f:
-            json.dump(processed_data, f, indent=2)
-
-        matches = []
-        for pokemon_name in pokemon_names:
-            match = next((pokemon for pokemon in processed_data if pokemon_name.lower() == pokemon['name'].lower()), None)
-            if match:
-                matches.append(match)
-            else:
-                closest_matches = difflib.get_close_matches(pokemon_name.lower(), [p['name'] for p in processed_data])
-                if closest_matches:
-                    suggestions = ', '.join([f'<a href="#" onclick="selectSuggestion(\'{match}\')">{match.capitalize()}</a>' for match in closest_matches])
-                    return jsonify({'error': f'Pokémon {pokemon_name} not found. Did you mean: {suggestions}'}), 404
-
-        for match in matches:
-            logger.info(f"Found match: {match}")
-
-        return jsonify(matches)
-
-    except Exception as e:
-        logger.error(f"Error occurred: {e}", exc_info=True)
-        return jsonify({'error': 'An error occurred while processing your request.'}), 500
+    return jsonify([match])
 
 @app.route('/api/pokemon/stats', methods=['GET'])
 async def get_pokemon_stats():
     return await get_pokemon_info()
 
 @app.route('/api/pokemon/suggestions')
-def suggest():
-    q = request.args.get('query','').lower()
-    hits = []
-    for f in FORMS:
-        fn = (f.get('form_name') or '').lower()
-        if fn.endswith(' size') or fn in ('male','female'):
-            continue
-        last = f['key'].split('-')[-1]
-        if not fn or last in SUFFIXES:
-            if f['key'].startswith(q):
-                hits.append(f['key'])
-    return jsonify({'suggestions': sorted(hits)})
-
-@app.route('/api/pokemon/suggestions', methods=['GET'])
-async def get_suggestions():
-    query = request.args.get('query', '').lower()
-    if not query:
+def suggestions():
+    q = request.args.get('query','').strip().lower()
+    if not q:
         return jsonify({'suggestions': []})
 
-    with open(get_resource_path(CACHE_FILE), 'r') as f:
-        all_pokemon_data = json.load(f)
+    seen = set()
+    outs = []
+    for key in FORM_BY_KEY:
+        # 1) skip deletes
+        if key in FORM_COLLAPSE_MAP and FORM_COLLAPSE_MAP[key] == 'delete':
+            continue
 
-    suggestions = [pokemon['name'] for pokemon in all_pokemon_data['results'] if query in pokemon['name'].lower()]
-    return jsonify({'suggestions': suggestions[:10]})
+        # 2) resolve into whatever key _should_ appear
+        candidate = resolve_form_key(key, FORM_BY_KEY, FORMS_BY_BASE, SUFFIXES)
+        if not candidate or candidate in seen:
+            continue
+
+        # 3) only include if it matches the query
+        if q in candidate:
+            seen.add(candidate)
+            outs.append(candidate)
+            if len(outs) >= 10:
+                break
+
+    return jsonify({'suggestions': outs})
 
 @app.route('/api/pokemon/evolutions', methods=['GET'])
 def get_pokemon_evolutions():
-    raw = request.args.get('name', '').strip().lower()
-    if not raw:
-        return jsonify([])
+    raw = request.args.get('name','').strip().lower()
+    real_key = resolve_form_key(raw, FORM_BY_KEY, FORMS_BY_SPECIES, SUFFIXES)
+    if not real_key or real_key not in FORM_BY_KEY:
+        return jsonify({'error':'Unknown Pokémon'}), 404
 
-    # 1) validate
-    keys = {f['key'] for f in FORMS}
-    if raw not in keys:
-        return jsonify({'error': 'Unknown Pokémon'}), 404
-
-    # 2) find the ultimate root of this chain
     def find_root(name):
-        # find any parents that evolve → name
-        parents = [e['from'] for e in EVOLUTIONS if e['to'] == name]
-        if not parents:
+        form = FORM_BY_KEY[name]
+        if form.get('form_name'):
             return name
-        # if multiple parents, pick the first (most lines are linear anyway)
-        return find_root(parents[0])
+        parents = [e['from'] for e in EVOLUTIONS if e['to']==name]
+        return find_root(parents[0]) if parents else name
 
-    root = find_root(raw)
+    root = find_root(real_key)
+    chain = []
 
-    # 3) your existing build_chain
-    def build_chain(name, evolves_from=None):
-        form = next(f for f in FORMS if f['key'] == name)
+    def traverse(name, evolves_from=None):
+        form = FORM_BY_KEY[name]
         node = {
             'name': name,
             'display_name': form['species'].title() + (f" ({form['form_name'].title()})" if form['form_name'] else ''),
             'sprite_url': form['sprite_url'],
-            'id': form['pokeapi_id'],
-            'evolves_from': evolves_from.title() if evolves_from else None,
+            'evolves_from': FORM_BY_KEY[evolves_from]['species'].title() if evolves_from else None,
             'evolution_conditions': []
         }
-
         if evolves_from:
-            edges = [e for e in EVOLUTIONS if e['from'] == evolves_from.lower() and e['to'] == name]
-            node['evolution_conditions'] = get_evolution_conditions(edges)
+            edge = next(e for e in EVOLUTIONS if e['from']==evolves_from and e['to']==name)
+            node['evolution_conditions'] = get_evolution_conditions([edge])
+            if edge.get('note'):
+                node['note'] = edge['note']
+        chain.append(node)
 
-        # recurse once per child
-        all_form_keys = {f['key'] for f in FORMS}
-        next_forms = sorted(
-            {e['to'] for e in EVOLUTIONS if e['from'] == name and e['to'] in all_form_keys}
-        )
+        for e in get_direct_evolutions(name):
+            # map target through resolver
+            child = resolve_form_key(e['to'], FORM_BY_KEY, FORMS_BY_SPECIES, SUFFIXES)
+            if not child:
+                continue
+            traverse(child, name)
 
-        chain = [node]
-        for child in next_forms:
-            chain.extend(build_chain(child, name))
-        return chain
-
-    # 4) build from the root, so you always include ancestors
-    full_chain = build_chain(root)
-    return jsonify(full_chain)
+    traverse(root)
+    return jsonify(chain)
 
 def capitalize_pokemon_name(name):
     return ' '.join([word.capitalize() for word in name.split('-')])

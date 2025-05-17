@@ -373,13 +373,65 @@
             <section id="main-result"></section>
         </div>
 
-        <script>
+        <script id="formCollapseMap" type="application/json">
+          {{ collapse_map | tojson | safe }}
+        </script>
 
+        <script>
+              const MAX_HISTORY = 9;
               // — state & persistence —
               let historyList = [];
               let currentPokemon = null;
               // when false: 1v1 mode (single card). when true: 2v2 mode (two cards)
               let dualMode = false;
+
+              
+
+              const FORM_COLLAPSE_MAP = JSON.parse(
+                document.getElementById('formCollapseMap').textContent
+              );
+              
+              const SHORTEN_SECOND = new Set([
+                "blade","blue","normal","standard","three","incarnate","altered",
+                "average","ordinary","midday","family","disguised","full",
+                "droopy","amped","school","50"
+              ]);
+
+              const FULL_PRESERVE = new Set([
+                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike"
+              ]);
+
+              function formatDisplayName(key) {
+                // 1) full Python overrides
+                if (FORM_COLLAPSE_MAP[key]) {
+                  return FORM_COLLAPSE_MAP[key] === "Delete"
+                    ? ""
+                    : FORM_COLLAPSE_MAP[key];
+                }
+
+                if (FULL_PRESERVE.has(key)) {
+                  return key;
+                }
+
+                // 2) tauros-paldea special case
+                if (key.startsWith("tauros-paldea-") && key.endsWith("-breed")) {
+                  return key.replace(/-breed$/, "");
+                }
+
+                // 3) otherwise split on “-”
+                const parts = key.split("-");
+                if (parts.length > 1) {
+                  // blacklist: drop the form entirely
+                  if (SHORTEN_SECOND.has(parts[1].toLowerCase())) {
+                    return parts[0];
+                  }
+                  // keep two chunks (e.g. "charizard-mega")
+                  return parts.slice(0,2).join("-");
+                }
+
+                // 4) no hyphens at all
+                return parts[0];
+              }
 
               function saveState() {
                 const secEl = document.getElementById('main-result');
@@ -412,8 +464,10 @@
                 const histRaw = localStorage.getItem('pkmnHistory')
                 if (histRaw) {
                   historyList = JSON.parse(histRaw)
-                  historyList.forEach(r => renderHistoryEntry(r))
+                  historyList = historyList.slice(0, MAX_HISTORY);
+                  historyList.forEach(r => renderHistoryEntry(r));
                 }
+              }
                 
                 // 2) restore dualMode flag & button text
                 const dmRaw = localStorage.getItem('pkmnDualMode')
@@ -445,7 +499,6 @@
                     sec.appendChild(card2)
                   }
                 }
-              }
 
               // — scrolling helper —
               const HEADER_HEIGHT = document.querySelector('header').offsetHeight;
@@ -463,7 +516,7 @@
                 sec.innerHTML = '';
                 }
                 const card = createCard(r);
-                card.dataset.name = r.name;
+                card.dataset.name = r.display_name;
                 sec.appendChild(card);
                 // ensure at most 2 cards side‐by‐side
                 if (dualMode && sec.children.length > 2) {
@@ -475,7 +528,7 @@
               // — when you click a history entry —
               function swapToMain(r) {
                 // 1) remove the clicked one from history
-                removeHistoryEntry(r.name);
+                removeHistoryEntry(r.display_name);
                 
                 const sec = document.getElementById('main-result')
                 // 2v2 mode: replace the right card
@@ -485,7 +538,7 @@
                   } else if (sec.children.length === 1) {
                     //just append as second
                     const card = createCard(r);
-                    card.dataset.name = r.name;
+                    card.dataset.name = r.display_name;
                     sec.appendChild(card);
                   } else {
                     //two cards: move rightmose to history, then swap in new
@@ -494,15 +547,14 @@
                     pushToHistory(data);
                     right.remove();
                     const card = createCard(r);
-                    card.dataset.name = r.name;
+                    card.dataset.name = r.display_name;
                     sec.appendChild(card);
                   }
                 }
                 // 1v1 mode: Original swap order
                 else {
-                  if (currentPokemon && currentPokemon.name !== r.name) {
-                    historyList.unshift(currentPokemon);
-                    renderHistoryEntry(currentPokemon, true);
+                  if (currentPokemon && currentPokemon.name !== r.display_name) {
+                    pushToHistory(currentPokemon)
                   }
                   renderMainCard(r);
                 }
@@ -512,14 +564,14 @@
               // — render a single history button —
               function renderHistoryEntry(r, prepend = false) {
                 // skip duplicates
-                if (document.querySelector(`#history .small-card[data-name="${r.name}"]`)) return;
+                if (document.querySelector(`#history .small-card[data-name="${r.display_name}"]`)) return;
 
                 const btn = document.createElement('div');
                 btn.className = 'small-card';
-                btn.dataset.name = r.name;
+                btn.dataset.name = r.display_name;
                 btn.innerHTML = `
                   <button class="history-btn">
-                    ${r.name.charAt(0).toUpperCase() + r.name.slice(1)}
+                    ${formatDisplayName(r.name)}
                     </button>
                     <button class="remove-btn">×</button>
                 `;
@@ -530,7 +582,7 @@
                 // click on × → just remove
                 btn.querySelector('.remove-btn').onclick = e => {
                   e.stopPropagation();
-                  removeHistoryEntry(r.name);
+                  removeHistoryEntry(r.display_name);
                 };
 
                 const container = document.getElementById('history');
@@ -543,10 +595,18 @@
 
               function pushToHistory(r) {
                 // skip if already in history or is current
-                if (historyList.some(x => x.name === r.name)) {
+                if (historyList.some(x => x.name === r.display_name)) {
                   return;
                 }
                 historyList.unshift(r);
+
+                if (historyList.length > MAX_HISTORY) {
+                  historyList.pop()
+                  const cards = document.querySelectorAll('#history .small-card');
+                  if (cards.length > MAX_HISTORY) {
+                    cards[cards.length - 1].remove();
+                  }
+                }
                 renderHistoryEntry(r, /*prepend=*/true);
                 saveState();
               }
@@ -577,7 +637,7 @@
                     .then(r=>r.json())
                     .then(data=>{
                       box.innerHTML = data.suggestions
-                        .map(s=>`<li onclick="selectSuggestion('${s}')">${s}</li>`)
+                        .map(s=>`<li onclick="selectSuggestion('${s}')">${formatDisplayName(s)}</li>`)
                         .join('');
                       box.style.display = data.suggestions.length ? 'block' : 'none';
                       selectedIndex = -1;
@@ -661,9 +721,9 @@
 
                   // 3) One card → append as the second (if not duplicate)
                   if (sec.children.length === 1) {
-                    if (sec.children[0].dataset.name !== r.name) {
+                    if (sec.children[0].dataset.name !== r.display_name) {
                       const card = createCard(r);
-                      card.dataset.name = r.name;
+                      card.dataset.name = r.display_name;
                       sec.appendChild(card);
                       saveState();
                     }
@@ -679,9 +739,9 @@
                     sec.removeChild(leftCard);
                   }
                   //    b) append new one (if not same as the remaining)
-                  if (sec.children[0].dataset.name !== r.name) {
+                  if (sec.children[0].dataset.name !== r.display_name) {
                     const card = createCard(r);
-                    card.dataset.name = r.name;
+                    card.dataset.name = r.display_name;
                     sec.appendChild(card);
                   }
                   saveState();
@@ -689,11 +749,6 @@
                 }
 
                 // — 1v1 MODE: original single-card behavior —
-                // push the old main into history, if there is one
-                if (currentPokemon) {
-                  pushToHistory(currentPokemon);
-                }
-
                 // fetch & render the new one
                 const epSingle   = location.pathname.includes('stats') ? 'stats' : 'info';
                 const resSingle  = await fetch(`/api/pokemon/${epSingle}?name=${encodeURIComponent(name)}`);
@@ -703,7 +758,13 @@
                 if (resSingle.ok) {
                   const r = dataSingle[0];
                   // remove from history (in case it was there)
-                  removeHistoryEntry(r.name);
+                  removeHistoryEntry(r.display_name);
+
+                  // now push the old main into history (if any), before we render the new one
+                  if (currentPokemon && currentPokemon.name !== r.display_name) {
+                    pushToHistory(currentPokemon);
+                  }
+
                   // render single slot
                   renderMainCard(r);
                 } else {
@@ -719,8 +780,8 @@
                 d.dataset.pokemon = JSON.stringify(r);
                 d.innerHTML = `
                   <button class="close-button" onclick="closeCard(this)">×</button>
-                  <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.name}">
-                  <h2>${r.name}</h2>
+                  <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.display_name}">
+                  <h2>${formatDisplayName(r.name)}</h2>
                   <p class="type-line">Type: ${r.types.map(
                     t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`
                   ).join(' ')}</p>

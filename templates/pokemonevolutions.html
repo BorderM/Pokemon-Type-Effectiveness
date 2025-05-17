@@ -237,12 +237,16 @@
                     });
                     card.innerHTML = `
                         <h2>${capitalize(pokemon.name)}</h2>
-                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png"
-                            alt="${pokemon.name}">
+                        <img src="${pokemon.sprite_url}" alt="${pokemon.display_name}">
                         ${evolvesFrom}
                         ${triggerHtml}
                         <div id="conditions-${pokemon.name.toLowerCase().replace(/ /g, '-')}" ></div>
                     `;
+                    if (pokemon.note) {
+                        const noteP = document.createElement('p');
+                        noteP.innerText = `Note: ${pokemon.note}`;
+                        card.appendChild(noteP);
+                    }
                     resultsDiv.appendChild(card);
 
                     // Display evolution conditions
