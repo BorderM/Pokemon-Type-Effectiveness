@@ -180,6 +180,9 @@ for frm, methods in overrides.items():
 # --------------------------------------------------------------------------------------------------
 print("⟳ Deduplicating edges…")
 priority = {
+    'level-up-day':    5,
+    'level-up-night':  5,
+    'level-up-dusk':   5,
     'level-up': 4,
     'use-item': 3,
     'trade':    2,

@@ -38,14 +38,9 @@ farfetchd-galar:
     note: "This is to be done without losing or running from the battle."
 
 voltorb-hisui:
-  - to: electrode-hisui
+  - to: electrode-hisuian
     trigger: use-item
     item: leaf-stone
-
-mr-mime-galar:
-  - to: mr-rime
-    trigger: level-up
-    min_level: 42
 
 wooper-paldea:
   - to: clodsire
@@ -79,7 +74,7 @@ yamask-galar:
     note: "Must travel under the large rock in Dusty Bowl with Yamask at 49+ HP taken without fainting."
 
 dartrix:
-  - to: decidueye-hisuian
+  - to: decidueye-hisui
     trigger: level-up
     min_level: 36
     note: "Only evolves into Hisuian Decidueye in the Hisui region."
@@ -118,23 +113,34 @@ mime-jr:
     known_move: mimic
     note: "Only evolves into Galarian Mr. Mime in the Galar region."
 
+mr-mime-galar:
+  - to: mr-rime
+    trigger: level-up
+    min_level: 42
+
 petilil:
-  - to: lilligant-hisuian
+  - to: lilligant-hisui
     trigger: use-item
     item: sun-stone
     note: "Only evolves into Hisuian Lilligant in the Hisui region."
 
 rufflet:
-  - to: braviary-hisuian
+  - to: braviary-hisui
     trigger: level-up
     min_level: 54
     note: "Only evolves into Hisuian Braviary in the Hisui region."
 
 goomy:
-  - to: sliggoo-hisuian
+  - to: sliggoo-hisui
     trigger: level-up
     min_level: 40
     note: "Only evolves into Hisuian Sliggoo in the Hisui region."
+
+sliggoo-hisui:
+  - to: goodra-hisui
+    trigger: level-up
+    min_level: 50
+    note: "Must be raining"
 
 diglett-alola:
   - to: dugtrio-alola
@@ -199,7 +205,7 @@ dewott:
     min_level: 36
     note: "Only evolves into Hisuian Samurott in the Hisui region."
 
-basculin:
+basculin-white-striped:
   - to: basculegion
     trigger: level-up
     note: "Evolves after losing at least 294 HP from recoil damage without fainting"
@@ -217,17 +223,17 @@ espurr:
 
 rockruff:  
   - to: lycanroc-midday  
-    trigger: level-up 
+    trigger: level-up-day
     min_level: 25 
     time_of_day: day  
     note: "Ability must be Keen Eye, Vital Spirit, or Steadfast"  
   - to: lycanroc-midnight  
-    trigger: level-up   
+    trigger: level-up-night  
     min_level: 25 
     time_of_day: night  
     note: "Ability must be Keen Eye, Vital Spirit, or Steadfast"  
   - to: lycanroc-dusk  
-    trigger: level-up   
+    trigger: level-up-dusk   
     min_level: 25 
     time_of_day: evening  
     note: "Ability must be Own Tempo"  
@@ -239,28 +245,32 @@ poltchageist:
     note: "Unremarkable teacup is for Unremarkable form. Masterpiece teacup is for Masterpiece form. They are form dependant of poltchageist"
 
 toxel:
-  - to: toxtricity-amped-form
+  - to: toxtricity-amped
     trigger: level-up
     min_level: 30
     note: "Nature must be one of Hardy, Brave, Adamant, Naughty, Docile, Impish, Lax, Hasty, Jolly, Naive, Rash, Sassy, or Quirky."
 
-  - to: toxtricity-low-key-form
+  - to: toxtricity-low-key
     trigger: level-up
     min_level: 30
     note: "Nature must be one of Lonely, Bold, Relaxed, Timid, Serious, Modest, Mild, Quiet, Bashful, Calm, Gentle, or Careful."
 
 doublade:
-  - to: Aegislash
+  - to: Aegislash-shield
+    trigger: use-item
+    min_level: 35
+    item: dusk-stone
+  - to: Aegislash-blade
     trigger: use-item
     min_level: 35
     item: dusk-stone
 
-pumpkaboo:
-  - to: gourgeist
+pumpkaboo-average:
+  - to: gourgeist-average
     trigger: trade
 
 burmy: 
-  - to: wormadam
+  - to: wormadam-plant
     trigger: level-up
     min_level: 20
     gender: female
