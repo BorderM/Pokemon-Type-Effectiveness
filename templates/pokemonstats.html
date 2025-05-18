@@ -295,8 +295,11 @@
     </head>
     <body
         class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
+        <script id="formsByBase" type="application/json">
+            {{ forms_by_base_json | tojson | safe }}
+        </script>
         <script id="formCollapseMap" type="application/json">
-          {{ collapse_map | tojson | safe }}
+            {{ collapse_map       | tojson | safe }}
         </script>
         <div class="fixed-header">
             <div class="watermark-fixed">Created by BorderM</div>
@@ -359,9 +362,8 @@
         // Calculate once, at page load, the height of your fixed header
         const HEADER_HEIGHT = document.querySelector('.fixed-header').offsetHeight;
 
-        const FORM_COLLAPSE_MAP = JSON.parse(
-            document.getElementById('formCollapseMap').textContent
-            );
+        const FORMS_BY_BASE   = JSON.parse(document.getElementById('formsByBase').textContent);
+        const FORM_COLLAPSE_MAP = JSON.parse(document.getElementById('formCollapseMap').textContent);
 
         const SHORTEN_SECOND = new Set([
         "blade","blue","normal","standard","three","incarnate","altered",
@@ -370,38 +372,40 @@
         ]);
 
         const FULL_PRESERVE = new Set([
-            "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike"
+            "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
+            "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
+            "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike"
         ]);
 
+        /**
+         * Turn any rawKey (what the user typed or what comes from your data)
+         * into the canonical form-key you have sprites/stats for.
+         */
+         function collapseKey(rawKey) {
+            const key = rawKey.toLowerCase().trim();
+            if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key];
+            if (FULL_PRESERVE.has(key))    return key;
+            const parts = key.split('-');
+            if (parts.length > 1 && SHORTEN_SECOND.has(parts[1])) return parts[0];
+            if (parts.length === 1 && FORMS_BY_BASE[parts[0]])  return FORMS_BY_BASE[parts[0]][0].key;
+            return key;
+        }
+
         function formatDisplayName(key) {
-            // 1) full Python overrides
             if (FORM_COLLAPSE_MAP[key]) {
                 return FORM_COLLAPSE_MAP[key] === "Delete"
-                ? ""
-                : FORM_COLLAPSE_MAP[key];
+                    ? ""
+                    : FORM_COLLAPSE_MAP[key];
             }
-
-            if (FULL_PRESERVE.has(key)) {
-                return key;
-            }
-
-            // 2) tauros-paldea special case
+            if (FULL_PRESERVE.has(key)) return key;
             if (key.startsWith("tauros-paldea-") && key.endsWith("-breed")) {
                 return key.replace(/-breed$/, "");
             }
-
-            // 3) otherwise split on “-”
             const parts = key.split("-");
             if (parts.length > 1) {
-                // blacklist: drop the form entirely
-                if (SHORTEN_SECOND.has(parts[1].toLowerCase())) {
-                return parts[0];
-                }
-                // keep two chunks (e.g. "charizard-mega")
+                if (SHORTEN_SECOND.has(parts[1])) return parts[0];
                 return parts.slice(0,2).join("-");
             }
-
-            // 4) no hyphens at all
             return parts[0];
         }
 
@@ -414,47 +418,37 @@
             window.scrollTo({ top: targetY, behavior: 'smooth' });
         }
         const LOCAL_STORAGE_KEY = 'activePokemonData';
+
+        let suggestionKeys = [];
         let selectedIndex = -1;
 
-        function handleInput(event) {
-            const input = event.target;
-            const suggestionsBox = input.parentElement.querySelector('.suggestions');
-            const query = input.value.trim();
+        async function handleInput(event) {
+                const q   = event.target.value.trim().toLowerCase();
+                const box = event.target.parentElement.querySelector('.suggestions');
 
-            if (query.length > 1) {
-                fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    // if no suggestions, hide & clear
-                    if (!data.suggestions || data.suggestions.length === 0) {
-                    suggestionsBox.style.display = 'none';
-                    suggestionsBox.innerHTML = '';
-                    return;
-                    }
+                if (q.length > 1) {
+                    const data = await (await fetch(
+                    `/api/pokemon/suggestions?query=${encodeURIComponent(q)}`
+                    )).json();
 
-                    // otherwise build the <li> list
-                    suggestionsBox.innerHTML = data.suggestions
-                    .map(s => 
-                        `<li onclick="selectSuggestion('${s}')" data-key="${s}">
-                        ${formatDisplayName(s)}
-                        </li>`
+                    // collapse+dedupe into suggestionKeys
+                    suggestionKeys = Array.from(
+                    new Set(data.suggestions.map(s => collapseKey(s)))
+                    );
+
+                    // render the dropdown
+                    box.innerHTML = suggestionKeys
+                    .map(key =>
+                        `<li onclick="selectSuggestion('${key}')">${formatDisplayName(key)}</li>`
                     )
-                    .join('');                     // ← join *after* map
-
-                    suggestionsBox.style.display = 'block';
-                    selectedIndex = -1;             // reset highlight
-                })
-                .catch(err => {
-                    console.error('Suggestion fetch failed', err);
-                    suggestionsBox.style.display = 'none';
-                    suggestionsBox.innerHTML = '';
-                });
-            } else {
-                // too-short query: hide & clear
-                suggestionsBox.style.display = 'none';
-                suggestionsBox.innerHTML = '';
+                    .join('');
+                    box.style.display = suggestionKeys.length ? 'block' : 'none';
+                    selectedIndex = -1;
+                } else {
+                    box.style.display = 'none';
+                    suggestionKeys = [];
+                }
             }
-        }
 
         function selectSuggestion(name) {
             const input = document.getElementById('pokemon-input');
@@ -463,32 +457,44 @@
             fetchPokemon();
         }
 
-        function handleEnterKey(event) {
-        const suggestionsBox = document.querySelector('.suggestions');
-        const suggestions = suggestionsBox.querySelectorAll('li');
-        if (event.key === 'ArrowDown') {
-            event.preventDefault();
-            if (selectedIndex < suggestions.length - 1) {
-                selectedIndex++;
-                highlightSuggestion(suggestions);
+        function handleEnterKey(e) {
+            const box   = document.getElementById('suggestions');
+            const items = Array.from(box.querySelectorAll('li'));
+
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                // move highlight
+                selectedIndex += (e.key === 'ArrowDown') ? 1 : -1;
+                selectedIndex = Math.max(0, Math.min(items.length - 1, selectedIndex));
+                items.forEach((li, i) => 
+                li.classList.toggle('highlighted', i === selectedIndex)
+                );
             }
-        } else if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            if (selectedIndex > 0) {
-                selectedIndex--;
-                highlightSuggestion(suggestions);
+            else if (e.key === 'Enter') {
+                e.preventDefault();
+                box.style.display = 'none';
+
+                if (items.length) {
+                // pick the canon key you stored in suggestionKeys
+                const idx = selectedIndex >= 0 ? selectedIndex : 0;
+                selectSuggestion(suggestionKeys[idx]);
+                } else {
+                // no suggestions: do the page’s search call
+                // stats page calls fetchPokemon()
+                // typeeffectiveness page calls performSearch()
+                // evolutions page calls fetchPokemonData()
+                const page = window.location.pathname;
+                if (page.includes('stats')) {
+                    fetchPokemon();
+                } else if (page.includes('typeeffectiveness')) {
+                    performSearch();
+                } else {
+                    fetchPokemonData();
+                }
+                }
+                // reset highlight
+                selectedIndex = -1;
             }
-        } else if (event.key === 'Enter') {
-            event.preventDefault();
-            if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
-                selectSuggestion(suggestions[selectedIndex].textContent);
-            } else if (suggestions.length > 0) {
-                selectSuggestion(suggestions[0].textContent);
-            } else {
-                fetchPokemon();
-            }
-            suggestionsBox.style.display = 'none';
-        }
         }
 
         function highlightSuggestion(suggestions) {
@@ -513,45 +519,57 @@
 
             async function fetchPokemon() {
                 const input = document.getElementById('pokemon-input');
-                let pokemonName = input.value.trim();
+                let raw = input.value.trim();
+
+                // — if they hit “Search” with no text but had suggestions, pick the first suggestion —
                 const suggestionsBox = document.querySelector('.suggestions');
-                const suggestions = suggestionsBox.querySelectorAll('li');
-
-                if (!pokemonName && suggestions.length > 0) {
-                    pokemonName = suggestions[0].textContent;
+                const suggestions    = suggestionsBox.querySelectorAll('li');
+                if (!raw && suggestions.length > 0) {
+                    raw = suggestions[0].textContent;
                 }
+                if (!raw) return;  // give up if still nothing
 
-                if (!pokemonName) return;
+                // — collapse the user’s input to your canonical form key —
+                const key = collapseKey(raw);
 
+                // — dedupe: if a card for this form is already showing, just scroll to it —
                 const resultsDiv = document.getElementById('results');
                 const existing = Array.from(resultsDiv.children)
-                .find(card => JSON.parse(card.getAttribute('data-pokemon')).name === pokemonName.toLowerCase());
+                    .find(card => {
+                        const data = JSON.parse(card.getAttribute('data-pokemon'));
+                        return data.name === key;
+                    });
                 if (existing) {
                     scrollToNewCard(existing);
                     input.value = '';
                     input.focus();
                     return;
                 }
+
+                // — show spinner & fetch with the collapsed key —
                 const progressBarContainer = document.getElementById('progress-bar-container');
                 progressBarContainer.classList.remove('hidden');
 
-                const response = await fetch(`/api/pokemon/${window.location.pathname.includes('stats') ? 'stats' : 'info'}?name=${pokemonName}`);
-                const data = await response.json();
+                const endpoint = window.location.pathname.includes('stats') ? 'stats' : 'info';
+                const res = await fetch(
+                    `/api/pokemon/${endpoint}?name=${encodeURIComponent(key)}`
+                );
+                const data = await res.json();
 
-                const errorMessageDiv = document.getElementById('error-message');
-                errorMessageDiv.innerHTML = '';
+                document.getElementById('error-message').innerHTML = '';
 
-                if (response.ok) {
+                if (res.ok) {
                     data.forEach(result => {
                         const newCard = createStatsCard(result);
                         resultsDiv.appendChild(newCard);
                         scrollToNewCard(newCard);
                     });
                     updateLocalStorage();
-                } else {
-                    handleSuggestionError(data.error, pokemonName);
+                }   else {
+                    handleSuggestionError(data.error, raw);
                 }
 
+                // — cleanup —
                 input.value = '';
                 input.focus();
                 progressBarContainer.classList.add('hidden');
@@ -561,14 +579,13 @@
                 const formDiv = document.createElement('div');
                 formDiv.className = "bg-white dark:bg-zinc-700 rounded-lg p-4 shadow-md result-card";
                 formDiv.setAttribute('data-pokemon', JSON.stringify(result));
-                const pokemonKey   = result.name;            // e.g. "aegislash-shield"
-                const pokemonName  = formatDisplayName(pokemonKey);  // "aegislash"
-                const bulbapediaLinkName = pokemonName.split('-')[0]; // Use part of name before first hyphen
+                const display = result.display_name;
+                const bulbapediaLinkName = display.split('-')[0]; // Use part of name before first hyphen
                 const bulbapediaLink = `https://bulbapedia.bulbagarden.net/wiki/${bulbapediaLinkName}_(Pok%C3%A9mon)`;
                 formDiv.innerHTML = `
                     <button class="close-button" onclick="removeCard(this)">X</button>
                     <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${result.id}.png" alt="${result.form}" class="mx-auto mb-2">
-                    <h2 class="text-center mb-2"><a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">${pokemonName}</a></h2>
+                    <h2 class="text-center mb-2"><a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">${display}</a></h2>
                     <p class="text-center"><span>Type:</span> ${result.types.map(type => `<span class="type-badge type-${type.toLowerCase()}">${capitalizeFirstLetter(type)}</span>`).join(' ')}</p>
                     <div class="content mt-2">
                         <div class="stat-row">

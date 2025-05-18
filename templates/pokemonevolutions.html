@@ -175,35 +175,106 @@
             <div id="error-message" class="error-message-fixed"></div>
         </div>
         <div id="results"></div>
+        <script id="formsByBase" type="application/json">
+            {{ forms_by_base_json | tojson | safe }}
+        </script>
+        <script id="formCollapseMap" type="application/json">
+            {{ collapse_map       | tojson | safe }}
+        </script>
         <script>
+            const FORMS_BY_BASE   = JSON.parse(document.getElementById('formsByBase').textContent);
+            const FORM_COLLAPSE_MAP = JSON.parse(document.getElementById('formCollapseMap').textContent);
+
+            const SHORTEN_SECOND = new Set([
+            "blade","blue","normal","standard","three","incarnate","altered",
+            "average","ordinary","midday","family","disguised","full",
+            "droopy","amped","school","50"
+            ]);
+
+            const FULL_PRESERVE = new Set([
+                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
+                "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
+                "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike"
+            ]);
+
+            /**
+             * Turn any rawKey (what the user typed or what comes from your data)
+             * into the canonical form-key you have sprites/stats for.
+             */
+            function collapseKey(rawKey) {
+                const key = rawKey.toLowerCase().trim();
+                if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key];
+                if (FULL_PRESERVE.has(key))    return key;
+                const parts = key.split('-');
+                if (parts.length > 1 && SHORTEN_SECOND.has(parts[1])) return parts[0];
+                if (parts.length === 1 && FORMS_BY_BASE[parts[0]])  return FORMS_BY_BASE[parts[0]][0].key;
+                return key;
+            }
+
+            function formatDisplayName(key) {
+                if (FORM_COLLAPSE_MAP[key]) {
+                    return FORM_COLLAPSE_MAP[key] === "Delete"
+                        ? ""
+                        : FORM_COLLAPSE_MAP[key];
+                }
+                if (FULL_PRESERVE.has(key)) return key;
+                if (key.startsWith("tauros-paldea-") && key.endsWith("-breed")) {
+                    return key.replace(/-breed$/, "");
+                }
+                const parts = key.split("-");
+                if (parts.length > 1) {
+                    if (SHORTEN_SECOND.has(parts[1])) return parts[0];
+                    return parts.slice(0,2).join("-");
+                }
+                return parts[0];
+            }
+
+            let suggestionKeys = [];
             let selectedIndex = -1;
-
+            
             async function handleInput(event) {
-                const input = event.target;
-                const box   = input.parentElement.querySelector('.suggestions');
+                const q   = event.target.value.trim().toLowerCase();
+                const box = event.target.parentElement.querySelector('.suggestions');
 
-                const q = input.value.trim().toLowerCase();
                 if (q.length > 1) {
-                const resp = await fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(q)}`);
-                const data = await resp.json();
+                    const data = await (await fetch(
+                    `/api/pokemon/suggestions?query=${encodeURIComponent(q)}`
+                    )).json();
 
-                // Populate & show
-                box.innerHTML = data.suggestions
-                    .map(name => `<li onclick="selectSuggestion('${name}')">${name}</li>`)
+                    // collapse+dedupe into suggestionKeys
+                    suggestionKeys = Array.from(
+                    new Set(data.suggestions.map(s => collapseKey(s)))
+                    );
+
+                    // render the dropdown
+                    box.innerHTML = suggestionKeys
+                    .map(key =>
+                        `<li onclick="selectSuggestion('${key}')">${formatDisplayName(key)}</li>`
+                    )
                     .join('');
-                box.style.display = data.suggestions.length ? 'block' : 'none';
-                selectedIndex = -1;
+                    box.style.display = suggestionKeys.length ? 'block' : 'none';
+                    selectedIndex = -1;
                 } else {
-                box.style.display = 'none';
-                box.innerHTML   = '';
+                    box.style.display = 'none';
+                    suggestionKeys = [];
                 }
             }
-            async function fetchPokemonData() {
-                const query = document.getElementById('pokemon-search').value.trim();
-                if (!query) return;
 
-                const response = await fetch(`/api/pokemon/evolutions?name=${query}`);
+
+            async function fetchPokemonData() {
+                const raw = document.getElementById('pokemon-search').value.trim();
+                if (!raw) return;
+                const key = collapseKey(raw);
+
+                document.getElementById('progress-bar-container').classList.remove('hidden');
+
+                const response = await fetch(
+                    `/api/pokemon/evolutions?name=${encodeURIComponent(key)}`
+                );
+
                 const data = await response.json();
+
+                document.getElementById('progress-bar-container').classList.add('hidden');
 
                 if (response.ok) {
                     displayResults(data);
@@ -226,6 +297,10 @@
                 resultsDiv.innerHTML = '';
 
                 data.forEach(pokemon => {
+                    // 1) Use the API’s display_name (already collapsed to base) for the header
+                    const dispName = pokemon.display_name || pokemon.name;
+                    // 2) And use the canonical form-key (pokemon.name) for IDs / lookups
+                    const formKey  = pokemon.name;
                     const card = document.createElement('div');
                     card.className = 'result-card';
                     const evolvesFrom = pokemon.evolves_from ? `<p>Evolves from: ${pokemon.evolves_from}</p>` : '';
@@ -236,11 +311,11 @@
                         }
                     });
                     card.innerHTML = `
-                        <h2>${capitalize(pokemon.name)}</h2>
-                        <img src="${pokemon.sprite_url}" alt="${pokemon.display_name}">
+                        <h2>${capitalize(dispName)}</h2>
+                        <img src="${pokemon.sprite_url}" alt="${dispName}">
                         ${evolvesFrom}
                         ${triggerHtml}
-                        <div id="conditions-${pokemon.name.toLowerCase().replace(/ /g, '-')}" ></div>
+                        <div id="conditions-${formKey}" ></div>
                     `;
                     if (pokemon.note) {
                         const noteP = document.createElement('p');
@@ -250,7 +325,7 @@
                     resultsDiv.appendChild(card);
 
                     // Display evolution conditions
-                    const conditionsDiv = document.getElementById(`conditions-${pokemon.name.toLowerCase().replace(/ /g, '-')}`);
+                    const conditionsDiv = document.getElementById(`conditions-${formKey}`);
                     pokemon.evolution_conditions.forEach(condition => {
                         Object.entries(condition).forEach(([key, val]) => {
                             if (key === 'Triggered by' || val === 'N/A') return;

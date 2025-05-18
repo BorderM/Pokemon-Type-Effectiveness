@@ -32,8 +32,8 @@ slowpoke-galar:
     trigger: use-item
     item: galarica-wreath
 
-farfetch'd-galar:
-  - to: sirfetch'd
+farfetchd-galar:
+  - to: sirfetchd
     trigger: three-critical-hits
     note: "This is to be done without losing or running from the battle."
 
@@ -110,6 +110,9 @@ koffing:
     note: "Only evolves into Galarian Weezing in the Galar region."
 
 mime-jr:
+  - to: mr-mime
+    trigger: level-up
+    known_move: mimic
   - to: mr-mime-galar
     trigger: level-up
     known_move: mimic
@@ -195,3 +198,75 @@ dewott:
     trigger: level-up
     min_level: 36
     note: "Only evolves into Hisuian Samurott in the Hisui region."
+
+basculin:
+  - to: basculegion
+    trigger: level-up
+    note: "Evolves after losing at least 294 HP from recoil damage without fainting"
+
+nincada: 
+  - to: shedinja
+    trigger: level-up
+    min_level: 20
+    note: "Upon evolving Nincada to Ninjask, if there is at least one space in your party and a pokeball in your bag."
+
+espurr:
+  - to: Meowstic
+    trigger: level-up
+    min_level: 25
+
+rockruff:  
+  - to: lycanroc-midday  
+    trigger: level-up 
+    min_level: 25 
+    time_of_day: day  
+    note: "Ability must be Keen Eye, Vital Spirit, or Steadfast"  
+  - to: lycanroc-midnight  
+    trigger: level-up   
+    min_level: 25 
+    time_of_day: night  
+    note: "Ability must be Keen Eye, Vital Spirit, or Steadfast"  
+  - to: lycanroc-dusk  
+    trigger: level-up   
+    min_level: 25 
+    time_of_day: evening  
+    note: "Ability must be Own Tempo"  
+
+poltchageist: 
+  - to: sinistcha
+    trigger: use-item
+    item: unremarkable teacup OR masterpiece teacup
+    note: "Unremarkable teacup is for Unremarkable form. Masterpiece teacup is for Masterpiece form. They are form dependant of poltchageist"
+
+toxel:
+  - to: toxtricity-amped-form
+    trigger: level-up
+    min_level: 30
+    note: "Nature must be one of Hardy, Brave, Adamant, Naughty, Docile, Impish, Lax, Hasty, Jolly, Naive, Rash, Sassy, or Quirky."
+
+  - to: toxtricity-low-key-form
+    trigger: level-up
+    min_level: 30
+    note: "Nature must be one of Lonely, Bold, Relaxed, Timid, Serious, Modest, Mild, Quiet, Bashful, Calm, Gentle, or Careful."
+
+doublade:
+  - to: Aegislash
+    trigger: use-item
+    min_level: 35
+    item: dusk-stone
+
+pumpkaboo:
+  - to: gourgeist
+    trigger: trade
+
+burmy: 
+  - to: wormadam
+    trigger: level-up
+    min_level: 20
+    gender: female
+    note: "Burmy changes form based on environment of last battle. This affects the cloak of Wormadam."
+
+  - to: mothim
+    trigger: level-up
+    min_level: 20
+    gender: male

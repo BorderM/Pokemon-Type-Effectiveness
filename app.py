@@ -130,11 +130,11 @@ def index():
 
 @app.route('/typeeffectiveness')
 def type_effectiveness():
-    return render_template('pokemontypeeffectiveness.html', collapse_map=json.dumps(FORM_COLLAPSE_MAP))
+    return render_template('pokemontypeeffectiveness.html', collapse_map=json.dumps(FORM_COLLAPSE_MAP), forms_by_base_json=json.dumps(FORMS_BY_BASE))
 
 @app.route('/stats')
 def stats():
-    return render_template('pokemonstats.html', collapse_map=json.dumps(FORM_COLLAPSE_MAP))
+    return render_template('pokemonstats.html', collapse_map=json.dumps(FORM_COLLAPSE_MAP), forms_by_base_json=json.dumps(FORMS_BY_BASE))
 
 @app.route('/typecalculator')
 def type_calculator():
@@ -146,7 +146,7 @@ def natures():
     
 @app.route('/evolutions')
 def evolution():
-    return render_template('pokemonevolutions.html')
+    return render_template('pokemonevolutions.html', collapse_map=json.dumps(FORM_COLLAPSE_MAP), forms_by_base_json=json.dumps(FORMS_BY_BASE))
 
 @app.route('/api/pokemon/info', methods=['GET'])
 async def get_pokemon_info():

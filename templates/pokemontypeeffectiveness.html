@@ -334,6 +334,25 @@
                 right: 10px;
                 z-index: 1001;
             }
+
+            .minimize-button {
+              position: absolute;
+              top: 10px;
+              /* place it just left of the close button (which is at right:10px) */
+              right: 40px;
+              background: #6b7280;    /* gray-500 */
+              color: white;
+              border: none;
+              border-radius: 50%;
+              width: 24px;
+              height: 24px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 1rem;
+              line-height: 1;
+            }
         </style>
         <title>Pokémon Type Effectiveness</title>
     </head>
@@ -367,16 +386,16 @@
             </div>
             <div id="error-message" class="error-message-fixed"></div>
         </header>
-
         <div class="container">
             <aside id="history"></aside>
             <section id="main-result"></section>
         </div>
-
+        <script id="formsByBase" type="application/json">
+          {{ forms_by_base_json | tojson | safe }}
+        </script>
         <script id="formCollapseMap" type="application/json">
           {{ collapse_map | tojson | safe }}
         </script>
-
         <script>
               const MAX_HISTORY = 9;
               // — state & persistence —
@@ -385,7 +404,9 @@
               // when false: 1v1 mode (single card). when true: 2v2 mode (two cards)
               let dualMode = false;
 
-              
+              const FORMS_BY_BASE = JSON.parse(
+                document.getElementById('formsByBase').textContent
+              );
 
               const FORM_COLLAPSE_MAP = JSON.parse(
                 document.getElementById('formCollapseMap').textContent
@@ -398,13 +419,48 @@
               ]);
 
               const FULL_PRESERVE = new Set([
-                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike"
+                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
+                "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
+                "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike"
               ]);
+
+              /**
+               * Turn any rawKey (what the user typed or what comes from your data)
+               * into the canonical form-key you have sprites/stats for.
+               */
+              function collapseKey(rawKey) {
+                const key = rawKey.toLowerCase().trim();
+
+                // 1) Python overrides
+                if (FORM_COLLAPSE_MAP[key]) {
+                  return FORM_COLLAPSE_MAP[key];
+                }
+
+                // 2) fully preserve exotic forms
+                if (FULL_PRESERVE.has(key)) {
+                  return key;
+                }
+
+                // 3) drop cosmetic second chunk (blade, shield…)
+                const parts = key.split('-');
+                if (parts.length > 1 && SHORTEN_SECOND.has(parts[1])) {
+                  return parts[0];
+                }
+
+                // 4) if they gave just a species, pick your default form from FORMS_BY_BASE
+                if (parts.length === 1 && FORMS_BY_BASE[parts[0]]) {
+                  // e.g. user typed "aegislash" → pick "aegislash-shield" (or whichever is first)
+                  return FORMS_BY_BASE[parts[0]][0].key;
+                }
+
+                // 5) fallback to whatever we have (may be invalid)
+                return key;
+              }
 
               function formatDisplayName(key) {
                 // 1) full Python overrides
                 if (FORM_COLLAPSE_MAP[key]) {
-                  return FORM_COLLAPSE_MAP[key] === "Delete"
+                  return FORM_COLLAPSE_MAP[key] === "Delete" 
                     ? ""
                     : FORM_COLLAPSE_MAP[key];
                 }
@@ -571,9 +627,9 @@
                 btn.dataset.name = r.display_name;
                 btn.innerHTML = `
                   <button class="history-btn">
-                    ${formatDisplayName(r.name)}
-                    </button>
-                    <button class="remove-btn">×</button>
+                    ${formatDisplayName(r.display_name)}
+                  </button>
+                  <button class="remove-btn">×</button>
                 `;
 
                 // click on label → swap
@@ -628,45 +684,78 @@
               }
 
               // — suggestions & search flow (unchanged) —
+              let suggestionKeys = [];
               let selectedIndex = -1;
-              function handleInput(e) {
-                const q = e.target.value.trim();
-                const box = document.getElementById('suggestions');
+
+              async function handleInput(event) {
+                const q   = event.target.value.trim().toLowerCase();
+                const box = event.target.parentElement.querySelector('.suggestions');
+
                 if (q.length > 1) {
-                  fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(q)}`)
-                    .then(r=>r.json())
-                    .then(data=>{
-                      box.innerHTML = data.suggestions
-                        .map(s=>`<li onclick="selectSuggestion('${s}')">${formatDisplayName(s)}</li>`)
-                        .join('');
-                      box.style.display = data.suggestions.length ? 'block' : 'none';
-                      selectedIndex = -1;
-                    });
+                    const data = await (await fetch(
+                    `/api/pokemon/suggestions?query=${encodeURIComponent(q)}`
+                    )).json();
+
+                    // collapse+dedupe into suggestionKeys
+                    suggestionKeys = Array.from(
+                    new Set(data.suggestions.map(s => collapseKey(s)))
+                    );
+
+                    // render the dropdown
+                    box.innerHTML = suggestionKeys
+                    .map(key =>
+                      `<li onclick="selectSuggestion('${key}')">${formatDisplayName(key)}</li>`
+                    )
+                    .join('');
+                    box.style.display = suggestionKeys.length ? 'block' : 'none';
+                    selectedIndex = -1;
                 } else {
-                  box.style.display = 'none';
-                  box.innerHTML = '';
+                    box.style.display = 'none';
+                    suggestionKeys = [];
                 }
-              }
+            }
+
+
               function handleEnterKey(e) {
-                const box = document.getElementById('suggestions');
+                const box   = document.getElementById('suggestions');
                 const items = Array.from(box.querySelectorAll('li'));
-                if (e.key==='ArrowDown'||e.key==='ArrowUp') {
-                  e.preventDefault();
-                  selectedIndex += e.key==='ArrowDown'?1:-1;
-                  selectedIndex = Math.max(0, Math.min(items.length-1, selectedIndex));
-                  items.forEach((li,i)=>li.classList.toggle('highlighted', i===selectedIndex));
+
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    // move highlight
+                    selectedIndex += (e.key === 'ArrowDown') ? 1 : -1;
+                    selectedIndex = Math.max(0, Math.min(items.length - 1, selectedIndex));
+                    items.forEach((li, i) => 
+                    li.classList.toggle('highlighted', i === selectedIndex)
+                    );
                 }
-                else if (e.key==='Enter') {
-                  e.preventDefault();
-                  if (items.length) {
-                    const idx = selectedIndex>=0?selectedIndex:0;
-                    selectSuggestion(items[idx].textContent);
-                  } else {
-                    performSearch();
-                  }
-                  box.style.display='none';
+                else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    box.style.display = 'none';
+
+                    if (items.length) {
+                    // pick the canon key you stored in suggestionKeys
+                    const idx = selectedIndex >= 0 ? selectedIndex : 0;
+                    selectSuggestion(suggestionKeys[idx]);
+                    } else {
+                    // no suggestions: do the page’s search call
+                    // stats page calls fetchPokemon()
+                    // typeeffectiveness page calls performSearch()
+                    // evolutions page calls fetchPokemonData()
+                    const page = window.location.pathname;
+                    if (page.includes('stats')) {
+                        fetchPokemon();
+                    } else if (page.includes('typeeffectiveness')) {
+                        performSearch();
+                    } else {
+                        fetchPokemonData();
+                    }
+                    }
+                    // reset highlight
+                    selectedIndex = -1;
                 }
               }
+
               function selectSuggestion(name) {
                 document.getElementById('pokemon-input').value = name;
                 document.getElementById('suggestions').style.display='none';
@@ -675,20 +764,22 @@
 
               function performSearch() {
                 const inp = document.getElementById('pokemon-input');
-                let name  = inp.value.trim();
-                const items = document.querySelectorAll('#suggestions li');
-                if (!name && items.length) name = items[0].textContent;
-                if (!name) return;
-                document.getElementById('suggestions').style.display='none';
+                const raw = document.getElementById('pokemon-input').value.trim();
+                if (!raw) return;
+                // 1) collapse to your canonical key
+                const key = collapseKey(raw);
+                document.getElementById('suggestions').style.display = 'none';
                 document.getElementById('progress-bar-container').classList.remove('hidden');
-                fetchPokemon(name.toLowerCase())
+                fetchPokemon(key)
                   .finally(() => {
                     document.getElementById('progress-bar-container').classList.add('hidden');
-                    inp.value=''; inp.focus();
+                    inp.value = '';
+                    inp.focus();
                   });
               }
 
-              async function fetchPokemon(name) {
+              async function fetchPokemon(rawName) {
+                const name = collapseKey(rawName)
                 const sec = document.getElementById('main-result');
 
                 // — if it’s already showing as the main card, just scroll to it —
@@ -779,9 +870,10 @@
                 d.className = 'result-card';
                 d.dataset.pokemon = JSON.stringify(r);
                 d.innerHTML = `
+                  <button class="minimize-button" onclick="minimizeCard(this)">−</button>
                   <button class="close-button" onclick="closeCard(this)">×</button>
                   <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.display_name}">
-                  <h2>${formatDisplayName(r.name)}</h2>
+                  <h2>${r.display_name}</h2>
                   <p class="type-line">Type: ${r.types.map(
                     t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`
                   ).join(' ')}</p>
@@ -819,6 +911,18 @@
                 currentPokemon = null;
                 localStorage.removeItem('pkmnCurrent');
                 // 3) Persist everything (historyList + dualMode)
+                saveState();
+              }
+
+              /**
+              * Move this card’s Pokémon into history,
+              * then remove it from the main-result area.
+              */
+              function minimizeCard(btn) {
+                const card = btn.closest('.result-card');
+                const data = JSON.parse(card.dataset.pokemon);
+                pushToHistory(data);
+                card.remove();
                 saveState();
               }
 
