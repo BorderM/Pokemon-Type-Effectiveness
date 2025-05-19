@@ -360,69 +360,70 @@
 
         <script>
         // Calculate once, at page load, the height of your fixed header
-        const HEADER_HEIGHT = document.querySelector('.fixed-header').offsetHeight;
+            const HEADER_HEIGHT = document.querySelector('.fixed-header').offsetHeight;
 
-        const FORMS_BY_BASE   = JSON.parse(document.getElementById('formsByBase').textContent);
-        const FORM_COLLAPSE_MAP = JSON.parse(document.getElementById('formCollapseMap').textContent);
+            const FORMS_BY_BASE   = JSON.parse(document.getElementById('formsByBase').textContent);
+            const FORM_COLLAPSE_MAP = JSON.parse(document.getElementById('formCollapseMap').textContent);
 
-        const SHORTEN_SECOND = new Set([
-        "blade","blue","normal","standard","three","incarnate","altered",
-        "average","ordinary","midday","family","disguised","full",
-        "droopy","amped","school","50"
-        ]);
+            const SHORTEN_SECOND = new Set([
+                "blade","blue","normal","standard","three","incarnate","altered",
+                "average","ordinary","family","disguised","full",
+                "droopy","school","50", "two"
+            ]);
 
-        const FULL_PRESERVE = new Set([
-            "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
-            "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
-            "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike"
-        ]);
+            const FULL_PRESERVE = new Set([
+                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
+                "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
+                "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike", "lycanroc-midday","lycanroc-midnight",
+                "lycanroc-dusk", "toxtricity-amped","toxtricity-low-key"
+            ]);
 
-        /**
-         * Turn any rawKey (what the user typed or what comes from your data)
-         * into the canonical form-key you have sprites/stats for.
-         */
-         function collapseKey(rawKey) {
-            const key = rawKey.toLowerCase().trim();
-            if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key];
-            if (FULL_PRESERVE.has(key))    return key;
-            const parts = key.split('-');
-            if (parts.length > 1 && SHORTEN_SECOND.has(parts[1])) return parts[0];
-            if (parts.length === 1 && FORMS_BY_BASE[parts[0]])  return FORMS_BY_BASE[parts[0]][0].key;
-            return key;
-        }
-
-        function formatDisplayName(key) {
-            if (FORM_COLLAPSE_MAP[key]) {
-                return FORM_COLLAPSE_MAP[key] === "Delete"
-                    ? ""
-                    : FORM_COLLAPSE_MAP[key];
+            /**
+             * Turn any rawKey (what the user typed or what comes from your data)
+             * into the canonical form-key you have sprites/stats for.
+             */
+            function collapseKey(rawKey) {
+                const key = rawKey.toLowerCase().trim();
+                if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key];
+                if (FULL_PRESERVE.has(key))    return key;
+                const parts = key.split('-');
+                if (parts.length > 1 && SHORTEN_SECOND.has(parts[1])) return parts[0];
+                if (parts.length === 1 && FORMS_BY_BASE[parts[0]])  return FORMS_BY_BASE[parts[0]][0].key;
+                return key;
             }
-            if (FULL_PRESERVE.has(key)) return key;
-            if (key.startsWith("tauros-paldea-") && key.endsWith("-breed")) {
-                return key.replace(/-breed$/, "");
+
+            function formatDisplayName(key) {
+                if (FORM_COLLAPSE_MAP[key]) {
+                    return FORM_COLLAPSE_MAP[key] === "Delete"
+                        ? ""
+                        : FORM_COLLAPSE_MAP[key];
+                }
+                if (FULL_PRESERVE.has(key)) return key;
+                if (key.startsWith("tauros-paldea-") && key.endsWith("-breed")) {
+                    return key.replace(/-breed$/, "");
+                }
+                const parts = key.split("-");
+                if (parts.length > 1) {
+                    if (SHORTEN_SECOND.has(parts[1])) return parts[0];
+                    return parts.slice(0,2).join("-");
+                }
+                return parts[0];
             }
-            const parts = key.split("-");
-            if (parts.length > 1) {
-                if (SHORTEN_SECOND.has(parts[1])) return parts[0];
-                return parts.slice(0,2).join("-");
+
+            /** Scroll `el` into view leaving a 16px gap below the header */
+            function scrollWithGap(el) {
+                const pageY   = window.scrollY || window.pageYOffset;
+                const elY     = el.getBoundingClientRect().top + pageY;
+                const targetY = elY - HEADER_HEIGHT - 16;  // 16px extra breathing room
+
+                window.scrollTo({ top: targetY, behavior: 'smooth' });
             }
-            return parts[0];
-        }
+            const LOCAL_STORAGE_KEY = 'activePokemonData';
 
-        /** Scroll `el` into view leaving a 16px gap below the header */
-        function scrollWithGap(el) {
-            const pageY   = window.scrollY || window.pageYOffset;
-            const elY     = el.getBoundingClientRect().top + pageY;
-            const targetY = elY - HEADER_HEIGHT - 16;  // 16px extra breathing room
+            let suggestionKeys = [];
+            let selectedIndex = -1;
 
-            window.scrollTo({ top: targetY, behavior: 'smooth' });
-        }
-        const LOCAL_STORAGE_KEY = 'activePokemonData';
-
-        let suggestionKeys = [];
-        let selectedIndex = -1;
-
-        async function handleInput(event) {
+            async function handleInput(event) {
                 const q   = event.target.value.trim().toLowerCase();
                 const box = event.target.parentElement.querySelector('.suggestions');
 
@@ -450,62 +451,62 @@
                 }
             }
 
-        function selectSuggestion(name) {
-            const input = document.getElementById('pokemon-input');
-            input.value = name;
-            input.parentElement.querySelector('.suggestions').style.display = 'none';
-            fetchPokemon();
-        }
-
-        function handleEnterKey(e) {
-            const box   = document.getElementById('suggestions');
-            const items = Array.from(box.querySelectorAll('li'));
-
-            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                e.preventDefault();
-                // move highlight
-                selectedIndex += (e.key === 'ArrowDown') ? 1 : -1;
-                selectedIndex = Math.max(0, Math.min(items.length - 1, selectedIndex));
-                items.forEach((li, i) => 
-                li.classList.toggle('highlighted', i === selectedIndex)
-                );
+            function selectSuggestion(name) {
+                const input = document.getElementById('pokemon-input');
+                input.value = name;
+                input.parentElement.querySelector('.suggestions').style.display = 'none';
+                fetchPokemon();
             }
-            else if (e.key === 'Enter') {
-                e.preventDefault();
-                box.style.display = 'none';
 
-                if (items.length) {
-                // pick the canon key you stored in suggestionKeys
-                const idx = selectedIndex >= 0 ? selectedIndex : 0;
-                selectSuggestion(suggestionKeys[idx]);
-                } else {
-                // no suggestions: do the page’s search call
-                // stats page calls fetchPokemon()
-                // typeeffectiveness page calls performSearch()
-                // evolutions page calls fetchPokemonData()
-                const page = window.location.pathname;
-                if (page.includes('stats')) {
-                    fetchPokemon();
-                } else if (page.includes('typeeffectiveness')) {
-                    performSearch();
-                } else {
-                    fetchPokemonData();
+            function handleEnterKey(e) {
+                const box   = document.getElementById('suggestions');
+                const items = Array.from(box.querySelectorAll('li'));
+
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    // move highlight
+                    selectedIndex += (e.key === 'ArrowDown') ? 1 : -1;
+                    selectedIndex = Math.max(0, Math.min(items.length - 1, selectedIndex));
+                    items.forEach((li, i) => 
+                    li.classList.toggle('highlighted', i === selectedIndex)
+                    );
                 }
+                else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    box.style.display = 'none';
+
+                    if (items.length) {
+                    // pick the canon key you stored in suggestionKeys
+                    const idx = selectedIndex >= 0 ? selectedIndex : 0;
+                    selectSuggestion(suggestionKeys[idx]);
+                    } else {
+                    // no suggestions: do the page’s search call
+                    // stats page calls fetchPokemon()
+                    // typeeffectiveness page calls performSearch()
+                    // evolutions page calls fetchPokemonData()
+                    const page = window.location.pathname;
+                    if (page.includes('stats')) {
+                        fetchPokemon();
+                    } else if (page.includes('typeeffectiveness')) {
+                        performSearch();
+                    } else {
+                        fetchPokemonData();
+                    }
+                    }
+                    // reset highlight
+                    selectedIndex = -1;
                 }
-                // reset highlight
-                selectedIndex = -1;
             }
-        }
 
-        function highlightSuggestion(suggestions) {
-            suggestions.forEach((suggestion, index) => {
-                if (index === selectedIndex) {
-                    suggestion.classList.add('highlighted');
-                } else {
-                    suggestion.classList.remove('highlighted');
-                }
-            });
-        }
+            function highlightSuggestion(suggestions) {
+                suggestions.forEach((suggestion, index) => {
+                    if (index === selectedIndex) {
+                        suggestion.classList.add('highlighted');
+                    } else {
+                        suggestion.classList.remove('highlighted');
+                    }
+                });
+            }
 
             function clearResults() {
                 const resultsDiv = document.getElementById('results');

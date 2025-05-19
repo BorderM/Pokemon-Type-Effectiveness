@@ -9,7 +9,30 @@ MASTER_CACHE_IN = os.path.join(SCRIPT_DIR, 'pokemon_cache.json')
 CACHE_OUT       = os.path.join(SCRIPT_DIR, 'processed_pokemon_cache.json')
 POKEAPI_BASE    = 'https://pokeapi.co/api/v2'
 
-# ── HELPERS ───────────────────────────────────────────────────────────────
+# ── COLLAPSE RULES ─────────────────────────────────────────────────────────
+# purely aesthetic suffixes to collapse away
+SHORTEN_SECOND = {
+    'blade','blue','normal','standard','three','incarnate','altered',
+    'average','ordinary','family','disguised','full','droopy','school','50','two'
+}
+# these forms must stay distinct (different stats/evo requirements)
+FULL_PRESERVE = {
+    "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
+    "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
+    "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike", "lycanroc-midday","lycanroc-midnight",
+    "lycanroc-dusk", "toxtricity-amped","toxtricity-low-key"
+}
+
+# collapse any raw name into canonical form-key
+def collapse_key(raw_key: str) -> str:
+    key = raw_key.lower().strip()
+    if key in FULL_PRESERVE:
+        return key
+    parts = key.split('-', 1)
+    if len(parts) == 2 and parts[1] in SHORTEN_SECOND:
+        return parts[0]
+    return key
+
 async def fetch_json(session, url):
     async with session.get(url) as r:
         r.raise_for_status()
@@ -40,7 +63,6 @@ def calculate_type_effectiveness(type_data_list):
     eff['normal_effective'] = list(all_types - set().union(*eff.values()))
     return eff
 
-# ── MAIN ─────────────────────────────────────────────────────────────────
 async def main():
     # 1) load or fetch /pokemon? list
     if os.path.exists(MASTER_CACHE_IN):
@@ -68,11 +90,12 @@ async def main():
 
         out = []
         for idx, p in enumerate(poke_list, 1):
-            name, url = p['name'], p['url']
+            raw_name, url = p['name'], p['url']
+            name = collapse_key(raw_name)
             try:
                 v = await fetch_json(sess, url)
             except Exception as e:
-                print(f"[ERROR] {name} fetch failed: {e}")
+                print(f"[ERROR] {raw_name} fetch failed: {e}")
                 continue
 
             stats = { s['stat']['name'].replace('-','_'): s['base_stat']
@@ -84,7 +107,7 @@ async def main():
             )
             eff = calculate_type_effectiveness(type_data)
 
-            disp = name.replace('-', ' ').title().replace(' ', '-')
+            disp = name.replace('-', ' ').title()
             out.append({
                 "name":          name,
                 "display_name":  disp,

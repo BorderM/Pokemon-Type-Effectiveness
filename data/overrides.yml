@@ -205,7 +205,7 @@ dewott:
     min_level: 36
     note: "Only evolves into Hisuian Samurott in the Hisui region."
 
-basculin-white-striped:
+basculin:
   - to: basculegion
     trigger: level-up
     note: "Evolves after losing at least 294 HP from recoil damage without fainting"
@@ -265,8 +265,8 @@ doublade:
     min_level: 35
     item: dusk-stone
 
-pumpkaboo-average:
-  - to: gourgeist-average
+pumpkaboo:
+  - to: gourgeist
     trigger: trade
 
 burmy: 

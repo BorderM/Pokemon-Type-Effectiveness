@@ -245,7 +245,9 @@ def get_pokemon_evolutions():
             'evolution_conditions': []
         }
         if evolves_from:
-            edge = next(e for e in EVOLUTIONS if e['from']==evolves_from and e['to']==name)
+            edge = next((e for e in EVOLUTIONS if e['from']==evolves_from and e['to']==name), None)
+            if not edge:
+                    return
             node['evolution_conditions'] = get_evolution_conditions([edge])
             if edge.get('note'):
                 node['note'] = edge['note']

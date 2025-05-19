@@ -187,14 +187,15 @@
 
             const SHORTEN_SECOND = new Set([
             "blade","blue","normal","standard","three","incarnate","altered",
-            "average","ordinary","midday","family","disguised","full",
-            "droopy","amped","school","50"
+            "average","ordinary","family","disguised","full",
+            "droopy","school","50", "two"
             ]);
 
             const FULL_PRESERVE = new Set([
                 "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
                 "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
-                "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike"
+                "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike", "lycanroc-midday","lycanroc-midnight",
+                "lycanroc-dusk", "toxtricity-amped","toxtricity-low-key"
             ]);
 
             /**
@@ -207,7 +208,9 @@
                 if (FULL_PRESERVE.has(key))    return key;
                 const parts = key.split('-');
                 if (parts.length > 1 && SHORTEN_SECOND.has(parts[1])) return parts[0];
-                if (parts.length === 1 && FORMS_BY_BASE[parts[0]])  return FORMS_BY_BASE[parts[0]][0].key;
+                if (parts.length === 1) {
+                    return parts[0];
+                }
                 return key;
             }
 
