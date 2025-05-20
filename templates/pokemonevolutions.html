@@ -181,14 +181,59 @@
         <script id="formCollapseMap" type="application/json">
             {{ collapse_map       | tojson | safe }}
         </script>
+        <script id="processedCache" type="application/json">
+            {{ processed_cache_json|safe }}
+        </script>
+        <script id="evolutionsData" type="application/json">
+            {{ evolutions_json     |safe }}
+        </script>
         <script>
-            const FORMS_BY_BASE   = JSON.parse(document.getElementById('formsByBase').textContent);
-            const FORM_COLLAPSE_MAP = JSON.parse(document.getElementById('formCollapseMap').textContent);
+            const FORM_COLLAPSE_MAP  = JSON.parse(document.getElementById('formCollapseMap').textContent);
+            const FORMS_BY_BASE      = JSON.parse(document.getElementById('formsByBase'     ).textContent);
+            const EVOLUTIONS         = JSON.parse(document.getElementById('evolutionsData').textContent);
+
+            // ③ build your evolutions‐by‐source map:
+            const EVOLUTIONS_BY_FROM = {};
+            for (const e of EVOLUTIONS) {
+                EVOLUTIONS_BY_FROM[e.from] = EVOLUTIONS_BY_FROM[e.from] || [];
+                EVOLUTIONS_BY_FROM[e.from].push(e);
+            }
+            
+            function selectSuggestion(name) {
+                const input = document.getElementById('pokemon-search');
+                input.value = name;
+                const box = document.getElementById('suggestions');
+                box.style.display = 'none';
+                fetchPokemonData();
+            }
+
+
+            // ② fetch & index your processed cache.json just once:
+            let PROCESSED_CACHE = {};     // name → full record
+            let COLLAPSED_TO_FORMS = {};  // inverse of FORM_COLLAPSE_MAP
+            fetch('/static/processed_pokemon_cache.json')
+            .then(r => r.json())
+            .then(list => {
+                for (const p of list) {
+                PROCESSED_CACHE[p.name] = p;
+                }
+                for (const raw of Object.keys(FORM_COLLAPSE_MAP)) {
+                const canon = FORM_COLLAPSE_MAP[raw] || raw;
+                COLLAPSED_TO_FORMS[canon] = COLLAPSED_TO_FORMS[canon] || [];
+                if (!COLLAPSED_TO_FORMS[canon].includes(raw)) {
+                    COLLAPSED_TO_FORMS[canon].push(raw);
+                }
+                }
+            });
+
+
+            // ④ tell your collapseKey helper what mode we’re in:
+            const CURRENT_MODE = 'evolutions';
 
             const SHORTEN_SECOND = new Set([
-            "blade","blue","normal","standard","three","incarnate","altered",
-            "average","ordinary","family","disguised","full",
-            "droopy","school","50", "two"
+                "blade","blue","normal","standard","three","incarnate","altered",
+                "average","ordinary","family","disguised","full",
+                "droopy","school","50", "two", "white", "male", "female", "two-segment","three-segment"
             ]);
 
             const FULL_PRESERVE = new Set([
@@ -204,15 +249,40 @@
              */
             function collapseKey(rawKey) {
                 const key = rawKey.toLowerCase().trim();
+                // 1) first apply any hard override from FORM_COLLAPSE_MAP:
                 if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key];
-                if (FULL_PRESERVE.has(key))    return key;
+
+                // 2) FULL_PRESERVE are never collapsed:
+                if (FULL_PRESERVE.has(key)) return key;
+
+                // get “sibling” forms of this canonical
+                const canon = key.split('-',1)[0];
+                const siblings = FORMS_BY_BASE[canon] || [key];
+
+                // MODE-SPECIFIC checks:
+                if (CURRENT_MODE === 'typeeffectiveness') {
+                    const sig = new Set(siblings.map(f => PROCESSED_CACHE[f].types.join(',')));
+                    if (sig.size > 1) return key;   // different typings → don’t collapse
+                }
+                if (CURRENT_MODE === 'stats') {
+                    const sig = new Set(siblings.map(f => JSON.stringify(PROCESSED_CACHE[f].stats)));
+                    if (sig.size > 1) return key;   // different stats → don’t collapse
+                }
+                if (CURRENT_MODE === 'evolutions') {
+                    // compare evolution‐method signatures for each sibling
+                    const sig = new Set(
+                        (EVOLUTIONS_BY_FROM[canon]||[]).map(e=>[e.to,e.trigger].join('|')).sort());
+                    if (sig.size>1) return key;
+
+                // 3) cosmetic suffix collapse:
                 const parts = key.split('-');
                 if (parts.length > 1 && SHORTEN_SECOND.has(parts[1])) return parts[0];
-                if (parts.length === 1) {
-                    return parts[0];
-                }
+
+                // 4) default form if you typed only the species:
+                if (parts.length === 1) return parts[0];
+
                 return key;
-            }
+                }
 
             function formatDisplayName(key) {
                 if (FORM_COLLAPSE_MAP[key]) {
@@ -278,6 +348,16 @@
                 const data = await response.json();
 
                 document.getElementById('progress-bar-container').classList.add('hidden');
+
+                // 2) Build a quick lookup by “from” key:
+                window.EVOLUTIONS_BY_FROM = {};
+                data.forEach(e => {
+                    EVOLUTIONS_BY_FROM[e.from] = EVOLUTIONS_BY_FROM[e.from]||[];
+                    EVOLUTIONS_BY_FROM[e.from].push(e);
+                });
+
+                displayResults(data);
+                }
 
                 if (response.ok) {
                     displayResults(data);

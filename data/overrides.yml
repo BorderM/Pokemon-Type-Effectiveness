@@ -208,7 +208,7 @@ dewott:
 basculin:
   - to: basculegion
     trigger: level-up
-    note: "Evolves after losing at least 294 HP from recoil damage without fainting"
+    note: "Basculin White Striped evolves after losing at least 294 HP from recoil damage without fainting"
 
 nincada: 
   - to: shedinja

@@ -5,10 +5,22 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-# 1) load FORMS exactly as you do in app.py
-BASE = os.path.dirname(__file__)
-with open(os.path.join(BASE, 'forms.json'), encoding='utf-8') as f:
-    FORMS = json.load(f)
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+CACHE = os.path.join(ROOT, 'processed_pokemon_cache.json')
+with open(CACHE, encoding='utf-8') as f:
+    data = json.load(f)
+
+FORMS = []
+for entry in data:
+    species = entry.get('species') or entry['name'].split('-, 1')[0]  
+    form_name = entry.get('form_name') or (entry['name'].split('-',1)[1] if '-' in entry['name'] else '')
+    FORMS.append({
+        'key':        entry['name'],
+        'species':    species,
+        'form_name':  form_name,
+        'sprite_url': entry.get('sprite_url',''),
+        'pokeapi_id': entry.get('id'),
+    })
 
 FORM_COLLAPSE_MAP = {
     "abomasnow-mega": "abomasnow-mega",
@@ -157,9 +169,9 @@ FORM_COLLAPSE_MAP = {
     "lopunny-mega": "lopunny-mega",
     "lucario-mega": "lucario-mega",
     "lurantis-totem": "Delete",
-    "lycanroc-dusk": "lycanroc-midday",
+    "lycanroc-dusk": "lycanroc-dusk",
     "lycanroc-midday": "lycanroc-midday",
-    "lycanroc-midnight": "lycanroc-midday",
+    "lycanroc-midnight": "lycanroc-midnight",
     "machamp-gmax": "machamp",
     "magearna-original": "Magearna",
     "manectric-mega": "manectric-mega",

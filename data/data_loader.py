@@ -1,241 +1,150 @@
 #!/usr/bin/env python3
-import re, yaml, json, os, sys, requests
+import re
+import yaml
+import json
+import os
+import requests
 from collections import defaultdict
-from pokeapi_client import fetch_form_metadata, fetch_evolution_chain, flatten_chain
+from pokeapi_client import fetch_evolution_chain, flatten_chain
 from config import POKEAPI_BASE_URL
 
-COLLAPSE_MAP = json.load(open(os.path.join(os.path.dirname)))
-
-# --------------------------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 # CONFIG & PATHS
-# --------------------------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 SCRIPT_DIR     = os.path.dirname(__file__)
 PROJECT_ROOT   = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir))
-CACHE_PATH     = os.path.join(PROJECT_ROOT, 'pokemon_cache.json')
+PROCESSED_CACHE_PATH = os.path.join(PROJECT_ROOT, 'processed_pokemon_cache.json')
 DATA_DIR       = os.path.join(PROJECT_ROOT, 'data')
 OVERRIDES_PATH = os.path.join(DATA_DIR, 'overrides.yml')
-OUTPUT_FORMS   = os.path.join(DATA_DIR, 'forms.json')
 OUTPUT_EVO     = os.path.join(DATA_DIR, 'evolutions.json')
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# suffixes we consider “regional variants”
-SUFFIXES  = ['alola','alolan','galar','galarian','hisui','hisuian','paldea','paldean']
-_SUFFIX_RE = re.compile(r'^(.+)-(' + '|'.join(SUFFIXES) + r')$')
+# which suffixes we treat as “regional variants”
+SUFFIXES    = ['alola','alolan','galar','galarian','hisui','hisuian','paldea','paldean']
+_SUFFIX_RE  = re.compile(r'^(.+)-(' + '|'.join(SUFFIXES) + r')$')
 
 def get_base(name: str) -> str:
-    """
-    Strip off our known regional suffixes (alola, galar, etc.).
-    Leave everything else—e.g. ho-oh, mr-mime—alone.
-    """
+    """ Strip off any of our known regional suffixes """
     m = _SUFFIX_RE.match(name)
     return m.group(1) if m else name
 
-# --------------------------------------------------------------------------------------------------
-# 0) Load your master cache
-# --------------------------------------------------------------------------------------------------
-raw = json.load(open(CACHE_PATH, encoding='utf-8'))
-if isinstance(raw, dict) and 'results' in raw:
-    cache_entries = raw['results']
-elif isinstance(raw, dict) and all(isinstance(v, str) for v in raw.values()):
-    cache_entries = [{'name': k, 'url': v} for k, v in raw.items()]
-elif isinstance(raw, list):
-    cache_entries = raw
-else:
-    raise ValueError("Invalid pokemon_cache.json format")
+# ─────────────────────────────────────────────────────────────────────────────
+# 0) Load your processed cache (contains *every* form already)
+# ─────────────────────────────────────────────────────────────────────────────
+processed = json.load(open(PROCESSED_CACHE_PATH, encoding='utf-8'))
 
-# --------------------------------------------------------------------------------------------------
-# 1) Build forms.json (with species_id + evolution_chain_id)
-# --------------------------------------------------------------------------------------------------
-print("⟳ Building forms list…")
-forms = []
+# group every form name by its “base species”
+species_to_forms = defaultdict(list)
+all_forms = set()
+for entry in processed:
+    form = entry['form']             # e.g. "aegislash-shield"
+    species = get_base(form)         # e.g. "aegislash"
+    species_to_forms[species].append(form)
+    all_forms.add(form)
 
-for entry in cache_entries:
-    key     = entry['name']
-    species = get_base(key)
-
-    # 1. fetch the /pokemon/{key} to get its true species URL
+# ─────────────────────────────────────────────────────────────────────────────
+# 1) For each species, fetch its evolution_chain_id
+# ─────────────────────────────────────────────────────────────────────────────
+species_meta = {}
+for species, forms in species_to_forms.items():
     try:
-        p_resp = requests.get(f"{POKEAPI_BASE_URL}/pokemon/{key}", timeout=10)
-        p_resp.raise_for_status()
-        pj = p_resp.json()
-        poke_id = pj['id']
+        spj = requests.get(
+            f"{POKEAPI_BASE_URL}/pokemon-species/{species}"
+        , timeout=10).json()
+        chain_url = spj.get('evolution_chain',{}).get('url')
+        cid = int(chain_url.rstrip('/').split('/')[-1]) if chain_url else None
+    except Exception:
+        cid = None
+    species_meta[species] = cid
 
-        # 2. fetch that species to get species_id and chain
-        sp_url = pj['species']['url']
-        sp_resp = requests.get(sp_url, timeout=10)
-        sp_resp.raise_for_status()
-        spj = sp_resp.json()
-        species_id = spj['id']
-        chain_url = spj.get('evolution_chain', {}).get('url')
-        evo_chain_id = (
-            int(chain_url.rstrip('/').split('/')[-1])
-            if chain_url else None
-        )
-    except Exception as ex:
-        print(f"  [warn] fetching /pokemon or /species for {key} → {ex}")
-        poke_id = None
-        species_id = None
-        evo_chain_id = None
-
-    meta      = fetch_form_metadata(key)
-    form_name = (meta.get('form_name') or '').strip().lower()
-    # skip pure cosmetic forms
-    if form_name.endswith(" size") or form_name in ("male","female"):
-        continue
-
-    forms.append({
-        'key':                key,
-        'species':            species,
-        'form_name':          meta.get('form_name',''),
-        'sprite_url':         f"/static/sprites/{key}.png",
-        'pokeapi_id':         poke_id,
-        'species_id':         species_id,
-        'evolution_chain_id': evo_chain_id
-    })
-
-# 1a) Ensure every species-group has a "base" entry
-species_groups = defaultdict(list)
-for f in forms:
-    species_groups[f['species']].append(f)
-
-existing_keys = {f['key'] for f in forms}
-for sp, group in species_groups.items():
-    if sp not in existing_keys:
-        default = next((f for f in group if not f['form_name']), group[0])
-        forms.append({
-            'key':                sp,
-            'species':            sp,
-            'form_name':          '',
-            'sprite_url':         default['sprite_url'],
-            'pokeapi_id':         default['pokeapi_id'],
-            'species_id':         default['species_id'],
-            'evolution_chain_id': default['evolution_chain_id']
-        })
-        existing_keys.add(sp)
-
-# 1b) Cover any raw species skipped entirely (pumpkaboo, basculin, etc.)
-raw_species = {get_base(e['name']) for e in cache_entries}
-for sp in raw_species - existing_keys:
-    entry = next(e for e in cache_entries if get_base(e['name']) == sp)
-    pid   = int(entry['url'].rstrip('/').split('/')[-1])
-    forms.append({
-        'key':                sp,
-        'species':            sp,
-        'form_name':          '',
-        'sprite_url':         f"/static/sprites/{sp}.png",
-        'pokeapi_id':         pid,
-        'species_id':         pid,
-        'evolution_chain_id': None
-    })
-    existing_keys.add(sp)
-
-form_keys = set(existing_keys)
-
-with open(OUTPUT_FORMS, 'w', encoding='utf-8') as fp:
-    json.dump(forms, fp, indent=2)
-print(f"✔ Wrote {len(forms)} forms → {OUTPUT_FORMS}")
-
-
-# --------------------------------------------------------------------------------------------------
-# 2a) Pull every unique species‐level evolution chain
-# --------------------------------------------------------------------------------------------------
-print("⟳ Building evolution chains from PokeAPI…")
+# ─────────────────────────────────────────────────────────────────────────────
+# 2a) Flatten every *species*-level chain into edges
+# ─────────────────────────────────────────────────────────────────────────────
 species_edges = []
-chain_ids = {f['evolution_chain_id'] for f in forms if f.get('evolution_chain_id')}
+chain_ids = {cid for cid in species_meta.values() if cid}
 for cid in sorted(chain_ids):
     try:
         chain = fetch_evolution_chain(cid).chain
-    except Exception as ex:
-        print(f"  [skip chain {cid}]: error → {ex}")
+    except Exception:
         continue
-    for edge in flatten_chain(chain):
-        # only species‐level names here
-        if edge['from'] in form_keys and edge['to'] in form_keys:
-            species_edges.append(edge)
+    for e in flatten_chain(chain):
+        # only keep it if *both* endpoints are base-species we know
+        if e['from'] in species_to_forms and e['to'] in species_to_forms:
+            species_edges.append(e)
 
-print(f"↳ Collected {len(species_edges)} species‐edges from {len(chain_ids)} chains")
+print(f"↳ Collected {len(species_edges)} species‐level edges")
 
-
-# --------------------------------------------------------------------------------------------------
-# 2b) Expand to form‐level: default→default + regional→regional
-# --------------------------------------------------------------------------------------------------
-print("⟳ Expanding species-edges to forms…")
-REGIONAL = {'alola','galar','hisui'}
-forms_by_species = defaultdict(list)
-for f in forms:
-    forms_by_species[f['species']].append(f['key'])
-
-all_edges = []
+# ─────────────────────────────────────────────────────────────────────────────
+# 2b) Expand those to *form*-level (propagate region suffixes)
+# ─────────────────────────────────────────────────────────────────────────────
+REGIONAL = set(SUFFIXES)
+form_edges = []
 for e in species_edges:
     sp_from, sp_to = e['from'], e['to']
 
     # default→default
-    all_edges.append(e.copy())
+    form_edges.append({ **e })  
 
-    # and propagate any regional suffix present
-    for frm in forms_by_species[sp_from]:
-        if frm == sp_from or '-' not in frm:
+    # and for each regional form of `sp_from`, if same suffix exists on sp_to
+    for frm in species_to_forms[sp_from]:
+        if '-' not in frm: 
             continue
         suffix = frm.split('-',1)[1]
         if suffix not in REGIONAL:
             continue
         tof = f"{sp_to}-{suffix}"
-        if tof in forms_by_species[sp_to]:
-            ne = e.copy()
-            ne['from'] = frm
-            ne['to']   = tof
-            all_edges.append(ne)
+        if tof in species_to_forms[sp_to]:
+            ne = { **e, 'from': frm, 'to': tof }
+            form_edges.append(ne)
 
-print(f"↳ Expanded to {len(all_edges)} form‐edges")
+print(f"↳ Expanded to {len(form_edges)} form‐level edges")
 
-
-# --------------------------------------------------------------------------------------------------
-# 3) Apply overrides.yml
-# --------------------------------------------------------------------------------------------------
-print("⟳ Applying overrides…")
-raw_ov = yaml.safe_load(open(OVERRIDES_PATH)) or {}
+# ─────────────────────────────────────────────────────────────────────────────
+# 3) Load & apply your manual overrides.yml
+# ─────────────────────────────────────────────────────────────────────────────
+overrides_raw = yaml.safe_load(open(OVERRIDES_PATH)) or {}
+# normalize keys to lower-case
 overrides = {
     frm.lower(): [
-        {k:(v.lower() if isinstance(v,str) else v) for k,v in m.items()}
+        { k:(v.lower() if isinstance(v,str) else v) for k,v in m.items() }
         for m in methods
     ]
-    for frm, methods in raw_ov.items()
+    for frm, methods in overrides_raw.items()
 }
 
-for o in overrides:
-    if o not in form_keys:
-        print(f"  [⚠️] override for “{o}” but no such form-key found")
+# 3a) drop any API edge that *exactly* matches an override
+def matches_override(edge, ov):
+    if edge['to'] != ov['to']:
+        return False
+    for fld,val in ov.items():
+        if fld == 'to': continue
+        if edge.get(fld) != val:
+            return False
+    return True
 
-# drop fully‐overridden edges
-filtered = []
-for e in all_edges:
+cleaned = []
+for e in form_edges:
     methods = overrides.get(e['from'], [])
-    if any(
-        e['to']==m['to'] and all(e.get(f)==m.get(f) for f in m if f!='to')
-        for m in methods
-    ):
+    if any(matches_override(e, m) for m in methods):
         continue
-    filtered.append(e)
-all_edges = filtered
+    cleaned.append(e)
+form_edges = cleaned
 
-# inject *all* overrides
+# 3b) inject *all* overrides
 for frm, methods in overrides.items():
     for m in methods:
-        edge = {'from':frm,'to':m['to']}
-        for fld in [
-            'trigger','min_level','item','min_happiness','min_beauty','gender',
-            'time_of_day','location','held_item','known_move','known_move_type',
-            'party_species','party_type','relative_physical_stats','trade_species','note'
-        ]:
+        edge = {'from': frm, 'to': m['to']}
+        for fld in ['trigger','min_level','item','min_happiness','min_beauty',
+                    'gender','time_of_day','location','held_item','known_move',
+                    'known_move_type','party_species','party_type',
+                    'relative_physical_stats','trade_species','note']:
             edge[fld] = m.get(fld)
-        all_edges.append(edge)
+        form_edges.append(edge)
 
-
-# --------------------------------------------------------------------------------------------------
-# 4) Deduplicate by trigger priority & write out
-# --------------------------------------------------------------------------------------------------
-print("⟳ Deduplicating edges…")
+# ─────────────────────────────────────────────────────────────────────────────
+# 4) Deduplicate by trigger‐priority & write out
+# ─────────────────────────────────────────────────────────────────────────────
 priority = {
     'level-up-day':   5,
     'level-up-night': 5,
@@ -246,24 +155,24 @@ priority = {
     'other':          1
 }
 best = {}
-for e in all_edges:
-    k  = (e['from'], e['to'])
-    sc = priority.get(e.get('trigger'), 0)
-    prev = best.get(k)
-    if not prev or sc > priority.get(prev['trigger'], 0):
-        best[k] = e
+for e in form_edges:
+    key   = (e['from'], e['to'])
+    score = priority.get(e.get('trigger','other'), 0)
+    prev  = best.get(key)
+    if not prev or score > priority.get(prev['trigger'],0):
+        best[key] = e
 
-fields = [
-    'from','to','trigger','item','min_level','time_of_day','location','held_item',
-    'known_move','known_move_type','min_happiness','min_beauty',
-    'relative_physical_stats','party_species','party_type','trade_species','gender'
-]
 final = []
+fields = ['from','to','trigger','item','min_level','time_of_day','location',
+          'held_item','known_move','known_move_type','min_happiness',
+          'min_beauty','relative_physical_stats','party_species','party_type',
+          'trade_species','gender','note']
 for e in best.values():
-    for f in fields + ['note']:
+    for f in fields:
         e.setdefault(f, None)
     final.append(e)
 
 with open(OUTPUT_EVO, 'w', encoding='utf-8') as fp:
     json.dump(final, fp, indent=2)
+
 print(f"✔ Wrote {len(final)} edges → {OUTPUT_EVO}")

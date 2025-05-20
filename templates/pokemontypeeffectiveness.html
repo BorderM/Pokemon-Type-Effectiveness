@@ -397,6 +397,26 @@
           {{ collapse_map | tojson | safe }}
         </script>
         <script>
+              let PROCESSED_CACHE = {};      // name → full record
+              let COLLAPSED_TO_FORMS = {};
+              CURRENT_MODE = 'typeeffectiveness'
+
+              // Fetch the JSON on page‐load
+              fetch('/static/processed_pokemon_cache.json')
+              .then(r=>r.json())
+              .then(list => {
+                  for (const p of list) {
+                  PROCESSED_CACHE[p.name] = p;
+                  }
+                  // build the inverse of your collapse‐map
+                  for (const raw of Object.keys(FORM_COLLAPSE_MAP)) {
+                  const canon = FORM_COLLAPSE_MAP[raw] || raw;
+                  COLLAPSED_TO_FORMS[canon] = COLLAPSED_TO_FORMS[canon] || [];
+                  if (!COLLAPSED_TO_FORMS[canon].includes(raw)) {
+                      COLLAPSED_TO_FORMS[canon].push(raw);
+                  }
+                  }
+              });
               const MAX_HISTORY = 9;
               // — state & persistence —
               let historyList = [];
@@ -415,7 +435,7 @@
               const SHORTEN_SECOND = new Set([
                 "blade","blue","normal","standard","three","incarnate","altered",
                 "average","ordinary","family","disguised","full",
-                "droopy","school","50","two"
+                "droopy","school","50", "two", "white", "two-segment","three-segment"
               ]);
 
               const FULL_PRESERVE = new Set([
@@ -425,36 +445,44 @@
                 "lycanroc-dusk", "toxtricity-amped","toxtricity-low-key"
               ]);
 
-              /**
-               * Turn any rawKey (what the user typed or what comes from your data)
-               * into the canonical form-key you have sprites/stats for.
-               */
               function collapseKey(rawKey) {
                 const key = rawKey.toLowerCase().trim();
+                // 1) first apply any hard override from FORM_COLLAPSE_MAP:
+                if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key];
 
-                // 1) Python overrides
-                if (FORM_COLLAPSE_MAP[key]) {
-                  return FORM_COLLAPSE_MAP[key];
+                // 2) FULL_PRESERVE are never collapsed:
+                if (FULL_PRESERVE.has(key)) return key;
+
+                // get “sibling” forms of this canonical
+                const canon = key.split('-',1)[0];
+                const siblings = FORMS_BY_BASE[canon] || [key];
+
+                // MODE-SPECIFIC checks:
+                if (CURRENT_MODE === 'typeeffectiveness') {
+                  const sig = new Set(siblings.map(f => PROCESSED_CACHE[f].types.join(',')));
+                  if (sig.size > 1) return key;   // different typings → don’t collapse
+                }
+                if (CURRENT_MODE === 'stats') {
+                  const sig = new Set(siblings.map(f => JSON.stringify(PROCESSED_CACHE[f].stats)));
+                  if (sig.size > 1) return key;   // different stats → don’t collapse
+                }
+                if (CURRENT_MODE === 'evolutions') {
+                  // compare evolution‐method signatures for each sibling
+                  const sig = new Set(siblings.map(f => {
+                    const evs = EVOLUTIONS_BY_FROM[f] || [];
+                    // stringify the sorted list of (to,trigger) pairs:
+                    return JSON.stringify(evs.map(e=>[e.to,e.trigger]).sort());
+                  }));
+                  if (sig.size > 1) return key;   // some form evolves differently → keep distinct
                 }
 
-                // 2) fully preserve exotic forms
-                if (FULL_PRESERVE.has(key)) {
-                  return key;
-                }
-
-                // 3) drop cosmetic second chunk (blade, shield…)
+                // 3) cosmetic suffix collapse:
                 const parts = key.split('-');
-                if (parts.length > 1 && SHORTEN_SECOND.has(parts[1])) {
-                  return parts[0];
-                }
+                if (parts.length > 1 && SHORTEN_SECOND.has(parts[1])) return parts[0];
 
-                // 4) if they gave just a species, pick your default form from FORMS_BY_BASE
-                if (parts.length === 1 && FORMS_BY_BASE[parts[0]]) {
-                  // e.g. user typed "aegislash" → pick "aegislash-shield" (or whichever is first)
-                  return FORMS_BY_BASE[parts[0]][0].key;
-                }
+                // 4) default form if you typed only the species:
+                if (parts.length === 1) return parts[0];
 
-                // 5) fallback to whatever we have (may be invalid)
                 return key;
               }
 
@@ -518,9 +546,9 @@
 
               function loadState() {
                 // 1) restory history
-                const histRaw = localStorage.getItem('pkmnHistory')
+                const histRaw = localStorage.getItem('pkmnHistory');
                 if (histRaw) {
-                  historyList = JSON.parse(histRaw)
+                  historyList = JSON.parse(histRaw);
                   historyList = historyList.slice(0, MAX_HISTORY);
                   historyList.forEach(r => renderHistoryEntry(r));
                 }
@@ -566,7 +594,6 @@
 
               // — render the main result card —
               function renderMainCard(r) {
-                saveState();
                 const sec = document.getElementById('main-result');
                 // in single‐mode we clear; in dual‐mode we just append (and later evict if >2)
                 if (!dualMode) {
@@ -579,6 +606,7 @@
                 if (dualMode && sec.children.length > 2) {
                 sec.removeChild(sec.children[0]);
                 }
+                saveState();
                 scrollWithGap(card);
               }
 
