@@ -721,24 +721,26 @@
                 const box = event.target.parentElement.querySelector('.suggestions');
 
                 if (q.length > 1) {
-                    const data = await (await fetch(
-                    `/api/pokemon/suggestions?query=${encodeURIComponent(q)}`
-                    )).json();
+                    // 1) fetch raw form-keys from the server
+                    const { suggestions: rawSuggestions } = await (await fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(q)}`)).json();
 
-                    // collapse+dedupe into suggestionKeys
-                    suggestionKeys = Array.from(
-                    new Set(data.suggestions.map(s => collapseKey(s)))
-                    );
+                    // 2) collapse them down to canonical buckets
+                    const canonical = Array.from(new Set(rawSuggestions.map(s => collapseKey(s))));
 
-                    // render the dropdown
-                    box.innerHTML = suggestionKeys
-                    .map(key =>
-                      `<li onclick="selectSuggestion('${key}')">${formatDisplayName(key)}</li>`
-                    )
-                    .join('');
+                    // 3) for each bucket, pick the one real form that actually evolves
+                    const rawReps = canonical.map(c => pickRepresentative(c));
+
+                    // stash these raw keys so arrow-up/down + enter will pick the correct one
+                    suggestionKeys = rawReps;
+
+                    // 4) render the dropdown with one <li> per bucket
+                    box.innerHTML = canonical.map((c, i) =>
+                      `<li onclick="selectSuggestion('${rawReps[i]}')">${formatDisplayName(c)}</li>`).join('');
+
                     box.style.display = suggestionKeys.length ? 'block' : 'none';
                     selectedIndex = -1;
-                } else {
+                }
+                else {
                     box.style.display = 'none';
                     suggestionKeys = [];
                 }

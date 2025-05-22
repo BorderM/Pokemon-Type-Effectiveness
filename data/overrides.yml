@@ -265,8 +265,8 @@ doublade:
     min_level: 35
     item: dusk-stone
 
-pumpkaboo:
-  - to: gourgeist
+pumpkaboo-average:
+  - to: gourgeist-average
     trigger: trade
 
 burmy: 

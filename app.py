@@ -11,6 +11,7 @@ import logging
 import yaml
 from aiohttp import ClientTimeout
 from asgiref.wsgi import WsgiToAsgi
+from collections import defaultdict
 
 # ─── CONFIG ──────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO,
@@ -216,15 +217,20 @@ def page_natures():
 
 @app.route('/evolutions')
 def evolution():
-    with open(get_resource_path('processed_pokemon_cache.json')) as f:
-        processed = json.load(f)
+    # load processed cache
+    proc_path = PCACHE
+    try:
+        with open(proc_path, 'r', encoding='utf-8') as f:
+            processed = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        processed = []
+
     return render_template(
-      'pokemonevolutions.html',
-      collapse_map=json.dumps(FORM_COLLAPSE_MAP),
-      forms_by_base_json=json.dumps(FORMS_BY_BASE),
-      # only if you want to inline it instead of fetching /static/…
-      processed_cache_json=json.dumps(processed),
-      evolutions_json=json.dumps(EVOLUTIONS)
+        'pokemonevolutions.html',
+        collapse_map=json.dumps(FORM_COLLAPSE_MAP),
+        forms_by_base_json=json.dumps(FORMS_BY_BASE),
+        processed_cache_json=json.dumps(processed),
+        evolutions_json=json.dumps(EVOLUTIONS)
     )
 
 @app.route('/api/pokemon/info')
@@ -250,22 +256,28 @@ async def api_info():
 
 @app.route('/api/pokemon/suggestions')
 def suggestions():
-    q = request.args.get('query','').strip().lower()
-    if not q:
-        return jsonify({'suggestions': []})
+    q = request.args.get('query','').lower()
+    # 1) find all raw form-keys whose display_name matches
+    raw = [k for k,v in FORM_BY_KEY.items()
+           if q in v['display_name'].lower()]
 
-    seen = set()
-    outs = []
-    # simple substring‐match against the raw 'name' field
-    for p in PROCESSED:
-        name = p['name']
-        if q in name and name not in seen:
-            seen.add(name)
-            outs.append(name)
-            if len(outs) >= 10:
-                break
+    # 2) bucket them by collapsed base (resolve_form_key strips suffixes/overrides)
+    buckets = defaultdict(list)
+    for form_key in raw:
+        base = resolve_form_key(form_key)
+        buckets[base].append(form_key)
 
-    return jsonify({'suggestions': outs})
+    # 3) for each base, pick the one raw form that actually has evolutions
+    suggestions = []
+    for base, forms in buckets.items():
+        # find a form with at least one direct evolution
+        rep = next((f for f in forms if get_direct_evolutions(f)), forms[0])
+        suggestions.append({
+            'display': FORM_BY_KEY[rep]['display_name'],
+            'key':       rep
+        })
+
+    return jsonify(suggestions=suggestions)
 
 @app.route('/api/pokemon/evolutions')
 def api_evo():
