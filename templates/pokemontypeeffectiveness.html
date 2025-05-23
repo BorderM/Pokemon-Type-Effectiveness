@@ -435,7 +435,7 @@
               const SHORTEN_SECOND = new Set([
                 "blade","blue","normal","standard","three","incarnate","altered",
                 "average","ordinary","family","disguised","full",
-                "droopy","school","50", "two", "white", "two-segment","three-segment"
+                "droopy","school","50", "two", "white", "two-segment","three-segment", "plant"
               ]);
 
               const FULL_PRESERVE = new Set([
@@ -446,9 +446,12 @@
               ]);
 
               function collapseKey(rawKey) {
+                if (typeof rawKey !== 'string') {
+                  return rawKey;
+                }
                 const key = rawKey.toLowerCase().trim();
                 // 1) first apply any hard override from FORM_COLLAPSE_MAP:
-                if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key];
+                if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key][0];
 
                 // 2) FULL_PRESERVE are never collapsed:
                 if (FULL_PRESERVE.has(key)) return key;
@@ -484,6 +487,13 @@
                 if (parts.length === 1) return parts[0];
 
                 return key;
+              }
+
+              function pickRepresentative(canon) {
+                const forms = COLLAPSED_TO_FORMS[canon] || [canon];
+                // You can refine this to pick the first with the right property,
+                // but as a fallback, just return the first form in the list:
+                return forms[0];
               }
 
               function formatDisplayName(key) {

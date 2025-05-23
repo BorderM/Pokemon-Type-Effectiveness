@@ -223,17 +223,17 @@ espurr:
 
 rockruff:  
   - to: lycanroc-midday  
-    trigger: level-up-day
+    trigger: level-up-during-day
     min_level: 25 
     time_of_day: day  
     note: "Ability must be Keen Eye, Vital Spirit, or Steadfast"  
   - to: lycanroc-midnight  
-    trigger: level-up-night  
+    trigger: level-up-during-night  
     min_level: 25 
     time_of_day: night  
     note: "Ability must be Keen Eye, Vital Spirit, or Steadfast"  
   - to: lycanroc-dusk  
-    trigger: level-up-dusk   
+    trigger: level-up-during-evening   
     min_level: 25 
     time_of_day: evening  
     note: "Ability must be Own Tempo"  
@@ -256,11 +256,11 @@ toxel:
     note: "Nature must be one of Lonely, Bold, Relaxed, Timid, Serious, Modest, Mild, Quiet, Bashful, Calm, Gentle, or Careful."
 
 doublade:
-  - to: Aegislash-shield
+  - to: aegislash-shield
     trigger: use-item
     min_level: 35
     item: dusk-stone
-  - to: Aegislash-blade
+  - to: aegislash-blade
     trigger: use-item
     min_level: 35
     item: dusk-stone
@@ -270,7 +270,7 @@ pumpkaboo-average:
     trigger: trade
 
 burmy: 
-  - to: wormadam-plant
+  - to: wormadam
     trigger: level-up
     min_level: 20
     gender: female

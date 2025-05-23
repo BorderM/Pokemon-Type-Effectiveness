@@ -10080,7 +10080,7 @@
     "note": "only evolves into hisuian samurott in the hisui region."
   },
   {
-    "from": "basculin",
+    "from": "basculin-white-striped",
     "to": "basculegion",
     "trigger": "level-up",
     "min_level": null,
@@ -10122,7 +10122,7 @@
   {
     "from": "rockruff",
     "to": "lycanroc-midday",
-    "trigger": "level-up-day",
+    "trigger": "level-up-during-day",
     "min_level": 25,
     "item": null,
     "min_happiness": null,
@@ -10142,7 +10142,7 @@
   {
     "from": "rockruff",
     "to": "lycanroc-midnight",
-    "trigger": "level-up-night",
+    "trigger": "level-up-during-night",
     "min_level": 25,
     "item": null,
     "min_happiness": null,
@@ -10162,7 +10162,7 @@
   {
     "from": "rockruff",
     "to": "lycanroc-dusk",
-    "trigger": "level-up-dusk",
+    "trigger": "level-up-during-evening",
     "min_level": 25,
     "item": null,
     "min_happiness": null,
@@ -10280,8 +10280,8 @@
     "note": null
   },
   {
-    "from": "pumpkaboo",
-    "to": "gourgeist",
+    "from": "pumpkaboo-average",
+    "to": "gourgeist-average",
     "trigger": "trade",
     "min_level": null,
     "item": null,
@@ -10301,7 +10301,7 @@
   },
   {
     "from": "burmy",
-    "to": "wormadam-plant",
+    "to": "wormadam",
     "trigger": "level-up",
     "min_level": 20,
     "item": null,

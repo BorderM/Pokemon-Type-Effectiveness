@@ -126,14 +126,12 @@
                 Pokémon Evolutions
             </h1>
             <div class="control-buttons">
-                <button
-                    onclick="fetchEvolutions(collapseKey(input.value))"
+                <button id="search-btn"
                     class="bg-blue-500 text-white p-2 rounded-lg"
                 >
                     Search
                 </button>
-                <button
-                    onclick="clearResults()"
+                <button id="clear-btn"
                     class="bg-gray-500 text-white p-2 rounded-lg"
                 >
                     Clear
@@ -168,136 +166,177 @@
             <div id="error-message" class="error-message-fixed"></div>
         </div>
         <div id="results"></div>
-        <!-- JSON data scripts -->
-        <script id="formsByBase" type="application/json">
-            {{ forms_by_base_json | tojson | safe }}
-        </script>
-        <script id="formCollapseMap" type="application/json">
-            {{ collapse_map | tojson | safe }}
-        </script>
-        <script id="processedCache" type="application/json">
-            {{ processed_cache_json | safe }}
-        </script>
-        <script id="evolutionsData" type="application/json">
-            {{ evolutions_json | safe }}
-        </script>
-        <script>       
-            // Parse template JSON
-            const FORM_COLLAPSE_MAP   = JSON.parse(document.getElementById('formCollapseMap').textContent);
-            const FORMS_BY_BASE       = JSON.parse(document.getElementById('formsByBase').textContent);
-            const EVOLUTIONS          = JSON.parse(document.getElementById('evolutionsData').textContent);
+        <script id="formsByBase"   type="application/json">{{ forms_by_base_json|tojson }}</script>
+        <script id="formCollapseMap" type="application/json">{{ collapse_map|tojson }}</script>
+        <script id="processedCache" type="application/json">{{ processed_cache_json|safe }}</script>
+        <script id="evolutionsData" type="application/json">{{ evolutions_json|safe }}</script>
 
-            // Build mappings
+        <script>
+            // Static JSON data
+            const FORM_COLLAPSE_MAP = JSON.parse(document.getElementById('formCollapseMap').textContent);
+            const FORMS_BY_BASE = JSON.parse(document.getElementById('formsByBase').textContent);
+            const EVOLUTIONS = JSON.parse(document.getElementById('evolutionsData').textContent);
+
+            // Build evolutions lookup by form key
             const EVOLUTIONS_BY_FROM = {};
             EVOLUTIONS.forEach(e => {
-            EVOLUTIONS_BY_FROM[e.from] = EVOLUTIONS_BY_FROM[e.from]||[];
+            EVOLUTIONS_BY_FROM[e.from] = EVOLUTIONS_BY_FROM[e.from] || [];
             EVOLUTIONS_BY_FROM[e.from].push(e);
             });
-            const COLLAPSED_TO_FORMS = {};
-            Object.entries(FORM_COLLAPSE_MAP).forEach(([raw,canon]) => {
-            COLLAPSED_TO_FORMS[canon] = COLLAPSED_TO_FORMS[canon]||[];
-            COLLAPSED_TO_FORMS[canon].push(raw);
-            });
-            Object.entries(FORMS_BY_BASE).forEach(([base, forms]) => {
-            COLLAPSED_TO_FORMS[base] = COLLAPSED_TO_FORMS[base] || forms;
-            });
 
-            // Utility sets
-            const SHORTEN = new Set(['blade','blue','normal','standard','three','incarnate','altered','average','ordinary','family','disguised','full','droopy','school','50','two','white','male','female','gmax','own']);
-            const PRESERVE = new Set(['charizard-mega-x','charizard-mega-y','mewtwo-mega-x','mewtwo-mega-y']);
+            // Override map for niche cases
+            const FORM_OVERRIDES = {
+            basculin: 'basculin-white-striped',
+            // add more manual overrides here
+            };
 
-            // Collapse key
-            function collapseKey(input) {
-            const key = input.toLowerCase().trim();
+            // Words indicating form suffixes to collapse
+            const SHORTEN_SECOND = new Set([
+                "blade","blue","normal","standard","three","incarnate","altered",
+                "average","ordinary","family","disguised","full",
+                "droopy","school","50", "two", "white", "two-segment","three-segment", "plant"
+            ]);
+            const PRESERVE = new Set([
+                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
+                "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
+                "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike", "lycanroc-midday","lycanroc-midnight",
+                "lycanroc-dusk", "toxtricity-amped","toxtricity-low-key"
+              ]);
+
+            // Normalize form keys: collapse to base unless special
+            function collapseKey(raw) {
+            const key = raw.toLowerCase().trim();
             const parts = key.split('-');
-            if (parts[1] && SHORTEN.has(parts[1])) return parts[0];
-            if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key][0];
+            // manual preserve
             if (PRESERVE.has(key)) return key;
+            // base overrides for forms
+            if (parts[1] && SHORTEN_SECOND.has(parts[1])) return parts[0];
+            if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key][0];
             const base = parts[0];
-            const siblings = FORMS_BY_BASE[base] || [base];
-            const sigs = new Set(siblings.map(f => JSON.stringify(
-                (EVOLUTIONS_BY_FROM[f]||[]).map(e=>[e.to,e.trigger]).sort()
-            )));
-            return sigs.size>1? key : base;
+            const sibs = FORMS_BY_BASE[base] || [base];
+            const signatures = new Set(
+                sibs.map(f => JSON.stringify((EVOLUTIONS_BY_FROM[f]||[]).map(e=>[e.to,e.trigger]).sort()))
+            );
+            return signatures.size > 1 ? key : base;
             }
 
             // Debounce
-            function debounce(fn,ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
-
-            // DOM
-            const inputEl = document.getElementById('pokemon-search');
-            const box     = document.getElementById('suggestions');
-            let suggestionKeys = [], selectedIndex = -1;
-
-            // Suggestions
-            async function handleInput(e) {
-            const q = e.target.value.trim().toLowerCase();
-            if (q.length<2) { box.style.display='none'; return; }
-            try {
-                const res = await fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(q)}`);
-                const { suggestions } = await res.json();
-                if (!suggestions.length) { box.style.display='none'; return; }
-                suggestionKeys = suggestions.map(s=>s.key);
-                box.innerHTML = suggestions.map((s,i)=>
-                `<li data-idx="${i}" onclick="selectSuggestion(${i})">${s.display}</li>`
-                ).join('');
-                selectedIndex = 0;
-                Array.from(box.children).forEach((li,i)=>li.classList.toggle('highlighted',i===0));
-                box.style.display='block';
-            } catch(e){ console.error(e); }
+            function debounce(fn, ms) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn.apply(this, args), ms);
+            };
             }
 
-            function selectSuggestion(i) {
-            const raw = suggestionKeys[i];
-            inputEl.value = box.children[i].textContent;
-            box.style.display='none';
-            fetchEvolutions(raw);
+            // DOM refs
+            const inputEl = document.getElementById('pokemon-search');
+            const suggestionsBox = document.getElementById('suggestions');
+            const resultsContainer = document.getElementById('results');
+
+            let collapsedItems = [];
+            let selectedIndex = -1;
+
+            function showSuggestions() { suggestionsBox.style.display = 'block'; }
+            function hideSuggestions() { suggestionsBox.style.display = 'none'; selectedIndex = -1; }
+
+            function selectSuggestion(idx) {
+            if (idx < 0 || idx >= collapsedItems.length) return;
+            const { key, display } = collapsedItems[idx];
+            inputEl.value = display;
+            hideSuggestions();
+            fetchEvolutions(key);
+            }
+
+            function handleInput(e) {
+            const q = e.target.value.toLowerCase().trim();
+            if (q.length < 2) return hideSuggestions();
+            fetchSuggestions(q);
+            }
+
+            async function fetchSuggestions(query) {
+            const res = await fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(query)}`);
+            const { suggestions } = await res.json();
+            if (!suggestions.length) return hideSuggestions();
+
+            const buckets = {};
+            suggestions.forEach(s => {
+                const norm = collapseKey(s.key);
+                buckets[norm] = buckets[norm] || [];
+                buckets[norm].push(s.key);
+            });
+
+            collapsedItems = Object.keys(buckets).map(norm => {
+                const keys = buckets[norm];
+                // manual override if present
+                const overrideKey = FORM_OVERRIDES[norm];
+                let best;
+                if (overrideKey) {
+                best = overrideKey;
+                } else {
+                const evoForm = keys.find(k => EVOLUTIONS_BY_FROM[k]?.length);
+                best = evoForm || keys[0];
+                }
+                const displayName = norm.replace(/-/g,' ').replace(/\b\w/g, c=>c.toUpperCase());
+                return { display: displayName, key: best };
+            });
+
+            suggestionsBox.innerHTML = '';
+            collapsedItems.forEach((item, i) => {
+                const li = document.createElement('li');
+                li.textContent = item.display;
+                li.dataset.idx = i;
+                li.className = i === 0 ? 'highlighted' : '';
+                li.addEventListener('click', () => selectSuggestion(i));
+                suggestionsBox.appendChild(li);
+            });
+            selectedIndex = 0;
+            showSuggestions();
             }
 
             function handleArrows(e) {
-            const items = Array.from(box.children);
-            if (e.key==='ArrowDown') selectedIndex = Math.min(items.length-1, selectedIndex+1);
-            else if (e.key==='ArrowUp') selectedIndex = Math.max(0, selectedIndex-1);
-            else if (e.key==='Enter'){
-                e.preventDefault();
-                if (box.style.display==='block') return selectSuggestion(selectedIndex);
-                return fetchEvolutions(collapseKey(inputEl.value));
-            } else return;
-            items.forEach((li,i)=>li.classList.toggle('highlighted', i===selectedIndex));
-            e.preventDefault();
+            const items = Array.from(suggestionsBox.children);
+            if (!items.length) {
+                if (e.key === 'Enter') { e.preventDefault(); fetchEvolutions(); }
+                return;
+            }
+            if (e.key === 'ArrowDown') selectedIndex = (selectedIndex+1)%items.length;
+            else if (e.key === 'ArrowUp') selectedIndex = (selectedIndex-1+items.length)%items.length;
+            else if (e.key === 'Enter') { e.preventDefault(); selectSuggestion(selectedIndex); return; }
+            else return;
+            items.forEach((li,i) => li.classList.toggle('highlighted', i===selectedIndex));
             }
 
-            // Fetch
-            function fetchEvolutions(rawKey){
-            const key = rawKey||collapseKey(inputEl.value);
-            inputEl.value=''; box.innerHTML=''; box.style.display='none';
-            fetch(`/api/pokemon/evolutions?name=${encodeURIComponent(key)}`)
-                .then(r=>r.json()).then(displayResults)
-                .catch(e=>console.error(e));
+            function fetchEvolutions(nameKey) {
+            const name = nameKey || collapseKey(inputEl.value.trim());
+            hideSuggestions();
+            inputEl.value = '';
+            resultsContainer.innerHTML = '';
+            fetch(`/api/pokemon/evolutions?name=${encodeURIComponent(name)}`)
+                .then(r=>r.json()).then(renderResults);
             }
 
-            // Display
-            function displayResults(data){
-            const div = document.getElementById('results'); div.innerHTML='';
-            data.forEach(p=>{
-                const nm=(p.display_name||p.name).replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-                const card=document.createElement('div'); card.className='result-card';
-                card.innerHTML=`<h2>${nm}</h2><img src="${p.sprite_url}" alt="${nm}"/>`;
-                if(p.evolves_from) card.innerHTML+=`<p>Evolves from: ${p.evolves_from}</p>`;
-                p.evolution_conditions.forEach(c=>Object.entries(c).forEach(([k,v])=>{ if(v&&v!=='N/A')card.innerHTML+=`<p>${k}: ${v}</p>`;}));
-                if(p.note) card.innerHTML+=`<p>Note: ${p.note}</p>`;
-                div.appendChild(card);
+            function renderResults(data) {
+            resultsContainer.innerHTML = '';
+            data.forEach(p => {
+                const title = (p.display_name||p.name).replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                card.innerHTML = `
+                <h2>${title}</h2>
+                <img src="${p.sprite_url}" alt="${title}" />
+                ${p.evolves_from?`<p>Evolves from: ${p.evolves_from}</p>`:''}
+                ${p.evolution_conditions.map(cond=>Object.entries(cond).map(([k,v])=>v&&v!=='N/A'?`<p>${k}: ${v}</p>`:'').join('')).join('')}
+                ${p.note?`<p>Note: ${p.note}</p>`:''}
+                `;
+                resultsContainer.appendChild(card);
             });
             }
 
-            // Clear
-            function clearResults(){ inputEl.value=''; box.innerHTML=''; box.style.display='none'; document.getElementById('results').innerHTML=''; }
-
-            // Events
             inputEl.addEventListener('input', debounce(handleInput,250));
             inputEl.addEventListener('keydown', handleArrows);
             document.getElementById('search-btn').addEventListener('click', ()=>fetchEvolutions());
-            document.getElementById('clear-btn').addEventListener('click', clearResults);
+            document.getElementById('clear-btn').addEventListener('click', ()=>{inputEl.value='';hideSuggestions();resultsContainer.innerHTML='';});
         </script>
     </body>
 </html>

@@ -146,9 +146,9 @@ for frm, methods in overrides.items():
 # 4) Deduplicate by trigger‐priority & write out
 # ─────────────────────────────────────────────────────────────────────────────
 priority = {
-    'level-up-day':   5,
-    'level-up-night': 5,
-    'level-up-dusk':  5,
+    'level-up-during-day':   5,
+    'level-up-during-night': 5,
+    'level-up-during-evening':  5,
     'level-up':       4,
     'use-item':       3,
     'trade':          2,
