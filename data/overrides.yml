@@ -205,8 +205,8 @@ dewott:
     min_level: 36
     note: "Only evolves into Hisuian Samurott in the Hisui region."
 
-basculin:
-  - to: basculegion
+basculin-white-striped:
+  - to: basculegion-male
     trigger: level-up
     note: "Basculin White Striped evolves after losing at least 294 HP from recoil damage without fainting"
 
@@ -280,3 +280,11 @@ burmy:
     trigger: level-up
     min_level: 20
     gender: male
+
+kubfu: 
+  - to: urshifu-single-strike-style
+    trigger: use-item
+    item: scroll-of-darkness
+  - to: urshifu-rapid-strike-style
+    trigger: use-item
+    item: scroll-of-waters

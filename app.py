@@ -282,40 +282,56 @@ def suggestions():
 @app.route('/api/pokemon/evolutions')
 def api_evo():
     raw = request.args.get('name','').lower().strip()
-    real = resolve_form_key(raw)
-    if not real or real not in FORM_BY_KEY:
-        return jsonify({'error':'Unknown Pokémon'}),404
+    # 1) resolve any form back to its canonical key
+    key = resolve_form_key(raw) or raw
+    # 2) fallback to base species if needed
+    if key not in FORM_BY_KEY:
+        base = key.split('-',1)[0]
+        key = resolve_form_key(base) or base
+    if key not in FORM_BY_KEY:
+        return jsonify([]), 200
 
-    def find_root(n):
-        f = FORM_BY_KEY[n]
-        if f.get('form_name'): return n
-        parents = [e['from'] for e in EVOLUTIONS if e['to']==n]
-        return find_root(parents[0]) if parents else n
+    # ─── NEW: climb up the tree to the ultimate chain root ─────────────
+    def find_chain_root(name):
+        # always work with your canonical form key
+        candidate = resolve_form_key(name) or name
+        while True:
+            # look for any evolution edge that targets this candidate
+            parent = next((e for e in EVOLUTIONS if e['to'] == candidate), None)
+            if not parent:
+                return candidate
+            # step up to its parent
+            candidate = resolve_form_key(parent['from']) or parent['from']
 
-    root = find_root(real)
-    chain=[]
+    root = find_chain_root(key)
+    # ─────────────────────────────────────────────────────────────────
+
+    chain = []
     def trav(name, frm=None):
+        if name not in FORM_BY_KEY:
+            return
         f = FORM_BY_KEY[name]
         node = {
-          'name':name,
-          'display_name':f['species'].title() + (f" ({f['form_name'].title()})" if f['form_name'] else ''),
-          'sprite_url':f['sprite_url'],
-          'evolves_from': FORM_BY_KEY[frm]['species'].title() if frm else None,
-          'evolution_conditions':[]
+            'name': name,
+            'display_name': f['species'].title() + (f" ({f['form_name'].title()})" if f['form_name'] else ''),
+            'sprite_url': f['sprite_url'],
+            'evolves_from': FORM_BY_KEY[frm]['species'].title() if frm else None,
+            'evolution_conditions': []
         }
         if frm:
-            edge = next((e for e in EVOLUTIONS if e['from']==frm and e['to']==name),None)
+            edge = next((e for e in EVOLUTIONS if e['from']==frm and e['to']==name), None)
             if edge:
-                node['evolution_conditions']=get_evolution_conditions([edge])
+                node['evolution_conditions'] = get_evolution_conditions([edge])
                 if edge.get('note'):
-                    node['note']=edge['note']
+                    node['note'] = edge['note']
         chain.append(node)
         for e in get_direct_evolutions(name):
-            child = resolve_form_key(e['to'])
+            child = resolve_form_key(e['to']) or e['to']
             trav(child, name)
 
     trav(root)
     return jsonify(chain)
+
 
 asgi_app = WsgiToAsgi(app)
 

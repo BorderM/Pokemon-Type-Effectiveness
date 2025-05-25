@@ -409,14 +409,23 @@
                   PROCESSED_CACHE[p.name] = p;
                   }
                   // build the inverse of your collapse‐map
-                  for (const raw of Object.keys(FORM_COLLAPSE_MAP)) {
-                  const canon = FORM_COLLAPSE_MAP[raw] || raw;
-                  COLLAPSED_TO_FORMS[canon] = COLLAPSED_TO_FORMS[canon] || [];
-                  if (!COLLAPSED_TO_FORMS[canon].includes(raw)) {
+                  Object.keys(PROCESSED_CACHE).forEach(raw => {
+                    const canon = collapseKey(raw);
+                    COLLAPSED_TO_FORMS[canon] = COLLAPSED_TO_FORMS[canon] || [];
+                    if (!COLLAPSED_TO_FORMS[canon].includes(raw)) {
                       COLLAPSED_TO_FORMS[canon].push(raw);
-                  }
-                  }
-              });
+                    }
+                  });
+                  SPECIES_SIGS = {};
+                  Object.keys(PROCESSED_CACHE).forEach(form => {
+                    const base = form.split('-',1)[0];
+                    SPECIES_SIGS[base] = SPECIES_SIGS[base] || { type: new Set(), stat: new Set(), forms: [] };
+                    const p = PROCESSED_CACHE[form];
+                    SPECIES_SIGS[base].type.add(p.types.join(','));
+                    SPECIES_SIGS[base].stat.add(JSON.stringify(p.stats));
+                    SPECIES_SIGS[base].forms.push(form);
+                  });
+                });
               const MAX_HISTORY = 9;
               // — state & persistence —
               let historyList = [];
@@ -435,7 +444,8 @@
               const SHORTEN_SECOND = new Set([
                 "blade","blue","normal","standard","three","incarnate","altered",
                 "average","ordinary","family","disguised","full",
-                "droopy","school","50", "two", "white", "two-segment","three-segment", "plant"
+                "droopy","school","50", "two", "white", "two-segment","three-segment", "plant",
+                "shield", "blade"
               ]);
 
               const FULL_PRESERVE = new Set([
@@ -462,12 +472,22 @@
 
                 // MODE-SPECIFIC checks:
                 if (CURRENT_MODE === 'typeeffectiveness') {
-                  const sig = new Set(siblings.map(f => PROCESSED_CACHE[f].types.join(',')));
-                  if (sig.size > 1) return key;   // different typings → don’t collapse
+                  const sig = new Set(
+                    (siblings
+                      .map(f => PROCESSED_CACHE[f])
+                      .filter(p => p)                  // only keep defined entries
+                      .map(p => p.types.join(',')))
+                  );
+                  if (sig.size > 1) return key;
                 }
                 if (CURRENT_MODE === 'stats') {
-                  const sig = new Set(siblings.map(f => JSON.stringify(PROCESSED_CACHE[f].stats)));
-                  if (sig.size > 1) return key;   // different stats → don’t collapse
+                  const sig = new Set(
+                    (siblings
+                      .map(f => PROCESSED_CACHE[f])
+                      .filter(p => p)                  // only keep defined entries
+                      .map(p => p.types.join(',')))
+                  );
+                  if (sig.size > 1) return key;
                 }
                 if (CURRENT_MODE === 'evolutions') {
                   // compare evolution‐method signatures for each sibling
@@ -496,36 +516,44 @@
                 return forms[0];
               }
 
-              function formatDisplayName(key) {
-                // 1) full Python overrides
-                if (FORM_COLLAPSE_MAP[key]) {
-                  return FORM_COLLAPSE_MAP[key] === "Delete" 
-                    ? ""
-                    : FORM_COLLAPSE_MAP[key];
+              function formatDisplayName(raw) {
+                // 0) nothing to do on non-strings:
+                if (typeof raw !== 'string') return raw;
+
+                // 1) full Python overrides: always pick the first string
+                if (FORM_COLLAPSE_MAP[raw]) {
+                  const mapped = FORM_COLLAPSE_MAP[raw];
+                  // mapped might be an array or a single string:
+                  return Array.isArray(mapped) ? mapped[0] : mapped;
                 }
 
-                if (FULL_PRESERVE.has(key)) {
-                  return key;
+                // 2) mega/other forms never collapse
+                if (FULL_PRESERVE.has(raw)) {
+                  return raw.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
                 }
 
-                // 2) tauros-paldea special case
-                if (key.startsWith("tauros-paldea-") && key.endsWith("-breed")) {
-                  return key.replace(/-breed$/, "");
+                // 3) tauros-paldea special case
+                if (raw.startsWith("tauros-paldea-") && raw.endsWith("-breed")) {
+                  return raw.replace(/-breed$/, "").replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
                 }
 
-                // 3) otherwise split on “-”
-                const parts = key.split("-");
+                // 4) otherwise split on “-”
+                const parts = raw.split("-");
                 if (parts.length > 1) {
-                  // blacklist: drop the form entirely
+                  // drop the form entirely if it’s a blacklisted suffix
                   if (SHORTEN_SECOND.has(parts[1].toLowerCase())) {
-                    return parts[0];
+                    return parts[0].replace(/\b\w/g,c=>c.toUpperCase());
                   }
-                  // keep two chunks (e.g. "charizard-mega")
-                  return parts.slice(0,2).join("-");
+                  // keep two chunks (e.g. "charizard-mega" → "Charizard Mega")
+                  return parts
+                    .slice(0,2)
+                    .join("-")
+                    .replace(/-/g,' ')
+                    .replace(/\b\w/g,c=>c.toUpperCase());
                 }
 
-                // 4) no hyphens at all
-                return parts[0];
+                // 5) no hyphens at all
+                return parts[0].replace(/\b\w/g,c=>c.toUpperCase());
               }
 
               function saveState() {
@@ -725,36 +753,47 @@
               // — suggestions & search flow (unchanged) —
               let suggestionKeys = [];
               let selectedIndex = -1;
+              let SPECIES_SIGS = {};
 
               async function handleInput(event) {
                 const q   = event.target.value.trim().toLowerCase();
-                const box = event.target.parentElement.querySelector('.suggestions');
+                const suggestionsBox = event.target.parentElement.querySelector('.suggestions');
 
-                if (q.length > 1) {
-                    // 1) fetch raw form-keys from the server
-                    const { suggestions: rawSuggestions } = await (await fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(q)}`)).json();
-
-                    // 2) collapse them down to canonical buckets
-                    const canonical = Array.from(new Set(rawSuggestions.map(s => collapseKey(s))));
-
-                    // 3) for each bucket, pick the one real form that actually evolves
-                    const rawReps = canonical.map(c => pickRepresentative(c));
-
-                    // stash these raw keys so arrow-up/down + enter will pick the correct one
-                    suggestionKeys = rawReps;
-
-                    // 4) render the dropdown with one <li> per bucket
-                    box.innerHTML = canonical.map((c, i) =>
-                      `<li onclick="selectSuggestion('${rawReps[i]}')">${formatDisplayName(c)}</li>`).join('');
-
-                    box.style.display = suggestionKeys.length ? 'block' : 'none';
-                    selectedIndex = -1;
+                if (q.length < 2) {
+                  suggestionsBox.style.display = 'none';
+                  return;
                 }
-                else {
-                    box.style.display = 'none';
-                    suggestionKeys = [];
-                }
-            }
+                const { suggestions } = await fetch(`/api/pokemon/suggestions?query=${q}`).then(r=>r.json());
+                const rawKeys = suggestions.map(s=>s.key);
+                 // group by base species
+                const buckets = {};
+                rawKeys.forEach(k => {
+                  const base = k.split('-',1)[0];
+                  buckets[base] = buckets[base]||new Set();
+                  buckets[base].add(k);
+                });
+
+                // render
+                suggestionKeys = [];
+                const html = [];
+                Object.entries(buckets).forEach(([base, forms]) => {
+                  const { type } = SPECIES_SIGS[base];
+                  if (type.size > 1) {
+                    // different typings → list each form separately
+                    forms.forEach(form => {
+                      html.push(`<li onclick="selectSuggestion('${form}')">${formatDisplayName(form)}</li>`);
+                      suggestionKeys.push(form);
+                    });
+                  } else {
+                    // same typing → collapse to base
+                    html.push(`<li onclick="selectSuggestion('${base}')">${formatDisplayName(base)}</li>`);
+                    suggestionKeys.push(base);
+                  }
+                });
+
+                suggestionsBox.innerHTML = html.join('');
+                suggestionsBox.style.display = suggestionKeys.length ? 'block' : 'none';
+              }
 
 
               function handleEnterKey(e) {
@@ -805,13 +844,14 @@
 
               function performSearch() {
                 const inp = document.getElementById('pokemon-input');
-                const raw = document.getElementById('pokemon-input').value.trim();
+                const raw = inp.value.trim();
                 if (!raw) return;
                 // 1) collapse to your canonical key
-                const key = collapseKey(raw);
+                const canon = collapseKey(raw);
+                const fetchKey = pickRepresentative(canon);
                 document.getElementById('suggestions').style.display = 'none';
                 document.getElementById('progress-bar-container').classList.remove('hidden');
-                fetchPokemon(key)
+                fetchPokemon(fetchKey)
                   .finally(() => {
                     document.getElementById('progress-bar-container').classList.add('hidden');
                     inp.value = '';
@@ -820,7 +860,7 @@
               }
 
               async function fetchPokemon(rawName) {
-                const name = collapseKey(rawName)
+                const name = rawName
                 const sec = document.getElementById('main-result');
 
                 // — if it’s already showing as the main card, just scroll to it —
@@ -833,7 +873,7 @@
                 if (dualMode) {
                   // 1) Fetch the data
                   const ep   = location.pathname.includes('stats') ? 'stats' : 'info';
-                  const res  = await fetch(`/api/pokemon/${ep}?name=${encodeURIComponent(name)}`);
+                  const res  = await fetch(`/api/pokemon/info?name=${encodeURIComponent(name)}`);
                   const data = await res.json();
                   document.getElementById('error-message').innerHTML = '';
 
@@ -914,7 +954,7 @@
                   <button class="minimize-button" onclick="minimizeCard(this)">−</button>
                   <button class="close-button" onclick="closeCard(this)">×</button>
                   <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.display_name}">
-                  <h2>${r.display_name}</h2>
+                  <h2>${formatDisplayName(r.name)}</h2>
                   <p class="type-line">Type: ${r.types.map(
                     t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`
                   ).join(' ')}</p>

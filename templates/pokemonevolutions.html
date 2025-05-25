@@ -220,6 +220,16 @@
             return signatures.size > 1 ? key : base;
             }
 
+            function formatDisplayName(raw) {
+                if (typeof raw !== 'string') return raw;
+                // convert hyphens to spaces, capitalize words:
+                let name = raw.replace(/-/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+                name = name.replace(/\s*\([^)]*\)$/, '');
+                // strip any parenthetical or trailing form words:
+                name = name.replace(/\s*(Average|White Striped|Red Striped|Blue Striped|Plant|Sandy|Trash)$/,'');
+                return name;
+            }
+
             // Debounce
             function debounce(fn, ms) {
             let timeout;
@@ -317,20 +327,54 @@
             }
 
             function renderResults(data) {
-            resultsContainer.innerHTML = '';
-            data.forEach(p => {
-                const title = (p.display_name||p.name).replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-                const card = document.createElement('div');
-                card.className = 'result-card';
-                card.innerHTML = `
-                <h2>${title}</h2>
-                <img src="${p.sprite_url}" alt="${title}" />
-                ${p.evolves_from?`<p>Evolves from: ${p.evolves_from}</p>`:''}
-                ${p.evolution_conditions.map(cond=>Object.entries(cond).map(([k,v])=>v&&v!=='N/A'?`<p>${k}: ${v}</p>`:'').join('')).join('')}
-                ${p.note?`<p>Note: ${p.note}</p>`:''}
-                `;
-                resultsContainer.appendChild(card);
-            });
+                const container = document.getElementById('results');
+                container.innerHTML = '';
+
+                // 1) build a map: parent_species -> [child entries]
+                const groups = data
+                    .filter(p => p.evolves_from)        // skip the root
+                    .reduce((m, p) => {
+                    m[p.evolves_from] = m[p.evolves_from]||[];
+                    m[p.evolves_from].push(p);
+                    return m;
+                    }, {});
+
+                // 2) determine which parents have >1 distinct form
+                const multiParent = new Set(
+                    Object.entries(groups)
+                    .filter(([parent, children]) => children.length > 1)
+                    .map(([parent]) => parent)
+                );
+
+                data.forEach(p => {
+                    // 3) choose display name:
+                    let title;
+                    if (p.evolves_from && multiParent.has(p.evolves_from)) {
+                    // keep the raw, e.g. "Lycanroc (Midday)"
+                    title = p.display_name
+                        .replace(/-/g,' ')
+                        .replace(/\b\w/g,c=>c.toUpperCase());
+                    } else {
+                    // strip all parens for single‐form evolutions
+                    title = formatDisplayName(p.display_name || p.name);
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = 'result-card';
+                    card.innerHTML = `
+                    <h2>${title}</h2>
+                    <img src="${p.sprite_url}" alt="${title}">
+                    ${p.evolves_from?`<p>Evolves from: ${formatDisplayName(p.evolves_from)}</p>`:''}
+                    ${p.evolution_conditions.map(cond=>
+                        Object.entries(cond)
+                        .filter(([k,v])=>v&&v!=='N/A')
+                        .map(([k,v])=>`<p>${k}: ${v}</p>`)
+                        .join('')
+                    ).join('')}
+                    ${p.note?`<p>Note: ${p.note}</p>`:''}
+                    `;
+                    container.appendChild(card);
+                });
             }
 
             inputEl.addEventListener('input', debounce(handleInput,250));
