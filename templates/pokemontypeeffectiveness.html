@@ -1067,7 +1067,7 @@
                   // auto-fill slot 2 from history if available
                   if (historyList.length > 0) {
                     const nextUp = historyList.shift();
-                    removeHistoryEntry(nextUp.name);
+                    removeHistoryEntry(nextUp.display_name);
                     renderMainCard(nextUp);
                   }
                 } else {
@@ -1079,7 +1079,7 @@
                   if (sec.children.length > 1) {
                     const rightCard = sec.children[1];
                     const obj = JSON.parse(rightCard.dataset.pokemon);
-                    removeHistoryEntry(obj.name);
+                    removeHistoryEntry(obj.display_name);
                     historyList.unshift(obj);
                     renderHistoryEntry(obj, /*prepend=*/true);
                     rightCard.remove();
