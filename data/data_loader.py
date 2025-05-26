@@ -73,6 +73,12 @@ for cid in sorted(chain_ids):
         if e['from'] in species_to_forms and e['to'] in species_to_forms:
             species_edges.append(e)
 
+# remove the default mr-mime → mr-rime edge
+species_edges = [
+    e for e in species_edges
+    if not (e['from'] == 'mr-mime' and e['to'] == 'mr-rime')
+]
+
 print(f"↳ Collected {len(species_edges)} species‐level edges")
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -171,6 +177,20 @@ for e in best.values():
     for f in fields:
         e.setdefault(f, None)
     final.append(e)
+
+all_froms    = set(e['from'] for e in final)
+override_froms = set(overrides.keys())
+# species_edges holds your API‐derived edges, form_edges before dedupe
+raw_froms      = set(e['from'] for e in form_edges)
+
+missing_overrides = override_froms - all_froms
+missing_api      = raw_froms - all_froms
+
+if missing_overrides:
+    print("⚠️  Overrides declared for these forms, but no final edge found:", missing_overrides)
+if missing_api:
+    print("⚠️  API returned evolutions for these forms, but none survived dedupe:", missing_api)
+# ─────────────────────────────────────────────────────────────────────────────
 
 with open(OUTPUT_EVO, 'w', encoding='utf-8') as fp:
     json.dump(final, fp, indent=2)

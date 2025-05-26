@@ -260,21 +260,27 @@ doublade:
     trigger: use-item
     min_level: 35
     item: dusk-stone
-  - to: aegislash-blade
-    trigger: use-item
-    min_level: 35
-    item: dusk-stone
 
-pumpkaboo-average:
-  - to: gourgeist-average
+pumpkaboo:
+  - to: gourgeist
     trigger: trade
 
 burmy: 
-  - to: wormadam
+  - to: wormadam-plant
     trigger: level-up
     min_level: 20
     gender: female
-    note: "Burmy changes form based on environment of last battle. This affects the cloak of Wormadam."
+    note: "battles in areas like forest and most routes change burmy's cloak to plant. This affects the cloak of Wormadam when evolving."
+  - to: wormadam-sandy
+    trigger: level-up
+    min_level: 20
+    gender: female
+    note: "battles in caves, beaches or deserts change burmy's cloak to sandy. This affects the cloak of Wormadam when evolving"
+  - to: wormadam-trash
+    trigger: level-up
+    min_level: 20
+    gender: female
+    note: "battles in most buildings and gyms change burmy's cloak to trash. This affects the cloak of Wormadam when evolving."
 
   - to: mothim
     trigger: level-up
@@ -282,9 +288,9 @@ burmy:
     gender: male
 
 kubfu: 
-  - to: urshifu-single-strike-style
+  - to: urshifu-single-strike
     trigger: use-item
     item: scroll-of-darkness
-  - to: urshifu-rapid-strike-style
+  - to: urshifu-rapid-strike
     trigger: use-item
     item: scroll-of-waters

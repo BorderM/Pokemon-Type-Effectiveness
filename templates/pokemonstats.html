@@ -306,7 +306,7 @@
             <h1 class="text-3xl font-bold text-center mb-2">Pokémon Stats</h1>
             <div class="control-buttons">
                 <button
-                    onclick="searchPokemonByInput()()"
+                    onclick="searchPokemonByInput()"
                     class="bg-blue-500 text-white p-2 rounded-lg"
                 >
                     Search
@@ -413,56 +413,48 @@
         ]);
 
         function collapseKey(rawKey) {
-            if (typeof rawKey !== 'string') {
-                return rawKey;
-            }
+            if (typeof rawKey !== 'string') return rawKey;
             const key = rawKey.toLowerCase().trim();
-            // 1) first apply any hard override from FORM_COLLAPSE_MAP:
-            if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key][0];
 
-            // 2) FULL_PRESERVE are never collapsed:
-            if (FULL_PRESERVE.has(key)) return key;
-
-            // get “sibling” forms of this canonical
-            const canon = key.split('-',1)[0];
-            const siblings = FORMS_BY_BASE[canon] || [key];
-
-            // MODE-SPECIFIC checks:
-            if (CURRENT_MODE === 'typeeffectiveness') {
-                  const sig = new Set(
-                    (siblings
-                      .map(f => PROCESSED_CACHE[f])
-                      .filter(p => p)                  // only keep defined entries
-                      .map(p => p.types.join(',')))
-                  );
-                  if (sig.size > 1) return key;
+            // 1) Strip purely aesthetic suffixes if they add no mechanical
+            //    difference (same types & stats).
+            for (const suffix of ['-gmax', '-gigantamax']) {
+                if (key.endsWith(suffix)) {
+                const base = key.slice(0, -suffix.length);
+                const P = PROCESSED_CACHE[key];
+                const Q = PROCESSED_CACHE[base];
+                if (
+                    P && Q &&
+                    JSON.stringify(P.stats) === JSON.stringify(Q.stats) &&
+                    P.types.join(',') === Q.types.join(',')
+                ) {
+                    // collapse to the base form (and re-run collapseKey in case
+                    // that base itself has an override)
+                    return collapseKey(base);
                 }
-            if (CURRENT_MODE === 'stats') {
-                const sig = new Set(
-                    (siblings
-                    .map(f => PROCESSED_CACHE[f])
-                    .filter(p => p)                   // drop undefined
-                    .map(p => JSON.stringify(p.stats)))
-                );
-                if (sig.size > 1) return key;       // stats differ → don’t collapse
-            }
-            if (CURRENT_MODE === 'evolutions') {
-                // compare evolution‐method signatures for each sibling
-                const sig = new Set(siblings.map(f => {
-                const evs = EVOLUTIONS_BY_FROM[f] || [];
-                // stringify the sorted list of (to,trigger) pairs:
-                return JSON.stringify(evs.map(e=>[e.to,e.trigger]).sort());
-                }));
-                if (sig.size > 1) return key;   // some form evolves differently → keep distinct
+                }
             }
 
-            // 3) cosmetic suffix collapse:
-            const parts = key.split('-');
-            if (parts.length > 1 && SHORTEN_SECOND.has(parts[1])) return parts[0];
+            // 2) Honor any Python‐side override map:
+            if (FORM_COLLAPSE_MAP[key]) {
+                const mapped = FORM_COLLAPSE_MAP[key];
+                return Array.isArray(mapped) ? mapped[0] : mapped;
+            }
 
-            // 4) default form if you typed only the species:
-            if (parts.length === 1) return parts[0];
+            // 3) Never collapse your “full preserve” exceptions:
+            if (FULL_PRESERVE.has(key)) {
+                return key;
+            }
 
+            // 4) If **every** form of this species has identical type+stats,
+            //    collapse to the bare species name:
+            const species = key.split('-',1)[0];
+            const sig = SPECIES_SIGS[species] || { type: new Set(), stat: new Set() };
+            if (sig.type.size === 1 && sig.stat.size === 1) {
+                return species;
+            }
+
+            // 5) Otherwise keep the full form:
             return key;
         }
 
@@ -474,44 +466,53 @@
         }
 
         function formatDisplayName(raw) {
-                // 0) nothing to do on non-strings:
-                if (typeof raw !== 'string') return raw;
+            // 0) nothing to do on non-strings:
+            if (typeof raw !== 'string') return raw;
 
-                // 1) full Python overrides: always pick the first string
-                if (FORM_COLLAPSE_MAP[raw]) {
-                  const mapped = FORM_COLLAPSE_MAP[raw];
-                  // mapped might be an array or a single string:
-                  return Array.isArray(mapped) ? mapped[0] : mapped;
-                }
-
-                // 2) mega/other forms never collapse
-                if (FULL_PRESERVE.has(raw)) {
-                  return raw.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-                }
-
-                // 3) tauros-paldea special case
-                if (raw.startsWith("tauros-paldea-") && raw.endsWith("-breed")) {
-                  return raw.replace(/-breed$/, "").replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-                }
-
-                // 4) otherwise split on “-”
-                const parts = raw.split("-");
-                if (parts.length > 1) {
-                  // drop the form entirely if it’s a blacklisted suffix
-                  if (SHORTEN_SECOND.has(parts[1].toLowerCase())) {
-                    return parts[0].replace(/\b\w/g,c=>c.toUpperCase());
-                  }
-                  // keep two chunks (e.g. "charizard-mega" → "Charizard Mega")
-                  return parts
-                    .slice(0,2)
-                    .join("-")
-                    .replace(/-/g,' ')
-                    .replace(/\b\w/g,c=>c.toUpperCase());
-                }
-
-                // 5) no hyphens at all
-                return parts[0].replace(/\b\w/g,c=>c.toUpperCase());
+            // — in stats mode, always turn "foo-bar" into "Foo Bar" —
+            if (CURRENT_MODE === 'stats') {
+                return raw
+                .split('-')
+                .slice(0, 2)           // just the first two pieces
+                .join(' ')
+                .replace(/\b\w/g, c=>c.toUpperCase());
             }
+
+            // 1) full Python overrides: always pick the first string
+            if (FORM_COLLAPSE_MAP[raw]) {
+                const mapped = FORM_COLLAPSE_MAP[raw];
+                // mapped might be an array or a single string:
+                return Array.isArray(mapped) ? mapped[0] : mapped;
+            }
+
+            // 2) mega/other forms never collapse
+            if (FULL_PRESERVE.has(raw)) {
+                return raw.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+            }
+
+            // 3) tauros-paldea special case
+            if (raw.startsWith("tauros-paldea-") && raw.endsWith("-breed")) {
+                return raw.replace(/-breed$/, "").replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+            }
+
+            // 4) otherwise split on “-”
+            const parts = raw.split("-");
+            if (parts.length > 1) {
+                // drop the form entirely if it’s a blacklisted suffix
+                if (SHORTEN_SECOND.has(parts[1].toLowerCase())) {
+                return parts[0].replace(/\b\w/g,c=>c.toUpperCase());
+                }
+                // keep two chunks (e.g. "charizard-mega" → "Charizard Mega")
+                return parts
+                .slice(0,2)
+                .join("-")
+                .replace(/-/g,' ')
+                .replace(/\b\w/g,c=>c.toUpperCase());
+            }
+
+            // 5) no hyphens at all
+            return parts[0].replace(/\b\w/g,c=>c.toUpperCase());
+        }
 
         /** Scroll `el` into view leaving a 16px gap below the header */
         function scrollWithGap(el) {
@@ -536,40 +537,47 @@
                 return;
             }
 
-            // 1) fetch raw form-keys
+            // fetch raw form keys
             const { suggestions: rawSuggestions } = await fetch(
                 `/api/pokemon/suggestions?query=${encodeURIComponent(q)}`
             ).then(r => r.json());
             const rawKeys = rawSuggestions.map(s => s.key);
 
-            // 2) group by base
-            const buckets = {};
-            rawKeys.forEach(key => {
-                const base = key.split('-',1)[0];
-                buckets[base] = buckets[base] || new Set();
-                buckets[base].add(key);
-            });
+            // bucket by species → then cluster by (types+stats) signature
+            const list = [];
+            const buckets = rawKeys.reduce((acc, raw) => {
+                const sp = raw.split('-',1)[0];
+                (acc[sp] = acc[sp]||[]).push(raw);
+                return acc;
+            }, {});
 
-            // 3) build the <li> list based on SPECIES_SIGS[base].stat
-            suggestionKeys = [];
-            box.innerHTML = '';
-            Object.entries(buckets).forEach(([base, forms]) => {
-                const sigData = SPECIES_SIGS[base];
-                if (!sigData) return;
-                // if >1 distinct stats, list each form
-                if (sigData.stat.size > 1) {
-                forms.forEach(form => {
-                    suggestionKeys.push(form);
-                    box.innerHTML += `<li onclick="selectSuggestion('${form}')">${formatSuggestionName(form)}</li>`;
-                });
+            for (const sp of Object.keys(buckets).sort()) {
+                const clusterMap = buckets[sp].reduce((c, form) => {
+                const p = PROCESSED_CACHE[form];
+                const sig = JSON.stringify({ t: p.types, s: p.stats });
+                (c[sig] = c[sig]||[]).push(form);
+                return c;
+                }, {});
+
+                for (const sig of Object.keys(clusterMap)) {
+                const forms = clusterMap[sig].sort();
+                if (forms.length === 1) {
+                    // only one mechanically‐distinct form
+                    list.push({ key: forms[0], label: formatSuggestionName(forms[0]) });
                 } else {
-                // otherwise collapse to base
-                suggestionKeys.push(base);
-                box.innerHTML += `<li onclick="selectSuggestion('${base}')">${base[0].toUpperCase()+base.slice(1)}</li>`;
+                    // multiple forms share the same sig → collapse to one entry
+                    const rep = collapseKey(forms[0]);
+                    list.push({ key: rep, label: formatSuggestionName(rep) });
                 }
-            });
+                }
+            }
 
-            box.style.display = suggestionKeys.length ? 'block' : 'none';
+            // render dropdown
+            suggestionKeys = list.map(x => x.key);
+            box.innerHTML = list
+                .map(x => `<li onclick="selectSuggestion('${x.key}')">${x.label}</li>`)
+                .join('');
+            box.style.display = list.length ? 'block' : 'none';
             selectedIndex = -1;
         }
 
@@ -579,6 +587,22 @@
             document.getElementById('suggestions').style.display = 'none';
             fetchPokemon(key);
         }
+
+        function searchPokemonByInput(){
+            const inp = document.getElementById('pokemon-input');
+            const raw = inp.value.trim();
+            if (!raw) return;
+
+            // if there are any suggestions, pick the first one
+            const items = document.querySelectorAll('#suggestions li');
+            if (items.length) {
+            return selectSuggestion(suggestionKeys[0]);
+            }
+
+            // otherwise fall back to raw
+            fetchPokemon(raw);
+        }
+
 
         function handleEnterKey(e) {
             const box   = document.getElementById('suggestions');
@@ -637,112 +661,125 @@
             return `${baseDisp} (${suffixDisp})`;
         }
 
-        function searchPokemonByInput() {
-            const raw = document.getElementById('pokemon-input').value.trim();
-            if (raw) fetchPokemon(raw);
-        }
-
         async function fetchPokemon(rawName) {
             const inputEl = document.getElementById('pokemon-input');
-            let raw = (typeof rawName === 'string' ? rawName : inputEl.value).trim();
+            const raw = (typeof rawName === 'string' ? rawName : inputEl.value).trim();
             if (!raw) return;
 
-            // collapse to base‐species if needed
-            const canon = collapseKey(raw);
-
-            // pick a real form key—either exactly what they typed, or an alphabetical fallback
-            let fetchKey = canon;
-            if (!PROCESSED_CACHE[fetchKey]) {
-                const forms = (COLLAPSED_TO_FORMS[canon] || []).slice().sort();
-                fetchKey = forms[0] || canon;
+            // collapse → pick representative
+            let fetchKey = collapseKey(raw);
+            if (!(fetchKey in PROCESSED_CACHE)) {
+            const all = FORMS_BY_BASE[fetchKey] || [];
+            fetchKey = all.filter(f=>f in PROCESSED_CACHE).sort()[0] || fetchKey;
             }
 
-            // clear & ready the input
+            // reset UI
             inputEl.value = '';
             inputEl.focus();
             document.getElementById('suggestions').style.display = 'none';
-
-            // spinner on
-            document.getElementById('progress-bar-container').classList.remove('hidden');
+            document.getElementById('progress-bar-container')
+                    .classList.remove('hidden');
 
             // fetch
-            const res  = await fetch(`/api/pokemon/stats?name=${encodeURIComponent(fetchKey)}`);
+            const res  = await fetch(
+            `/api/pokemon/stats?name=${encodeURIComponent(fetchKey)}`
+            );
             const data = await res.json();
-            document.getElementById('progress-bar-container').classList.add('hidden');
+            document.getElementById('progress-bar-container')
+                    .classList.add('hidden');
 
             if (!res.ok) {
-                handleSuggestionError(data.error, raw);
-                return;
+            handleSuggestionError(data.error, raw);
+            return;
             }
 
-            // render
+            // render (only append new cards)
             const results = document.getElementById('results');
-            data.forEach(result => {
-                const card = createStatsCard(result);
+            for (const r of data) {
+            const card = createStatsCard(r);
+            if (card) {
                 results.appendChild(card);
                 scrollToNewCard(card);
-            });
+            }
+            }
             updateLocalStorage();
         }
 
-
         function createStatsCard(result) {
+            const canon = collapseKey(result.name);
+
+            // If we already have one for this canon, scroll there & bail
+            const existing = document.querySelector(
+                `.result-card[data-name="${canon}"]`
+            );
+            if (existing) {
+                scrollToNewCard(existing);
+                return null;
+            }
+
+            // Build a fresh card
             const formDiv = document.createElement('div');
             formDiv.className = "bg-white dark:bg-zinc-700 rounded-lg p-4 shadow-md result-card";
             formDiv.setAttribute('data-pokemon', JSON.stringify(result));
-            const display = result.display_name;
-            const bulbapediaLinkName = display.split('-')[0]; // Use part of name before first hyphen
-            const bulbapediaLink = `https://bulbapedia.bulbagarden.net/wiki/${bulbapediaLinkName}_(Pok%C3%A9mon)`;
+            formDiv.setAttribute('data-name', canon);
+
+            const species        = result.name.split('-',1)[0];
+            const displayName    = formatSuggestionName(canon);
+            const speciesSlug    = species[0].toUpperCase() + species.slice(1);
+            const bulbapediaLink = `https://bulbapedia.bulbagarden.net/wiki/${speciesSlug}_(Pok%C3%A9mon)`;
+
             formDiv.innerHTML = `
                 <button class="close-button" onclick="removeCard(this)">X</button>
-                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${result.id}.png" alt="${result.form}" class="mx-auto mb-2">
-                <h2 class="text-center mb-2"><a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">${display}</a></h2>
-                <p class="text-center"><span>Type:</span> ${result.types.map(type => `<span class="type-badge type-${type.toLowerCase()}">${capitalizeFirstLetter(type)}</span>`).join(' ')}</p>
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${result.id}.png"
+                    alt="${result.form}" class="mx-auto mb-2">
+                <h2 class="text-center mb-2">
+                <a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">
+                    ${displayName}
+                </a>
+                </h2>
+                <p class="text-center">
+                <span>Type:</span>
+                ${result.types.map(t=>
+                    `<span class="type-badge type-${t.toLowerCase()}">
+                    ${capitalizeFirstLetter(t)}
+                    </span>`
+                ).join(' ')}
+                </p>
                 <div class="content mt-2">
-                    <div class="stat-row">
-                        <span class="stat-label">HP:</span>
-                        <span class="stat-value">${result.stats.hp}</span>
-                        <div class="stat-bar" style="width: ${result.stats.hp}px; background-color: #69DC12;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Attack:</span>
-                        <span class="stat-value">${result.stats.attack}</span>
-                        <div class="stat-bar" style="width: ${result.stats.attack}px; background-color: #EFCC18;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Defense:</span>
-                        <span class="stat-value">${result.stats.defense}</span>
-                        <div class="stat-bar" style="width: ${result.stats.defense}px; background-color: #E86412;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Sp. Atk:</span>
-                        <span class="stat-value">${result.stats.special_attack}</span>
-                        <div class="stat-bar" style="width: ${result.stats.special_attack}px; background-color: #14C3F1;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Sp. Def:</span>
-                        <span class="stat-value">${result.stats.special_defense}</span>
-                        <div class="stat-bar" style="width: ${result.stats.special_defense}px; background-color: #4A6ADF;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Speed:</span>
-                        <span class="stat-value">${result.stats.speed}</span>
-                        <div class="stat-bar" style="width: ${result.stats.speed}px; background-color: #D51DAD;"></div>
-                    </div>
-                    <div class="separator"></div>
-                    <div class="stat-row">
-                        <span class="stat-label">Total:</span>
-                        <span class="stat-value">${result.stats.total}</span>
-                    </div>
+                ${renderStatRow('HP',  result.stats.hp,               'hp-bar')}
+                ${renderStatRow('Attack', result.stats.attack,       'attack-bar')}
+                ${renderStatRow('Defense', result.stats.defense,     'defense-bar')}
+                ${renderStatRow('Sp. Atk',result.stats.special_attack,'special-attack-bar')}
+                ${renderStatRow('Sp. Def',result.stats.special_defense,'special-defense-bar')}
+                ${renderStatRow('Speed', result.stats.speed,         'speed-bar')}
+                ${renderStatRow('Total', result.stats.total)}
                 </div>
             `;
             return formDiv;
-        }
+            }
+
+            // helper to avoid repeating the separator + row markup
+            function renderStatRow(label, value, barClass) {
+                if (label === 'Total') {
+                    // just label + value, no bar, no separator
+                    return `
+                    <div class="stat-row">
+                        <span class="stat-label">Total:</span>
+                        <span class="stat-value">${value}</span>
+                    </div>
+                    `;
+                }
+
+                // all other stats get a bar + separator
+                return `
+                    <div class="stat-row">
+                    <span class="stat-label">${label}:</span>
+                    <span class="stat-value">${value}</span>
+                    <div class="stat-bar ${barClass}" style="width:${value}px;"></div>
+                    </div>
+                    <div class="separator"></div>
+                `;
+            }
 
         function capitalizeFirstLetter(string) {
             return string.charAt(0).toUpperCase() + string.slice(1);

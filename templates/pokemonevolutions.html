@@ -187,6 +187,8 @@
             // Override map for niche cases
             const FORM_OVERRIDES = {
             basculin: 'basculin-white-striped',
+            pumpkaboo: 'pumpkaboo-average',
+            gourgeist: 'gourgeist-average',
             // add more manual overrides here
             };
 
@@ -194,13 +196,13 @@
             const SHORTEN_SECOND = new Set([
                 "blade","blue","normal","standard","three","incarnate","altered",
                 "average","ordinary","family","disguised","full",
-                "droopy","school","50", "two", "white", "two-segment","three-segment", "plant"
+                "droopy","school","50", "two", "white", "two-segment","three-segment", "plant", "small", "large", "super"
             ]);
             const PRESERVE = new Set([
                 "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
                 "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
                 "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike", "lycanroc-midday","lycanroc-midnight",
-                "lycanroc-dusk", "toxtricity-amped","toxtricity-low-key"
+                "lycanroc-dusk", "toxtricity-amped","toxtricity-low-key", "mime-jr", "mr-mime", "mr-rime"
               ]);
 
             // Normalize form keys: collapse to base unless special
@@ -222,12 +224,12 @@
 
             function formatDisplayName(raw) {
                 if (typeof raw !== 'string') return raw;
-                // convert hyphens to spaces, capitalize words:
-                let name = raw.replace(/-/g,' ').replace(/\b\w/g, c => c.toUpperCase());
-                name = name.replace(/\s*\([^)]*\)$/, '');
-                // strip any parenthetical or trailing form words:
-                name = name.replace(/\s*(Average|White Striped|Red Striped|Blue Striped|Plant|Sandy|Trash)$/,'');
-                return name;
+                const parts = raw.split('-');
+                const base = parts[0].replace(/\b\w/g, c => c.toUpperCase());
+                const suffix = parts.slice(1)
+                    .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+                    .join(' ');
+                return suffix ? `${base} (${suffix})` : base;
             }
 
             // Debounce
@@ -244,77 +246,117 @@
             const suggestionsBox = document.getElementById('suggestions');
             const resultsContainer = document.getElementById('results');
 
-            let collapsedItems = [];
-            let selectedIndex = -1;
-
             function showSuggestions() { suggestionsBox.style.display = 'block'; }
             function hideSuggestions() { suggestionsBox.style.display = 'none'; selectedIndex = -1; }
 
             function selectSuggestion(idx) {
             if (idx < 0 || idx >= collapsedItems.length) return;
-            const { key, display } = collapsedItems[idx];
+            const { display, key } = collapsedItems[idx];
             inputEl.value = display;
             hideSuggestions();
             fetchEvolutions(key);
+            // 📦 Save state
+            localStorage.setItem('evoLastKey', key);
+            localStorage.setItem('evoLastDisplay', display);;
             }
 
+            function pickRepresentative(canon) {
+                // 1) if you explicitly overrode this base, use it
+                if (FORM_OVERRIDES[canon]) {
+                    return FORM_OVERRIDES[canon];
+                }
+
+                // 2) otherwise fall back to whichever form actually has evolutions
+                const forms = FORMS_BY_BASE[canon] || [canon];
+                const evoForm = forms.find(f => EVOLUTIONS_BY_FROM[f]?.length);
+                if (evoForm) return evoForm;
+
+                // 3) otherwise just give me the first one
+                return forms[0];
+            }
+
+            let collapsedItems = [];
+            let selectedIndex  = -1;
+
+            // when the user types
             function handleInput(e) {
-            const q = e.target.value.toLowerCase().trim();
-            if (q.length < 2) return hideSuggestions();
-            fetchSuggestions(q);
+                const q = e.target.value.toLowerCase().trim();
+                if (q.length < 2) {
+                    hideSuggestions();
+                    return;
+                }
+                fetchSuggestions(q);
             }
 
             async function fetchSuggestions(query) {
-            const res = await fetch(`/api/pokemon/suggestions?query=${encodeURIComponent(query)}`);
-            const { suggestions } = await res.json();
-            if (!suggestions.length) return hideSuggestions();
-
-            const buckets = {};
-            suggestions.forEach(s => {
-                const norm = collapseKey(s.key);
-                buckets[norm] = buckets[norm] || [];
-                buckets[norm].push(s.key);
-            });
-
-            collapsedItems = Object.keys(buckets).map(norm => {
-                const keys = buckets[norm];
-                // manual override if present
-                const overrideKey = FORM_OVERRIDES[norm];
-                let best;
-                if (overrideKey) {
-                best = overrideKey;
-                } else {
-                const evoForm = keys.find(k => EVOLUTIONS_BY_FROM[k]?.length);
-                best = evoForm || keys[0];
+                const res = await fetch(
+                    `/api/pokemon/suggestions?query=${encodeURIComponent(query)}`
+                );
+                const { suggestions: raw } = await res.json();
+                if (!raw.length) {
+                    hideSuggestions();
+                    return;
                 }
-                const displayName = norm.replace(/-/g,' ').replace(/\b\w/g, c=>c.toUpperCase());
-                return { display: displayName, key: best };
-            });
 
-            suggestionsBox.innerHTML = '';
-            collapsedItems.forEach((item, i) => {
-                const li = document.createElement('li');
-                li.textContent = item.display;
-                li.dataset.idx = i;
-                li.className = i === 0 ? 'highlighted' : '';
-                li.addEventListener('click', () => selectSuggestion(i));
-                suggestionsBox.appendChild(li);
-            });
-            selectedIndex = 0;
-            showSuggestions();
+                // 1) extract and dedupe the raw keys
+                let keys = Array.from(new Set(raw.map(s => s.key)));
+
+                // 2) remove any purely cosmetic Dynamax/G-Max
+                keys = keys.filter(k => {
+                    const l = k.toLowerCase();
+                    return !l.endsWith('-gmax') && !l.endsWith('-gigantamax');
+                });
+
+                // 3) bucket by your collapseKey so mechanical-duplicates collapse
+                const buckets = {};
+                keys.forEach(k => {
+                    const canon = collapseKey(k);
+                    (buckets[canon] ||= new Set()).add(k);
+                });
+
+                // 4) pick a representative from each bucket
+                const items = Object.keys(buckets)
+                    .sort((a, b) => formatDisplayName(a).localeCompare(formatDisplayName(b)))
+                    .map(canon => {
+                    // pick a form that actually exists in your processed cache
+                    const forms = Array.from(buckets[canon]);
+                    const pick   = pickRepresentative(canon);
+                    return {
+                        display: formatDisplayName(canon),
+                        key:     pick
+                    };
+                    });
+
+                // 5) render them
+                collapsedItems = items;
+                suggestionsBox.innerHTML = '';
+                items.forEach((it, i) => {
+                    const li = document.createElement('li');
+                    li.textContent   = it.display;
+                    li.dataset.idx   = i;
+                    if (i === 0) li.classList.add('highlighted');
+                    li.addEventListener('click', () => selectSuggestion(i));
+                    suggestionsBox.appendChild(li);
+                });
+
+                selectedIndex = 0;
+                showSuggestions();
             }
 
             function handleArrows(e) {
-            const items = Array.from(suggestionsBox.children);
-            if (!items.length) {
-                if (e.key === 'Enter') { e.preventDefault(); fetchEvolutions(); }
-                return;
-            }
-            if (e.key === 'ArrowDown') selectedIndex = (selectedIndex+1)%items.length;
-            else if (e.key === 'ArrowUp') selectedIndex = (selectedIndex-1+items.length)%items.length;
-            else if (e.key === 'Enter') { e.preventDefault(); selectSuggestion(selectedIndex); return; }
-            else return;
-            items.forEach((li,i) => li.classList.toggle('highlighted', i===selectedIndex));
+                const items = Array.from(suggestionsBox.children);
+                if (!items.length) {
+                    if (e.key==='Enter') fetchEvolutions();
+                    return;
+                }
+                if (e.key==='ArrowDown')  selectedIndex = (selectedIndex+1)%items.length;
+                if (e.key==='ArrowUp')    selectedIndex = (selectedIndex-1+items.length)%items.length;
+                if (e.key==='Enter') {
+                    e.preventDefault();
+                    selectSuggestion(selectedIndex);
+                    return;
+                }
+                items.forEach((li,i)=> li.classList.toggle('highlighted', i===selectedIndex));
             }
 
             function fetchEvolutions(nameKey) {
@@ -324,6 +366,10 @@
             resultsContainer.innerHTML = '';
             fetch(`/api/pokemon/evolutions?name=${encodeURIComponent(name)}`)
                 .then(r=>r.json()).then(renderResults);
+            }
+
+            function capitalizeFirstLetter(str) {
+                return str.replace(/^(\w)/, (m,p) => p.toUpperCase());
             }
 
             function renderResults(data) {
@@ -342,45 +388,111 @@
                 // 2) determine which parents have >1 distinct form
                 const multiParent = new Set(
                     Object.entries(groups)
-                    .filter(([parent, children]) => children.length > 1)
+                    .filter(([_, children]) => children.length > 1)
                     .map(([parent]) => parent)
                 );
 
                 data.forEach(p => {
-                    // 3) choose display name:
+                    // ---- compute title based on p.name and p.evolves_from ----
+                    const parts       = p.name.split('-');
+                    const base        = parts[0];
+                    const suffixParts = parts.slice(1);
                     let title;
-                    if (p.evolves_from && multiParent.has(p.evolves_from)) {
-                    // keep the raw, e.g. "Lycanroc (Midday)"
-                    title = p.display_name
-                        .replace(/-/g,' ')
-                        .replace(/\b\w/g,c=>c.toUpperCase());
+
+                    if (!p.evolves_from) {
+                    // ── ROOT form: show all parts
+                    title = [base, ...suffixParts]
+                        .map(capitalizeFirstLetter)
+                        .join(' ');
                     } else {
-                    // strip all parens for single‐form evolutions
-                    title = formatDisplayName(p.display_name || p.name);
+                    // ── EVOLUTION
+                    const parentBase = p.evolves_from.split('-',1)[0];
+
+                    // default child: exactly one suffix and it matches the parent
+                    if (
+                        suffixParts.length === 1 &&
+                        suffixParts[0] === parentBase
+                    ) {
+                        title = `${capitalizeFirstLetter(base)} ${capitalizeFirstLetter(suffixParts[0])}`;
                     }
+                    // alternate forms: first suffix matches parent, extra bits go in parens
+                    else if (
+                        suffixParts.length > 1 &&
+                        suffixParts[0] === parentBase
+                    ) {
+                        const extra = suffixParts
+                        .slice(1)
+                        .map(capitalizeFirstLetter)
+                        .join(' ');
+                        title = `${capitalizeFirstLetter(base)} (${extra})`;
+                    }
+                    // fallback: just join everything
+                    else {
+                        title = [base, ...suffixParts]
+                        .map(capitalizeFirstLetter)
+                        .join(' ');
+                    }
+            }
+
+                    title = title.replace(/ Average$/, '')
+
+                    const species = p.name.split('-',1)[0];
+                    const slug    = species.charAt(0).toUpperCase() + species.slice(1);
+                    const bulbLink = `https://bulbapedia.bulbagarden.net/wiki/${slug}_(Pok%C3%A9mon)`;
 
                     const card = document.createElement('div');
                     card.className = 'result-card';
                     card.innerHTML = `
-                    <h2>${title}</h2>
+                    <h2>
+                        <a href="${bulbLink}" target="_blank" class="text-blue-500 underline">
+                        ${title}
+                        </a>
+                    </h2>
                     <img src="${p.sprite_url}" alt="${title}">
-                    ${p.evolves_from?`<p>Evolves from: ${formatDisplayName(p.evolves_from)}</p>`:''}
-                    ${p.evolution_conditions.map(cond=>
+                    ${p.evolves_from
+                        ? `<p>Evolves from: ${capitalizeFirstLetter(p.evolves_from.split('-')[0])}</p>`
+                        : ''}
+                    ${p.evolution_conditions.map(cond =>
                         Object.entries(cond)
-                        .filter(([k,v])=>v&&v!=='N/A')
-                        .map(([k,v])=>`<p>${k}: ${v}</p>`)
+                        .filter(([k,v]) => v && v !== 'N/A')
+                        .map(([k,v]) => `<p>${k.replace(/_/g,' ')}: ${v}</p>`)
                         .join('')
                     ).join('')}
-                    ${p.note?`<p>Note: ${p.note}</p>`:''}
+                    ${p.note ? `<p>Note: ${capitalizeFirstLetter(p.note)}</p>` : ''}
                     `;
                     container.appendChild(card);
                 });
-            }
+                }
 
             inputEl.addEventListener('input', debounce(handleInput,250));
             inputEl.addEventListener('keydown', handleArrows);
-            document.getElementById('search-btn').addEventListener('click', ()=>fetchEvolutions());
-            document.getElementById('clear-btn').addEventListener('click', ()=>{inputEl.value='';hideSuggestions();resultsContainer.innerHTML='';});
+            document.getElementById('search-btn').addEventListener('click', ()=> {  
+                fetchEvolutions();
+                // if user manually typed and hit Search without picking from dropdown,
+                // you may also want to save raw collapseKey/input here:
+                const raw = inputEl.value.trim().toLowerCase();
+                if (raw) {
+                    const canon = collapseKey(raw);
+                    const fetchKey = FORM_OVERRIDES[canon] || canon;
+                    localStorage.setItem('evoLastKey', fetchKey);
+                    localStorage.setItem('evoLastDisplay', inputEl.value);
+                }   
+            });           
+            document.getElementById('clear-btn').addEventListener('click', ()=>{inputEl.value='';hideSuggestions();resultsContainer.innerHTML='';
+                // 🗑️ Clear saved state
+                localStorage.removeItem('evoLastKey');
+                localStorage.removeItem('evoLastDisplay');
+            });
+
+            // ▶️ On load, restore last search
+            document.addEventListener('DOMContentLoaded', () => {
+                const key     = localStorage.getItem('evoLastKey');
+                const display = localStorage.getItem('evoLastDisplay');
+                if (key && display) {
+                    inputEl.value = display;
+                    fetchEvolutions(key);
+                }
+            });
         </script>
     </body>
 </html>

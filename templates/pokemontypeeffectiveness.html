@@ -456,58 +456,52 @@
               ]);
 
               function collapseKey(rawKey) {
-                if (typeof rawKey !== 'string') {
-                  return rawKey;
-                }
+                if (typeof rawKey !== 'string') return rawKey;
                 const key = rawKey.toLowerCase().trim();
-                // 1) first apply any hard override from FORM_COLLAPSE_MAP:
-                if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key][0];
 
-                // 2) FULL_PRESERVE are never collapsed:
-                if (FULL_PRESERVE.has(key)) return key;
-
-                // get “sibling” forms of this canonical
-                const canon = key.split('-',1)[0];
-                const siblings = FORMS_BY_BASE[canon] || [key];
-
-                // MODE-SPECIFIC checks:
-                if (CURRENT_MODE === 'typeeffectiveness') {
-                  const sig = new Set(
-                    (siblings
-                      .map(f => PROCESSED_CACHE[f])
-                      .filter(p => p)                  // only keep defined entries
-                      .map(p => p.types.join(',')))
-                  );
-                  if (sig.size > 1) return key;
-                }
-                if (CURRENT_MODE === 'stats') {
-                  const sig = new Set(
-                    (siblings
-                      .map(f => PROCESSED_CACHE[f])
-                      .filter(p => p)                  // only keep defined entries
-                      .map(p => p.types.join(',')))
-                  );
-                  if (sig.size > 1) return key;
-                }
-                if (CURRENT_MODE === 'evolutions') {
-                  // compare evolution‐method signatures for each sibling
-                  const sig = new Set(siblings.map(f => {
-                    const evs = EVOLUTIONS_BY_FROM[f] || [];
-                    // stringify the sorted list of (to,trigger) pairs:
-                    return JSON.stringify(evs.map(e=>[e.to,e.trigger]).sort());
-                  }));
-                  if (sig.size > 1) return key;   // some form evolves differently → keep distinct
+                // 1) Strip purely aesthetic suffixes if they add no mechanical
+                //    difference (same types & stats).
+                for (const suffix of ['-gmax', '-gigantamax']) {
+                  if (key.endsWith(suffix)) {
+                    const base = key.slice(0, -suffix.length);
+                    const P = PROCESSED_CACHE[key];
+                    const Q = PROCESSED_CACHE[base];
+                    if (
+                      P && Q &&
+                      JSON.stringify(P.stats) === JSON.stringify(Q.stats) &&
+                      P.types.join(',') === Q.types.join(',')
+                    ) {
+                      // collapse to the base form (and re-run collapseKey in case
+                      // that base itself has an override)
+                      return collapseKey(base);
+                    }
+                  }
                 }
 
-                // 3) cosmetic suffix collapse:
-                const parts = key.split('-');
-                if (parts.length > 1 && SHORTEN_SECOND.has(parts[1])) return parts[0];
+                // 2) Honor any Python‐side override map:
+                if (FORM_COLLAPSE_MAP[key]) {
+                  const mapped = FORM_COLLAPSE_MAP[key];
+                  return Array.isArray(mapped) ? mapped[0] : mapped;
+                }
 
-                // 4) default form if you typed only the species:
-                if (parts.length === 1) return parts[0];
+                // 3) Never collapse your “full preserve” exceptions:
+                if (FULL_PRESERVE.has(key)) {
+                  return key;
+                }
 
+                // 4) If **every** form of this species has identical type+stats,
+                //    collapse to the bare species name:
+                const species = key.split('-',1)[0];
+                const sig = SPECIES_SIGS[species] || { type: new Set(), stat: new Set() };
+                if (sig.type.size === 1 && sig.stat.size === 1) {
+                  return species;
+                }
+
+                // 5) Otherwise keep the full form:
                 return key;
               }
+
+
 
               function pickRepresentative(canon) {
                 const forms = COLLAPSED_TO_FORMS[canon] || [canon];
@@ -684,6 +678,19 @@
                 saveState();
               }
 
+              function formatSuggestionName(key) {
+                const parts = key.split('-');
+                const base  = parts.shift();
+                const suffix= parts.join(' ');
+                const baseDisp  = base[0].toUpperCase() + base.slice(1);
+                if (!suffix) return baseDisp;
+                const suffixDisp = suffix
+                    .split(' ')
+                    .map(w=>w[0].toUpperCase()+w.slice(1))
+                    .join(' ');
+                return `${baseDisp} (${suffixDisp})`;
+              }
+
               // — render a single history button —
               function renderHistoryEntry(r, prepend = false) {
                 // skip duplicates
@@ -755,44 +762,58 @@
               let selectedIndex = -1;
               let SPECIES_SIGS = {};
 
-              async function handleInput(event) {
-                const q   = event.target.value.trim().toLowerCase();
-                const suggestionsBox = event.target.parentElement.querySelector('.suggestions');
 
+              async function handleInput(e) {
+                const q = e.target.value.trim().toLowerCase();
+                const box = e.target.parentElement.querySelector('.suggestions');
                 if (q.length < 2) {
-                  suggestionsBox.style.display = 'none';
+                  box.style.display = 'none';
+                  suggestionKeys = [];
                   return;
                 }
-                const { suggestions } = await fetch(`/api/pokemon/suggestions?query=${q}`).then(r=>r.json());
-                const rawKeys = suggestions.map(s=>s.key);
-                 // group by base species
-                const buckets = {};
-                rawKeys.forEach(k => {
-                  const base = k.split('-',1)[0];
-                  buckets[base] = buckets[base]||new Set();
-                  buckets[base].add(k);
-                });
 
-                // render
-                suggestionKeys = [];
-                const html = [];
-                Object.entries(buckets).forEach(([base, forms]) => {
-                  const { type } = SPECIES_SIGS[base];
-                  if (type.size > 1) {
-                    // different typings → list each form separately
-                    forms.forEach(form => {
-                      html.push(`<li onclick="selectSuggestion('${form}')">${formatDisplayName(form)}</li>`);
-                      suggestionKeys.push(form);
-                    });
-                  } else {
-                    // same typing → collapse to base
-                    html.push(`<li onclick="selectSuggestion('${base}')">${formatDisplayName(base)}</li>`);
-                    suggestionKeys.push(base);
+                // fetch raw form keys
+                const { suggestions: rawSuggestions } = await fetch(
+                  `/api/pokemon/suggestions?query=${encodeURIComponent(q)}`
+                ).then(r => r.json());
+                const rawKeys = rawSuggestions.map(s => s.key);
+
+                // bucket by species → then cluster by (types+stats) signature
+                const list = [];
+                const buckets = rawKeys.reduce((acc, raw) => {
+                  const sp = raw.split('-',1)[0];
+                  (acc[sp] = acc[sp]||[]).push(raw);
+                  return acc;
+                }, {});
+
+                for (const sp of Object.keys(buckets).sort()) {
+                  const clusterMap = buckets[sp].reduce((c, form) => {
+                    const p = PROCESSED_CACHE[form];
+                    const sig = JSON.stringify({ t: p.types, s: p.stats });
+                    (c[sig] = c[sig]||[]).push(form);
+                    return c;
+                  }, {});
+
+                  for (const sig of Object.keys(clusterMap)) {
+                    const forms = clusterMap[sig].sort();
+                    if (forms.length === 1) {
+                      // only one mechanically‐distinct form
+                      list.push({ key: forms[0], label: formatSuggestionName(forms[0]) });
+                    } else {
+                      // multiple forms share the same sig → collapse to one entry
+                      const rep = collapseKey(forms[0]);
+                      list.push({ key: rep, label: formatSuggestionName(rep) });
+                    }
                   }
-                });
+                }
 
-                suggestionsBox.innerHTML = html.join('');
-                suggestionsBox.style.display = suggestionKeys.length ? 'block' : 'none';
+                // render dropdown
+                suggestionKeys = list.map(x => x.key);
+                box.innerHTML = list
+                  .map(x => `<li onclick="selectSuggestion('${x.key}')">${x.label}</li>`)
+                  .join('');
+                box.style.display = list.length ? 'block' : 'none';
+                selectedIndex = -1;
               }
 
 
@@ -860,7 +881,10 @@
               }
 
               async function fetchPokemon(rawName) {
-                const name = rawName
+                // 1) collapse any cosmetic or mechanic‐duplicate forms (eg “-gmax”)
+                let canon = collapseKey(rawName);
+                // 2) if that canon isn't a real form, pick the first valid sibling
+                let name = pickRepresentative(canon);
                 const sec = document.getElementById('main-result');
 
                 // — if it’s already showing as the main card, just scroll to it —
@@ -884,6 +908,16 @@
                     return;
                   }
                   const r = data[0];
+                  removeHistoryEntry(r.display_name);
+
+                  // ── DUPLICATE CHECK ──
+                  for (let i = 0; i < sec.children.length; i++) {
+                    const existing = JSON.parse(sec.children[i].dataset.pokemon);
+                    if (existing.display_name === r.display_name) {
+                      sec.children[i].scrollIntoView({ behavior:'smooth', block:'end' });
+                      return;
+                    }
+                  }
 
                   // 2) Zero cards yet → show first slot only
                   if (sec.children.length === 0) {
@@ -903,14 +937,15 @@
                   }
 
                   // 4) Two cards: slide window
-                  //    a) move leftmost into history
+                  let leftData;
                   {
                     const leftCard = sec.children[0];
-                    const leftData = JSON.parse(leftCard.dataset.pokemon);
-                    pushToHistory(leftData);
+                    leftData = JSON.parse(leftCard.dataset.pokemon);
                     sec.removeChild(leftCard);
+                    // immediately push that one into history
+                    pushToHistory(leftData);
                   }
-                  //    b) append new one (if not same as the remaining)
+                  // b) append the new one (if it isn’t the same as what’s left)
                   if (sec.children[0].dataset.name !== r.display_name) {
                     const card = createCard(r);
                     card.dataset.name = r.display_name;
@@ -918,8 +953,8 @@
                   }
                   saveState();
                   return;
-                }
-
+                }  
+                
                 // — 1v1 MODE: original single-card behavior —
                 // fetch & render the new one
                 const epSingle   = location.pathname.includes('stats') ? 'stats' : 'info';
@@ -930,6 +965,15 @@
                 if (resSingle.ok) {
                   const r = dataSingle[0];
                   // remove from history (in case it was there)
+                  removeHistoryEntry(r.display_name);
+                  // ── DUPLICATE CHECK ──
+                  {
+                    const existing = sec.querySelector(`.result-card[data-name="${r.display_name}"]`);
+                    if (existing) {
+                      existing.scrollIntoView({ behavior:'smooth', block:'end' });
+                      return;
+                    }
+                  }
                   removeHistoryEntry(r.display_name);
 
                   // now push the old main into history (if any), before we render the new one
@@ -947,6 +991,10 @@
 
 
               function createCard(r) {
+                const species = r.name.split('-',1)[0];
+                const title   = formatDisplayName(r.name);
+                const slug    = species[0].toUpperCase() + species.slice(1);
+                const bulbapediaLink = `https://bulbapedia.bulbagarden.net/wiki/${slug}_(Pok%C3%A9mon)`;
                 const d = document.createElement('div');
                 d.className = 'result-card';
                 d.dataset.pokemon = JSON.stringify(r);
@@ -954,7 +1002,7 @@
                   <button class="minimize-button" onclick="minimizeCard(this)">−</button>
                   <button class="close-button" onclick="closeCard(this)">×</button>
                   <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.display_name}">
-                  <h2>${formatDisplayName(r.name)}</h2>
+                  <h2><a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">${title}</a></h2>
                   <p class="type-line">Type: ${r.types.map(
                     t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`
                   ).join(' ')}</p>
