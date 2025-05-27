@@ -432,6 +432,7 @@
                 align-items: flex-start;
                 margin-top: 50px;
                 margin-right: 230px;
+                min-height: 675px; /* ← KEEP THIS */
               }
 
               #history {
@@ -447,6 +448,8 @@
                 height: fit-content;
                 margin-top: 50px;
                 margin-left: -30px;
+                flex-shrink: 0;
+                min-height: 50px;
               }
               #history.hidden-history {
                 visibility: hidden !important;
