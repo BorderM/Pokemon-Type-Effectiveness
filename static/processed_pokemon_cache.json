@@ -34702,12 +34702,12 @@
     }
   },
   {
-    "name": "meowstic-male",
-    "display_name": "Meowstic Male",
+    "name": "meowstic",
+    "display_name": "Meowstic",
     "species": "meowstic",
     "form_name": "male",
     "sprite_url": "/static/sprites/meowstic-male.png",
-    "form": "meowstic-male",
+    "form": "meowstic",
     "id": 678,
     "types": [
       "psychic"
