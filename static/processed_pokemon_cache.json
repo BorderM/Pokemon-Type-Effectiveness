@@ -60026,12 +60026,12 @@
     }
   },
   {
-    "name": "mimikyu-totem-disguised",
-    "display_name": "Mimikyu Totem Disguised",
+    "name": "mimikyu",
+    "display_name": "Mimikyu",
     "species": "mimikyu",
     "form_name": "totem-disguised",
-    "sprite_url": "/static/sprites/mimikyu-totem-disguised.png",
-    "form": "mimikyu-totem-disguised",
+    "sprite_url": "/static/sprites/mimikyu-disguised.png",
+    "form": "mimikyu-disguised",
     "id": 10144,
     "types": [
       "ghost",

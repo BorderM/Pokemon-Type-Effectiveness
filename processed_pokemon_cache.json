@@ -34702,12 +34702,12 @@
     }
   },
   {
-    "name": "meowstic-male",
-    "display_name": "Meowstic Male",
+    "name": "meowstic",
+    "display_name": "Meowstic",
     "species": "meowstic",
     "form_name": "male",
     "sprite_url": "/static/sprites/meowstic-male.png",
-    "form": "meowstic-male",
+    "form": "meowstic",
     "id": 678,
     "types": [
       "psychic"
@@ -60026,12 +60026,12 @@
     }
   },
   {
-    "name": "mimikyu-totem-disguised",
-    "display_name": "Mimikyu Totem Disguised",
+    "name": "mimikyu",
+    "display_name": "Mimikyu",
     "species": "mimikyu",
     "form_name": "totem-disguised",
-    "sprite_url": "/static/sprites/mimikyu-totem-disguised.png",
-    "form": "mimikyu-totem-disguised",
+    "sprite_url": "/static/sprites/mimikyu-disguised.png",
+    "form": "mimikyu-disguised",
     "id": 10144,
     "types": [
       "ghost",
