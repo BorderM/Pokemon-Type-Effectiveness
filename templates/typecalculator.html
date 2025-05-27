@@ -4,7 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
+        <style>
+        /* Fixed header shared styling */
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #1a202c;
+            padding: 1rem 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 200px;
+        }
+
+        .fixed-header h1 {
+            margin-top: 20px;
+        }
+
+        .watermark-fixed {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 0.75rem;
+            color: #a0aec0;
+        }
+
+        body {
+            padding-top: 200px; /* Ensure all content scrolls below header */
+        }
+
+        #results {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-top: 0.5rem; /* Small consistent gap under header */
+            margin-top: 0;
+        }
+
         .input-container {
             position: relative;
             width: 100%;
@@ -15,22 +53,26 @@
             padding-left: 10px;
             gap: 20px;
         }
+
         .dropdown {
             background-color: white;
             border: 1px solid #ccc;
             padding: 8px;
             border-radius: 4px;
-            flex-grow: 1;
             color: black;
             width: 100%;
             max-width: 200px;
             margin-bottom: 10px;
         }
+
         .control-buttons {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 10px;
+            justify-content: center;
         }
+
         .result-card {
             background-color: #2d2d2d;
             color: white;
@@ -45,37 +87,46 @@
             word-wrap: break-word;
             justify-content: space-between;
             position: relative;
+            margin-top: 20px;
+            scroll-margin-top: 200px; /* Aligns scrolling just below header */
         }
+
         .result-card h2 {
             font-size: 1.25rem;
             font-weight: bold;
             text-align: center;
             margin-bottom: 1rem;
         }
+
         .result-card p {
             font-size: 1rem;
             margin-bottom: 0.5rem;
         }
+
         .effectiveness-row {
             padding: 0.5rem 0;
             display: flex;
             align-items: flex-start;
             flex-wrap: wrap;
         }
+
         .effectiveness-label {
             width: 100px;
             font-weight: bold;
         }
+
         .effectiveness-content {
             flex: 1;
             display: flex;
             flex-wrap: wrap;
             gap: 0.5rem;
         }
+
         .separator {
             border-top: 2px solid #444;
             margin: 0.5rem 0;
         }
+
         .type-badge {
             display: inline-block;
             padding: 0.25rem 0.5rem;
@@ -84,6 +135,8 @@
             font-weight: bold;
             margin: 0.1rem;
         }
+
+        /* Type colors */
         .type-normal { background-color: #A8A77A; }
         .type-fire { background-color: #EE8130; }
         .type-water { background-color: #6390F0; }
@@ -103,58 +156,38 @@
         .type-steel { background-color: #C0C0C0; }
         .type-fairy { background-color: #D685AD; }
         .type-none { background-color: #000000; }
-        .fixed-header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background-color: #1a202c;
-            padding: 1rem 0;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 200px;
-        }
-        .watermark-fixed {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 0.75rem;
-            color: #a0aec0;
-        }
-        .progress-bar-container {
-            width: 100%;
-            max-width: 450px;
-            margin-top: 10px;
-            height: 20px;
-        }
+
         .hidden {
             visibility: hidden;
         }
-        #results {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 200px;
-        }
-        .dropdown {
-            background-color: white;
-            border: 1px solid #ccc;
-            padding: 8px;
-            border-radius: 4px;
-            color: black;
-            width: 100%;
-            max-width: 200px;
-            margin-bottom: 10px;
+
+        @media (max-width: 768px) {
+            .result-card {
+                scroll-snap-align: start;
+                flex-shrink: 0;
+            }
+
+            #main-result {
+                scroll-snap-type: x mandatory;
+            }
+
+            .fixed-header {
+                height: 220px;
+            }
+
+            .control-buttons {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
         }
     </style>
     <title>Type Calculator</title>
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen w-full">
     <div class="fixed-header">
         <div class="watermark-fixed">Created by BorderM</div>
         <h1 class="text-3xl font-bold text-center mb-2">Pokémon Type Calculator</h1>
-        <div class="control-buttons">
+        <div class="control-buttons flex flex-wrap justify-center gap-2"">
             <button onclick="clearResults()" class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
             <a href="/typeeffectiveness" class="bg-green-500 text-white p-2 rounded-lg">Type Effectiveness</a>
             <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
@@ -208,6 +241,35 @@
     </div>
     <div id="results"></div>
     <script>
+        let TYPE_CHART = {};
+
+        // 1) Fetch the local chart once, then initialize everything
+        fetch('{{ url_for("static", filename="typechart.json") }}')
+            .then(r => {
+                if (!r.ok) throw new Error("Could not load typechart.json");
+                return r.json();
+            })
+            .then(json => {
+                TYPE_CHART = json;
+                initCalculator();      // now that TYPE_CHART is ready, wire up the UI
+            })
+            .catch(err => {
+                console.error("Type chart load failed:", err);
+                document.getElementById('results').innerHTML =
+                `<div class="result-card"><p style="color: red">Could not load type chart.</p></div>`;
+            });
+
+        // 2) All of your normal functions go _below_ (populateDropdowns, clearResults, displayResults, etc.)
+
+        function initCalculator() {
+            populateDropdowns();
+            computeAndRender();      // initial render if any types were saved
+            document.getElementById('type1')
+            .addEventListener('change', computeAndRender);
+            document.getElementById('type2')
+            .addEventListener('change', computeAndRender);
+        }
+
         const types = [
             "bug", "dark", "dragon", "electric", "fairy", "fighting",
             "fire", "flying", "ghost", "grass", "ground", "ice",
@@ -272,27 +334,80 @@
             localStorage.setItem('type1', type1);
             localStorage.setItem('type2', type2);
 
-            fetchTypeEffectiveness();
+            computeAndRender();
         }
 
-        async function fetchTypeEffectiveness() {
-            const type1 = document.getElementById('type1').value;
-            const type2 = document.getElementById('type2').value;
-
-            if (!type1) {
+        function computeAndRender() {
+            const t1 = document.getElementById('type1').value;
+            const t2 = document.getElementById('type2').value;
+            if (!t1) {
                 document.getElementById('results').innerHTML = '';
                 return;
             }
 
-            const response = await fetch(`/api/typeeffectiveness?type1=${type1}&type2=${type2}`);
-            const data = await response.json();
+            // since TYPE_CHART[type] is already the damage_relations object:
+            const rel1 = TYPE_CHART[t1];
+            const rel2 = t2 ? TYPE_CHART[t2] : { };
 
-            if (response.ok) {
-                displayResults(data);
-            } else {
-                alert(data.error || 'An error occurred');
+            // now pass those directly into your JS port of calculate_type_effectiveness:
+            const merged = calculateTypeEffectiveness([ rel1, rel2 ]);
+            displayResults(merged);
             }
+
+
+        // simple port of your Python logic to JS:
+        function calculateTypeEffectiveness(damageRelationsList) {
+            const damage = {};
+
+            for (const rel of damageRelationsList) {
+                // guard against undefined
+                for (const [relation, arr] of Object.entries(rel || {})) {
+                const mult = relation === 'double_damage_from' ? 2
+                            : relation === 'half_damage_from'   ? 0.5
+                            : relation === 'no_damage_from'     ? 0
+                            : 1;
+
+                for (const o of arr) {
+                    damage[o.name] = (damage[o.name] || 1) * mult;
+                }
+                }
+            }
+
+            const categories = {
+                four_times_effective: [],
+                super_effective:      [],
+                normal_effective:     [],
+                two_times_resistant:  [],
+                four_times_resistant: [],
+                immune:               []
+            };
+
+            const allTypes = new Set([
+                "normal","fire","water","electric","grass","ice","fighting",
+                "poison","ground","flying","psychic","bug","rock","ghost",
+                "dragon","dark","steel","fairy"
+            ]);
+
+            for (const [t, m] of Object.entries(damage)) {
+                if      (m === 4)   categories.four_times_effective.push(t);
+                else if (m === 2)   categories.super_effective.push(t);
+                else if (m === 0.5) categories.two_times_resistant.push(t);
+                else if (m === 0.25)categories.four_times_resistant.push(t);
+                else if (m === 0)   categories.immune.push(t);
+            }
+
+            categories.normal_effective = 
+                [...allTypes].filter(t => ![
+                ...categories.four_times_effective,
+                ...categories.super_effective,
+                ...categories.two_times_resistant,
+                ...categories.four_times_resistant,
+                ...categories.immune
+                ].includes(t));
+
+            return categories;
         }
+
 
         function clearResults() {
 			localStorage.removeItem('type1');
@@ -350,7 +465,7 @@
 
         window.onload = () => {
             populateDropdowns();
-            fetchTypeEffectiveness();
+            computeAndRender();
         };
     </script>
 </body>

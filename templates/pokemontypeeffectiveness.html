@@ -37,13 +37,14 @@
                 top: 0;
                 left: 0;
                 right: 0;
+                width: 100%;
                 background: #1f2937; /* gray-800 */
                 padding: 1rem 0;
                 z-index: 1000;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                height: 200px;
+                height: auto;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
             }
             .watermark-fixed {
@@ -54,18 +55,16 @@
                 color: #a0aec0;
             }
 
-            /* Controls */
-            .control-buttons {
-                display: flex;
-                gap: 10px;
-                margin-bottom: 10px;
-            }
-
             /* Input + suggestions */
             .input-container {
                 position: relative;
                 width: 100%;
                 max-width: 450px;
+            }
+            header h1 {
+              margin-top: 20px;
+              margin-bottom: 10px;
+              text-align: center;
             }
             .input-field {
                 width: 100%;
@@ -73,7 +72,8 @@
                 border: none;
                 border-radius: 4px;
                 background: #374151; /* gray-700 – contrast vs header */
-                color: #fff;
+                color: #000000;
+                background-color: white;
             }
             .suggestions {
                 position: absolute;
@@ -103,30 +103,120 @@
             }
 
             /* ─── container / history / main-result ─── */
-            .container {
+            @media (max-width: 640px) {
+              .container {
+                  flex-direction: column;
+                  position: relative;
+                  max-width: 1200px;
+                  margin: 0 auto;
+                  padding-top: 100px; /* keep space for the header */
+                  border-top: 1px solid #374151; /* dark grey separator */
+                  background: #0e131f; /* your original gray-900 */
+                  display: flex;
+                  gap: 2rem;
+              }
+              /* main-result grows to fill the rest of the flex container */
+              #main-result {
                 position: relative;
-                max-width: 1200px;
-                margin: 0 auto;
-                padding-top: 220px; /* keep space for the header */
-                border-top: 1px solid #374151; /* dark grey separator */
-                background: #0e131f; /* your original gray-900 */
+                margin-top: 775px;
+                overflow-x: auto;
+                white-space: nowrap;
+                scroll-snap-type: x mandatory;
+                width: 100%;
                 display: flex;
-                gap: 2rem;
-            }
-            /* hide history until you push your first item */
-            #history:empty {
-                display: none;
-            }
-            /* once it has items, float it on top of the left edge */
-            #history {
-                background: #1f2937; /* same as your main card bg */
-                padding: 1rem; /* give it some breathing room */
-                width: 180px;
-                max-height: calc(100vh - 240px);
+                flex-wrap: nowrap;
+                gap: 1rem;
+                padding: 0 1rem;
+                transform: scale(0.92);
+                transform-origin: top center;
+                margin-left: 10px;
+              }
+              /* ───── result-card (original size & aesthetic) ───── */
+              .result-card {
+                background: #1f2937; /* gray-800 */
+                color: white;
+                position: relative;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                max-width: 500px;
+                width: 90vw;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                flex: 0 0 90%;
+                min-width: 280px;
+                scroll-snap-align: start;
+                
+              }
+              #results {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 1rem;
+                padding-top: 100px;
+                flex-direction: column;
+                align-items: center;
+                margin-top: 240px;
+                padding: 0 1rem;
+              }
+              /* Controls */
+              .control-buttons {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 10px;
+              }
+              #history {
+                transition: all 0.3s ease;
+                background: #1f2937;
+                position: fixed;
+                bottom: 70px;
+                right: 20px;
+                left: 20px;
+                padding: 0.5rem;
+                border-radius: 0.5rem;
+                max-height: 300px;
                 overflow-y: auto;
-                padding-right: 1rem;
-                border-right: 1px solid #374151;
+                z-index: 999;
+                display: none;
+                max-width: 90%;
+              }
+                  
             }
+            .control-buttons {
+              display: flex;
+              gap: 10px;
+              margin-bottom: 10px;
+            }
+
+            /* ───── result-card (original size & aesthetic) ───── */
+              .result-card {
+                background: #1f2937; /* gray-800 */
+                color: white;
+                position: relative;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                max-width: 500px;
+                width: 90vw;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                flex: 0 0 90%;
+                min-width: 280px;
+                scroll-snap-align: start;
+              }
+              #results {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 1rem;
+                padding-top: 220px;
+                flex-direction: column;
+                align-items: center;
+                margin-top: 300px;
+                padding: 0 1rem;
+              }
             /* history cards */
             .small-card {
                 display: flex;
@@ -174,36 +264,6 @@
               margin-top: 0.5rem;
               display: flex;
               justify-content: center;
-            }
-
-            /* main-result grows to fill the rest of the flex container */
-            #main-result {
-                position: absolute;
-                top: 220px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: max-content;
-                min-height: calc(100vh - 260px);
-                display: flex;
-                justify-content: center;
-                align-items: flex-start;
-                z-index: 0;
-                gap: 1rem;
-            }
-            /* ───── result-card (original size & aesthetic) ───── */
-            .result-card {
-                background: #1f2937; /* gray-800 */
-                color: white;
-                position: relative;
-                padding: 1rem;
-                border-radius: 0.5rem;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                max-width: 500px;
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                /* let it grow naturally—no forced max-height/scroll */
             }
             .close-button {
                 position: absolute;
@@ -353,20 +413,59 @@
               font-size: 1rem;
               line-height: 1;
             }
+            @media (min-width: 641px) {
+              .container {
+                display: flex;
+                flex-direction: row;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding-top: 200px;
+                gap: 2rem;
+              }
+
+              #main-result {
+                flex: 1;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1rem;
+                justify-content: center;
+                align-items: flex-start;
+                margin-top: 50px;
+                margin-right: 220px;
+              }
+
+              #history {
+                width: 220px;
+                max-height: 80vh;
+                overflow-y: auto;
+                background: #1f2937;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                display: block;
+                position: sticky;
+                top: 200px;
+                height: fit-content;
+                margin-top: 50px;
+                margin-left: -30px;
+              }
+              #toggle-history-btn {
+                display: none !important; /* hide floating button */
+              }
+            }
         </style>
         <title>Pokémon Type Effectiveness</title>
     </head>
-    <body>
+    <body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen w-full">
         <header>
             <div class="watermark-fixed">Created by BorderM</div>
-            <h1 class="text-3xl font-bold mb-2">Pokémon Type Effectiveness</h1>
-            <div class="control-buttons">
-                <button onclick="performSearch()"class="bg-blue-500 text-white p-2 rounded">Search</button>
-                <button onclick="clearHistory()"class="bg-gray-500 text-white p-2 rounded">Clear</button>
-                <a href="/stats"class="bg-yellow-500 text-white p-2 rounded">Stats</a>
-                <a href="/typecalculator"class="bg-red-500 text-white p-2 rounded">Type Calcs</a>
-                <a href="/natures"class="bg-cyan-500 text-white p-2 rounded">Natures</a>
-                <a href="/evolutions"class="bg-orange-500 text-white p-2 rounded">Evolutions</a>
+            <h1 class="text-3xl font-bold text-white text-center mb-2">Pokémon Type Effectiveness</h1>
+            <div class="control-buttons flex flex-wrap justify-center gap-2">
+                <button onclick="performSearch()"class="bg-blue-500 text-white p-2 rounded-lg">Search</button>
+                <button onclick="clearHistory()"class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
+                <a href="/stats"class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
+                <a href="/typecalculator"class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
+                <a href="/natures"class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
+                <a href="/evolutions"class="bg-orange-500 text-white p-2 rounded-lg">Evolutions</a>
             </div>
             <div class="input-container">
                 <input
@@ -386,6 +485,9 @@
             </div>
             <div id="error-message" class="error-message-fixed"></div>
         </header>
+        <button id="toggle-history-btn" class="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg z-50 sm:hidden">
+          📜
+        </button>
         <div class="container">
             <aside id="history"></aside>
             <section id="main-result"></section>
@@ -397,49 +499,55 @@
           {{ collapse_map | tojson | safe }}
         </script>
         <script>
-              let PROCESSED_CACHE = {};      // name → full record
-              let COLLAPSED_TO_FORMS = {};
-              CURRENT_MODE = 'typeeffectiveness'
+            let PROCESSED_CACHE = {};      // name → full record
+            let COLLAPSED_TO_FORMS = {};
+            CURRENT_MODE = 'typeeffectiveness'
+            const MAX_HISTORY = 9;
+            // — state & persistence —
+            let historyList = JSON.parse(localStorage.getItem("historyList") || "[]");
+            let currentPokemon = null;
+            // when false: 1v1 mode (single card). when true: 2v2 mode (two cards)
+            let dualMode = false;
 
-              // Fetch the JSON on page‐load
-              fetch('/static/processed_pokemon_cache.json')
-              .then(r=>r.json())
-              .then(list => {
-                  for (const p of list) {
-                  PROCESSED_CACHE[p.name] = p;
+            const FORMS_BY_BASE = JSON.parse(
+              document.getElementById('formsByBase').textContent
+            );
+
+            const FORM_COLLAPSE_MAP = JSON.parse(
+              document.getElementById('formCollapseMap').textContent
+            );
+            // Fetch the JSON on page‐load
+            fetch('/static/processed_pokemon_cache.json')
+            .then(r=>r.json())
+            .then(list => {
+                for (const p of list) {
+                PROCESSED_CACHE[p.name] = p;
+                }
+                // build the inverse of your collapse‐map
+                Object.keys(PROCESSED_CACHE).forEach(raw => {
+                  const canon = collapseKey(raw);
+                  COLLAPSED_TO_FORMS[canon] = COLLAPSED_TO_FORMS[canon] || [];
+                  if (!COLLAPSED_TO_FORMS[canon].includes(raw)) {
+                    COLLAPSED_TO_FORMS[canon].push(raw);
                   }
-                  // build the inverse of your collapse‐map
-                  Object.keys(PROCESSED_CACHE).forEach(raw => {
-                    const canon = collapseKey(raw);
-                    COLLAPSED_TO_FORMS[canon] = COLLAPSED_TO_FORMS[canon] || [];
-                    if (!COLLAPSED_TO_FORMS[canon].includes(raw)) {
-                      COLLAPSED_TO_FORMS[canon].push(raw);
-                    }
-                  });
-                  SPECIES_SIGS = {};
-                  Object.keys(PROCESSED_CACHE).forEach(form => {
-                    const base = form.split('-',1)[0];
-                    SPECIES_SIGS[base] = SPECIES_SIGS[base] || { type: new Set(), stat: new Set(), forms: [] };
-                    const p = PROCESSED_CACHE[form];
-                    SPECIES_SIGS[base].type.add(p.types.join(','));
-                    SPECIES_SIGS[base].stat.add(JSON.stringify(p.stats));
-                    SPECIES_SIGS[base].forms.push(form);
-                  });
                 });
-              const MAX_HISTORY = 9;
-              // — state & persistence —
-              let historyList = [];
-              let currentPokemon = null;
-              // when false: 1v1 mode (single card). when true: 2v2 mode (two cards)
-              let dualMode = false;
-
-              const FORMS_BY_BASE = JSON.parse(
-                document.getElementById('formsByBase').textContent
-              );
-
-              const FORM_COLLAPSE_MAP = JSON.parse(
-                document.getElementById('formCollapseMap').textContent
-              );
+                SPECIES_SIGS = {};
+                Object.keys(PROCESSED_CACHE).forEach(form => {
+                  const base = form.split('-',1)[0];
+                  SPECIES_SIGS[base] = SPECIES_SIGS[base] || { type: new Set(), stat: new Set(), forms: [] };
+                  const p = PROCESSED_CACHE[form];
+                  SPECIES_SIGS[base].type.add(p.types.join(','));
+                  SPECIES_SIGS[base].stat.add(JSON.stringify(p.stats));
+                  SPECIES_SIGS[base].forms.push(form);
+                });
+                loadState();
+              });
+              document.getElementById('toggle-history-btn').addEventListener('click', () => {
+                const historyPanel = document.getElementById('history');
+                const isVisible = historyPanel.style.display === 'block';
+                historyPanel.style.display = isVisible ? 'none' : 'block';
+              });
+              
               
               const SHORTEN_SECOND = new Set([
                 "blade","blue","normal","standard","three","incarnate","altered",
@@ -577,7 +685,6 @@
               }
 
               function loadState() {
-                // 1) restory history
                 const histRaw = localStorage.getItem('pkmnHistory');
                 if (histRaw) {
                   historyList = JSON.parse(histRaw);
@@ -618,10 +725,10 @@
                 }
 
               // — scrolling helper —
-              const HEADER_HEIGHT = document.querySelector('header').offsetHeight;
               function scrollWithGap(el) {
+                const headerHeight = document.querySelector('header').offsetHeight;
                 const y = el.getBoundingClientRect().top + window.scrollY;
-                window.scrollTo({ top: y - HEADER_HEIGHT - 16, behavior: 'smooth' });
+                window.scrollTo({ top: y - headerHeight - 16, behavior: 'smooth' });
               }
 
               // — render the main result card —
@@ -721,6 +828,7 @@
                 } else {
                   container.appendChild(btn);
                 }
+                saveState();
               }
 
               function pushToHistory(r) {
@@ -742,9 +850,10 @@
               }
 
               function removeHistoryEntry(name) {
-                historyList = historyList.filter(x => x.name !== name);
+                historyList = historyList.filter(x => x.display_name !== name);
                 const btn = document.querySelector(`#history .small-card[data-name="${name}"]`);
                 if (btn) btn.remove();
+                localStorage.setItem("pkmnHistory", JSON.stringify(historyList)); // << add this!
                 saveState();
               }
 
@@ -755,6 +864,9 @@
                 document.getElementById('main-result').innerHTML = '';
                 localStorage.removeItem('pkmnHistory');
                 localStorage.removeItem('pkmnCurrent');
+                localStorage.removeItem('pkmnSecondary');
+                localStorage.setItem("pkmnHistory", JSON.stringify(historyList)); // If not already included
+                saveState(); // <-- Force saving the empty state
               }
 
               // — suggestions & search flow (unchanged) —

@@ -81,7 +81,8 @@
             .result-card {
                 background-color: #2d2d2d;
                 color: white;
-                width: 500px;
+                width: 100%;
+                max-width: 500px;
                 display: flex;
                 flex-direction: column;
                 margin-bottom: 1rem;
@@ -233,11 +234,14 @@
                 margin-bottom: 10px;
             }
             #results {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 1rem;
-                justify-items: center;
-                margin-top: 200px; /* Adjust this margin to ensure the results start below the fixed header */
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: flex-start;
+                gap: 20px;
+                padding: 1rem;
+                margin-top: 250px; /* height of fixed-header (approx) + some spacing */
+                width: 100%;
             }
             .close-button {
                 position: absolute;
@@ -264,7 +268,9 @@
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                height: 200px; /* Adjusted height to accommodate the progress bar */
+                height: auto; /* Adjusted height to accommodate the progress bar */
+                padding-top: 2rem;
+                padding-bottom: 1rem;
             }
             .watermark-fixed {
                 position: absolute;
@@ -294,7 +300,7 @@
         <title>Pokémon Stats</title>
     </head>
     <body
-        class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
+        class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen w-full">
         <script id="formsByBase" type="application/json">
             {{ forms_by_base_json | tojson | safe }}
         </script>
@@ -304,7 +310,7 @@
         <div class="fixed-header">
             <div class="watermark-fixed">Created by BorderM</div>
             <h1 class="text-3xl font-bold text-center mb-2">Pokémon Stats</h1>
-            <div class="control-buttons">
+            <div class="control-buttons flex flex-wrap justify-center gap-2">
                 <button
                     onclick="searchPokemonByInput()"
                     class="bg-blue-500 text-white p-2 rounded-lg"

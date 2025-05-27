@@ -12,6 +12,7 @@ import yaml
 from aiohttp import ClientTimeout
 from asgiref.wsgi import WsgiToAsgi
 from collections import defaultdict
+import traceback
 
 # ─── CONFIG ──────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO,
@@ -50,6 +51,10 @@ FORM_COLLAPSE_MAP = {
     frm.lower(): [m['to'].lower() for m in methods]
     for frm, methods in _raw_ov.items()
 }
+
+TYPECHART_PATH = get_resource_path("static","typechart.json")
+with open(TYPECHART_PATH, encoding="utf-8") as f:
+    TYPE_CHART = json.load(f)
 
 # ─── FORM RESOLUTION ───────────────────────────────────────────────────
 def resolve_form_key(raw: str):
@@ -304,6 +309,9 @@ def api_evo():
             candidate = resolve_form_key(parent['from']) or parent['from']
 
     root = find_chain_root(key)
+
+
+
     # ─────────────────────────────────────────────────────────────────
 
     chain = []
@@ -331,6 +339,30 @@ def api_evo():
 
     trav(root)
     return jsonify(chain)
+
+@app.route('/api/typeeffectiveness')
+def api_typeeffectiveness():
+    t1 = request.args.get('type1', '').lower().strip()
+    t2 = request.args.get('type2', '').lower().strip()
+
+    if not t1:
+        return jsonify({ 'error': 'type1 is required' }), 400
+
+    try:
+        data_list = [TYPE_CHART[t1]]
+        if t2:
+            data_list.append(TYPE_CHART[t2])
+
+        result = calculate_type_effectiveness(data_list)
+        return jsonify(result)
+
+    except KeyError as e:
+        return jsonify({ 'error': f'Unknown type \"{e.args[0]}\"' }), 404
+
+    except Exception as e:
+        # Log the traceback to help debug
+        print(traceback.format_exc())
+        return jsonify({ 'error': 'Internal server error' }), 500
 
 
 asgi_app = WsgiToAsgi(app)

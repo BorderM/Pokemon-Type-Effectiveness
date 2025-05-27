@@ -67,6 +67,9 @@
                 display: flex;
                 flex-direction: column;
                 align-items: center;
+                height: auto;
+                padding-top: 2rem;
+                padding-bottom: 2rem;
             }
             .watermark-fixed {
                 position: absolute;
@@ -81,15 +84,7 @@
                 margin-top: 10px;
                 height: 20px;
             }
-            #results {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                align-items: center;
-                gap: 20px;
-                margin-top: 20px;
-                padding-top: 150px;
-            }
+            
             .suggestions {
                 position: absolute;
                 top: 100%;
@@ -114,18 +109,30 @@
             .suggestions li:hover {
                 background-color: #BFC2BA;
             }
+
+            #results {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: flex-start;
+                gap: 20px;
+                padding: 1rem;
+                margin-top: 250px; /* height of fixed-header (approx) + some spacing */
+                width: 100%;
+            }
+
         </style>
         <title>Pokémon Evolution Search</title>
     </head>
     <body
-        class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen"
+        class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen w-full"
     >
         <div class="fixed-header">
             <div class="watermark-fixed">Created by BorderM</div>
             <h1 class="text-3xl font-bold text-center mb-2">
                 Pokémon Evolutions
             </h1>
-            <div class="control-buttons">
+            <div class="control-buttons flex flex-wrap justify-center gap-2">
                 <button id="search-btn"
                     class="bg-blue-500 text-white p-2 rounded-lg"
                 >

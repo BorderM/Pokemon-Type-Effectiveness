@@ -23,6 +23,8 @@
             width: 100%;
             margin: 1rem auto;
             border-collapse: collapse;
+            overflow-x: auto;
+            display: block;
         }
         th, td {
             padding: 0.5rem;
@@ -62,6 +64,8 @@
             flex-direction: column;
             align-items: center;
             height: 200px;
+            padding-top: 2rem;
+            padding-bottom: 1rem;
         }
         .watermark-fixed {
             position: absolute;
@@ -71,7 +75,7 @@
             color: #a0aec0;
         }
         .main-content {
-            padding-top: 150px; 
+            padding-top: 220px; 
             width: 100%;
             max-width: 1000px;
             margin: 0 auto;
@@ -80,7 +84,8 @@
             justify-content: space-between;
         }
         .table-container {
-			padding-left: 125px;
+			padding-left: 1rem;
+            padding-right: 1rem;
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
@@ -100,14 +105,17 @@
                 width: 100%;
             }
         }
+        body {
+            overflow-y: auto;
+        }
     </style>
     <title>Pokémon Natures</title>
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen w-full">
     <div class="fixed-header">
         <div class="watermark-fixed">Created by BorderM</div>
         <h1 class="text-3xl font-bold text-center mb-2">Pokémon Natures</h1>
-        <div class="control-buttons">
+        <div class="control-buttons flex flex-wrap justify-center gap-2">
             <a href="/typeeffectiveness" class="bg-green-500 text-white p-2 rounded-lg">Type Effectiveness</a>
             <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
 			<a href="/typecalculator" class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
