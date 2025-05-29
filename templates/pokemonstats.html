@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        <link rel="icon" href="/static/favicon.ico" />
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <script src="https://cdn.tailwindcss.com"></script>
@@ -373,8 +374,9 @@
         .then(r=>r.json())
         .then(list => {
             for (const p of list) {
-            PROCESSED_CACHE[p.name] = p;
+            PROCESSED_CACHE[p.name] = p;    
             }
+            ALL_POKEMON = Object.values(PROCESSED_CACHE);
             // build the inverse of your collapse‐map
             Object.keys(PROCESSED_CACHE).forEach(raw => {
                 const canon = collapseKey(raw);
@@ -392,6 +394,14 @@
             SPECIES_SIGS[base].stat.add(JSON.stringify(p.stats));
             SPECIES_SIGS[base].forms.push(form);
             });
+        });
+
+        let POKEMON_REFERENCE_MAP = null;
+
+        fetch('/static/pokemon_reference_map.json')
+        .then(r => r.json())
+        .then(data => {
+            POKEMON_REFERENCE_MAP = data;
         });
 
         // 2️⃣ Let us know which page we’re on
@@ -419,49 +429,13 @@
         ]);
 
         function collapseKey(rawKey) {
-            if (typeof rawKey !== 'string') return rawKey;
-            const key = rawKey.toLowerCase().trim();
+            const key = rawKey.toLowerCase();
+            const entry = POKEMON_REFERENCE_MAP?.[key];
+            if (!entry) return key;
 
-            // 1) Strip purely aesthetic suffixes if they add no mechanical
-            //    difference (same types & stats).
-            for (const suffix of ['-gmax', '-gigantamax']) {
-                if (key.endsWith(suffix)) {
-                const base = key.slice(0, -suffix.length);
-                const P = PROCESSED_CACHE[key];
-                const Q = PROCESSED_CACHE[base];
-                if (
-                    P && Q &&
-                    JSON.stringify(P.stats) === JSON.stringify(Q.stats) &&
-                    P.types.join(',') === Q.types.join(',')
-                ) {
-                    // collapse to the base form (and re-run collapseKey in case
-                    // that base itself has an override)
-                    return collapseKey(base);
-                }
-                }
-            }
-
-            // 2) Honor any Python‐side override map:
-            if (FORM_COLLAPSE_MAP[key]) {
-                const mapped = FORM_COLLAPSE_MAP[key];
-                return Array.isArray(mapped) ? mapped[0] : mapped;
-            }
-
-            // 3) Never collapse your “full preserve” exceptions:
-            if (FULL_PRESERVE.has(key)) {
-                return key;
-            }
-
-            // 4) If **every** form of this species has identical type+stats,
-            //    collapse to the bare species name:
-            const species = key.split('-',1)[0];
-            const sig = SPECIES_SIGS[species] || { type: new Set(), stat: new Set() };
-            if (sig.type.size === 1 && sig.stat.size === 1) {
-                return species;
-            }
-
-            // 5) Otherwise keep the full form:
-            return key;
+            return entry.force_preserve_name
+                ? key
+                : (entry.collapse_display_name_to || entry.base_name || key);
         }
 
         function pickRepresentative(canon) {
@@ -471,53 +445,50 @@
             return forms[0];
         }
 
-        function formatDisplayName(raw) {
-            // 0) nothing to do on non-strings:
-            if (typeof raw !== 'string') return raw;
+        function pickRepresentativeForm(canonical) {
+            // You could also extend the JSON later to include this
+            const matches = Object.keys(POKEMON_REFERENCE_MAP).filter(
+                key => POKEMON_REFERENCE_MAP[key].collapse_display_name_to === canonical
+            );
+            return matches.length ? matches[0] : canonical;
+        }
 
-            // — in stats mode, always turn "foo-bar" into "Foo Bar" —
-            if (CURRENT_MODE === 'stats') {
-                return raw
-                .split('-')
-                .slice(0, 2)           // just the first two pieces
-                .join(' ')
-                .replace(/\b\w/g, c=>c.toUpperCase());
-            }
+        function getCollapsedSuggestions(query) {
+            const results = new Set();
 
-            // 1) full Python overrides: always pick the first string
-            if (FORM_COLLAPSE_MAP[raw]) {
-                const mapped = FORM_COLLAPSE_MAP[raw];
-                // mapped might be an array or a single string:
-                return Array.isArray(mapped) ? mapped[0] : mapped;
-            }
+            const q = query.trim().toLowerCase();
+            if (!q) return [];
 
-            // 2) mega/other forms never collapse
-            if (FULL_PRESERVE.has(raw)) {
-                return raw.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-            }
-
-            // 3) tauros-paldea special case
-            if (raw.startsWith("tauros-paldea-") && raw.endsWith("-breed")) {
-                return raw.replace(/-breed$/, "").replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-            }
-
-            // 4) otherwise split on “-”
-            const parts = raw.split("-");
-            if (parts.length > 1) {
-                // drop the form entirely if it’s a blacklisted suffix
-                if (SHORTEN_SECOND.has(parts[1].toLowerCase())) {
-                return parts[0].replace(/\b\w/g,c=>c.toUpperCase());
+            for (const pkmn of ALL_POKEMON) {
+                const key = pkmn.name.toLowerCase();
+                const entry = POKEMON_REFERENCE_MAP?.[key];
+                const collapsed = entry?.collapse_display_name_to ?? pkmn.name;
+                if (collapsed.toLowerCase().includes(q)) {
+                results.add(collapsed);
                 }
-                // keep two chunks (e.g. "charizard-mega" → "Charizard Mega")
-                return parts
-                .slice(0,2)
-                .join("-")
-                .replace(/-/g,' ')
-                .replace(/\b\w/g,c=>c.toUpperCase());
             }
 
-            // 5) no hyphens at all
-            return parts[0].replace(/\b\w/g,c=>c.toUpperCase());
+            // Capitalize & sort
+            return Array.from(results)
+                .map(name =>
+                name
+                    .replace(/-/g, ' ')
+                    .replace(/\b\w/g, c => c.toUpperCase())
+                )
+                .sort();
+        }
+
+        function formatDisplayName(key) {
+            const lc = key.toLowerCase();
+            const entry = POKEMON_REFERENCE_MAP?.[lc];
+            if (!entry) return key;
+
+            const shouldPreserve = entry.force_preserve_name;
+            const nameToFormat = shouldPreserve ? lc : (entry.collapse_display_name_to ?? entry.base_name);
+
+            return nameToFormat
+                .replace(/-/g, ' ')
+                .replace(/\b\w/g, c => c.toUpperCase());
         }
 
         /** Scroll `el` into view leaving a 16px gap below the header */
@@ -560,7 +531,10 @@
             for (const sp of Object.keys(buckets).sort()) {
                 const clusterMap = buckets[sp].reduce((c, form) => {
                 const p = PROCESSED_CACHE[form];
-                const sig = JSON.stringify({ t: p.types, s: p.stats });
+                const ref = POKEMON_REFERENCE_MAP[form.toLowerCase()];
+                const sig = ref?.force_preserve_name 
+                    ? form
+                    : JSON.stringify({ t: p.types, s: p.stats });
                 (c[sig] = c[sig]||[]).push(form);
                 return c;
                 }, {});
@@ -655,16 +629,15 @@
         }
 
         function formatSuggestionName(key) {
-            const parts = key.split('-');
-            const base  = parts.shift();
-            const suffix= parts.join(' ');
-            const baseDisp  = base[0].toUpperCase() + base.slice(1);
-            if (!suffix) return baseDisp;
-            const suffixDisp = suffix
+            const entry = POKEMON_REFERENCE_MAP?.[key.toLowerCase()];
+            const collapsedName = entry?.collapse_display_name_to || key;
+            const displayName = collapsedName.replace(/-/g, ' ');
+
+            // Capitalize each word
+            return displayName
                 .split(' ')
-                .map(w=>w[0].toUpperCase()+w.slice(1))
+                .map(w => w[0].toUpperCase() + w.slice(1))
                 .join(' ');
-            return `${baseDisp} (${suffixDisp})`;
         }
 
         async function fetchPokemon(rawName) {
