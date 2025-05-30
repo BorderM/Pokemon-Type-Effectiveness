@@ -228,12 +228,6 @@
             .total-bar {
                 background-color: #a0aec0;
             }
-            .control-buttons {
-                display: flex;
-                justify-content: center;
-                gap: 10px;
-                margin-bottom: 10px;
-            }
             #results {
                 display: flex;
                 flex-wrap: wrap;
@@ -302,12 +296,7 @@
     </head>
     <body
         class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen w-full">
-        <script id="formsByBase" type="application/json">
-            {{ forms_by_base_json | tojson | safe }}
-        </script>
-        <script id="formCollapseMap" type="application/json">
-            {{ collapse_map       | tojson | safe }}
-        </script>
+
         <div class="fixed-header">
             <div class="watermark-fixed">Created by BorderM</div>
             <h1 class="text-3xl font-bold text-center mb-2">Pokémon Stats</h1>
@@ -366,390 +355,278 @@
             class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4"></div>
 
         <script>
-        let PROCESSED_CACHE = {};      // name → full record
-        let COLLAPSED_TO_FORMS = {};
+            let PROCESSED_CACHE = {};
+            let COLLAPSED_TO_FORMS = {};
+            let SPECIES_SIGS = {};
+            let POKEMON_REFERENCE_MAP = null;
+            let ALL_POKEMON = [];
+            let suggestionKeys = [];
+            let selectedIndex = -1;
 
-        // Fetch the JSON on page‐load
-        fetch('/static/processed_pokemon_cache.json')
-        .then(r=>r.json())
-        .then(list => {
-            for (const p of list) {
-            PROCESSED_CACHE[p.name] = p;    
-            }
-            ALL_POKEMON = Object.values(PROCESSED_CACHE);
-            // build the inverse of your collapse‐map
-            Object.keys(PROCESSED_CACHE).forEach(raw => {
-                const canon = collapseKey(raw);
-                COLLAPSED_TO_FORMS[canon] = COLLAPSED_TO_FORMS[canon] || [];
-                if (!COLLAPSED_TO_FORMS[canon].includes(raw)) {
-                    COLLAPSED_TO_FORMS[canon].push(raw);
-                }
-            });
-            SPECIES_SIGS = {};
-            Object.keys(PROCESSED_CACHE).forEach(form => {
-            const base = form.split('-',1)[0];
-            SPECIES_SIGS[base] = SPECIES_SIGS[base] || { type: new Set(), stat: new Set(), forms: [] };
-            const p = PROCESSED_CACHE[form];
-            SPECIES_SIGS[base].type.add(p.types.join(','));
-            SPECIES_SIGS[base].stat.add(JSON.stringify(p.stats));
-            SPECIES_SIGS[base].forms.push(form);
-            });
-        });
+            const CURRENT_MODE = 'stats';
 
-        let POKEMON_REFERENCE_MAP = null;
+            const HEADER_HEIGHT = document.querySelector('.fixed-header').offsetHeight;
 
-        fetch('/static/pokemon_reference_map.json')
-        .then(r => r.json())
-        .then(data => {
-            POKEMON_REFERENCE_MAP = data;
-        });
-
-        // 2️⃣ Let us know which page we’re on
-        //   set this manually at the top of each HTML
-        const CURRENT_MODE = 'stats';
-
-        // Calculate once, at page load, the height of your fixed header
-        const HEADER_HEIGHT = document.querySelector('.fixed-header').offsetHeight;
-
-        const FORMS_BY_BASE   = JSON.parse(document.getElementById('formsByBase').textContent);
-        const FORM_COLLAPSE_MAP = JSON.parse(document.getElementById('formCollapseMap').textContent);
-
-        const SHORTEN_SECOND = new Set([
-            "blade","blue","normal","standard","three","incarnate","altered",
-            "average","ordinary","family","disguised","full",
-            "droopy","school","50", "two", "white", "two-segment","three-segment", "plant",
-            "shield", "blade", "disguised", "busted"
-        ]);
-
-        const FULL_PRESERVE = new Set([
-            "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
-            "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
-            "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike", "lycanroc-midday","lycanroc-midnight",
-            "lycanroc-dusk", "toxtricity-amped","toxtricity-low-key"
-        ]);
-
-        function collapseKey(rawKey) {
-            const key = rawKey.toLowerCase();
-            const entry = POKEMON_REFERENCE_MAP?.[key];
-            if (!entry) return key;
-
-            return entry.force_preserve_name
-                ? key
-                : (entry.collapse_display_name_to || entry.base_name || key);
-        }
-
-        function pickRepresentative(canon) {
-            const forms = COLLAPSED_TO_FORMS[canon] || [canon];
-            // You can refine this to pick the first with the right property,
-            // but as a fallback, just return the first form in the list:
-            return forms[0];
-        }
-
-        function pickRepresentativeForm(canonical) {
-            // You could also extend the JSON later to include this
-            const matches = Object.keys(POKEMON_REFERENCE_MAP).filter(
-                key => POKEMON_REFERENCE_MAP[key].collapse_display_name_to === canonical
-            );
-            return matches.length ? matches[0] : canonical;
-        }
-
-        function getCollapsedSuggestions(query) {
-            const results = new Set();
-
-            const q = query.trim().toLowerCase();
-            if (!q) return [];
-
-            for (const pkmn of ALL_POKEMON) {
-                const key = pkmn.name.toLowerCase();
+            function collapseKey(rawKey) {
+                const key = rawKey.toLowerCase();
                 const entry = POKEMON_REFERENCE_MAP?.[key];
-                const collapsed = entry?.collapse_display_name_to ?? pkmn.name;
-                if (collapsed.toLowerCase().includes(q)) {
-                results.add(collapsed);
-                }
+                if (!entry) return key;
+                return entry.force_preserve_name
+                    ? key
+                    : (entry.collapse_display_name_to || entry.base_name || key);
             }
 
-            // Capitalize & sort
-            return Array.from(results)
-                .map(name =>
-                name
+            function formatDisplayName(key) {
+                const lc = key.toLowerCase();
+                const entry = POKEMON_REFERENCE_MAP?.[lc];
+                const displayKey = entry?.collapse_display_name_to || lc;
+
+                return displayKey
                     .replace(/-/g, ' ')
-                    .replace(/\b\w/g, c => c.toUpperCase())
-                )
-                .sort();
-        }
-
-        function formatDisplayName(key) {
-            const lc = key.toLowerCase();
-            const entry = POKEMON_REFERENCE_MAP?.[lc];
-            if (!entry) return key;
-
-            const shouldPreserve = entry.force_preserve_name;
-            const nameToFormat = shouldPreserve ? lc : (entry.collapse_display_name_to ?? entry.base_name);
-
-            return nameToFormat
-                .replace(/-/g, ' ')
-                .replace(/\b\w/g, c => c.toUpperCase());
-        }
-
-        /** Scroll `el` into view leaving a 16px gap below the header */
-        function scrollWithGap(el) {
-            const pageY   = window.scrollY || window.pageYOffset;
-            const elY     = el.getBoundingClientRect().top + pageY;
-            const targetY = elY - HEADER_HEIGHT - 16;  // 16px extra breathing room
-
-            window.scrollTo({ top: targetY, behavior: 'smooth' });
-        }
-        const LOCAL_STORAGE_KEY = 'activePokemonData';
-
-        let suggestionKeys = [];
-        let selectedIndex = -1;
-        let SPECIES_SIGS = {};
-
-        async function handleInput(e) {
-            const q = e.target.value.trim().toLowerCase();
-            const box = e.target.parentElement.querySelector('.suggestions');
-            if (q.length < 2) {
-                box.style.display = 'none';
-                suggestionKeys = [];
-                return;
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
             }
 
-            // fetch raw form keys
-            const { suggestions: rawSuggestions } = await fetch(
-                `/api/pokemon/suggestions?query=${encodeURIComponent(q)}`
-            ).then(r => r.json());
-            const rawKeys = rawSuggestions.map(s => s.key);
+            function formatSuggestionName(key) {
+                return formatDisplayName(key);
+            }
 
-            // bucket by species → then cluster by (types+stats) signature
-            const list = [];
-            const buckets = rawKeys.reduce((acc, raw) => {
-                const sp = raw.split('-',1)[0];
-                (acc[sp] = acc[sp]||[]).push(raw);
-                return acc;
-            }, {});
+            document.addEventListener('DOMContentLoaded', () => {
+                Promise.all([
+                    fetch('/static/processed_pokemon_cache.json').then(r => r.json()),
+                    fetch('/static/pokemon_reference_map_stats.json').then(r => r.json())
+                ]).then(([processedList, referenceMap]) => {
+                    for (const p of processedList) {
+                        PROCESSED_CACHE[p.name] = p;
+                    }
+                    POKEMON_REFERENCE_MAP = referenceMap;
+                    ALL_POKEMON = Object.values(PROCESSED_CACHE);
 
-            for (const sp of Object.keys(buckets).sort()) {
-                const clusterMap = buckets[sp].reduce((c, form) => {
-                const p = PROCESSED_CACHE[form];
-                const ref = POKEMON_REFERENCE_MAP[form.toLowerCase()];
-                const sig = ref?.force_preserve_name 
-                    ? form
-                    : JSON.stringify({ t: p.types, s: p.stats });
-                (c[sig] = c[sig]||[]).push(form);
-                return c;
+                    Object.keys(PROCESSED_CACHE).forEach(raw => {
+                        const canon = collapseKey(raw);
+                        COLLAPSED_TO_FORMS[canon] = COLLAPSED_TO_FORMS[canon] || [];
+                        if (!COLLAPSED_TO_FORMS[canon].includes(raw)) {
+                            COLLAPSED_TO_FORMS[canon].push(raw);
+                        }
+                    });
+
+                    Object.keys(PROCESSED_CACHE).forEach(form => {
+                        const base = form.split('-',1)[0];
+                        SPECIES_SIGS[base] = SPECIES_SIGS[base] || { type: new Set(), stat: new Set(), forms: [] };
+                        const p = PROCESSED_CACHE[form];
+                        SPECIES_SIGS[base].type.add(p.types.join(','));
+                        SPECIES_SIGS[base].stat.add(JSON.stringify(p.stats));
+                        SPECIES_SIGS[base].forms.push(form);
+                    });
+
+                    loadDataFromLocalStorage();
+                });
+            });
+
+            async function handleInput(e) {
+                const q = e.target.value.trim().toLowerCase();
+                const box = e.target.parentElement.querySelector('.suggestions');
+                if (q.length < 2 || !POKEMON_REFERENCE_MAP) {
+                    box.style.display = 'none';
+                    suggestionKeys = [];
+                    return;
+                }
+
+                const { suggestions: rawSuggestions } = await fetch(
+                    `/api/pokemon/suggestions?query=${encodeURIComponent(q)}`
+                ).then(r => r.json());
+                const rawKeys = rawSuggestions.map(s => s.key);
+
+                const list = [];
+                const buckets = rawKeys.reduce((acc, raw) => {
+                    const sp = raw.split('-', 1)[0];
+                    (acc[sp] = acc[sp] || []).push(raw);
+                    return acc;
                 }, {});
 
-                for (const sig of Object.keys(clusterMap)) {
-                const forms = clusterMap[sig].sort();
-                if (forms.length === 1) {
-                    // only one mechanically‐distinct form
-                    list.push({ key: forms[0], label: formatSuggestionName(forms[0]) });
-                } else {
-                    // multiple forms share the same sig → collapse to one entry
-                    const rep = collapseKey(forms[0]);
-                    list.push({ key: rep, label: formatSuggestionName(rep) });
+                for (const sp of Object.keys(buckets).sort()) {
+                    const clusterMap = buckets[sp].reduce((c, form) => {
+                        const p = PROCESSED_CACHE[form];
+                        const ref = POKEMON_REFERENCE_MAP[form.toLowerCase()];
+                        const sig = ref?.force_preserve_name
+                            ? form
+                            : JSON.stringify({ t: p.types, s: p.stats });
+                        (c[sig] = c[sig] || []).push(form);
+                        return c;
+                    }, {});
+
+                    for (const sig of Object.keys(clusterMap)) {
+                        const forms = clusterMap[sig].sort((a, b) => a.length - b.length); // ⬅ Optional improvement
+                        const rep = collapseKey(forms[0]);
+                        list.push({ key: rep, label: formatDisplayName(rep) });
+                    }
                 }
-                }
-            }
 
-            // render dropdown
-            suggestionKeys = list.map(x => x.key);
-            box.innerHTML = list
-                .map(x => `<li onclick="selectSuggestion('${x.key}')">${x.label}</li>`)
-                .join('');
-            box.style.display = list.length ? 'block' : 'none';
-            selectedIndex = -1;
-        }
+                // 🧹 Deduplicate suggestions by label
+                const seenLabels = new Set();
+                const uniqueList = list.filter(({ label }) => {
+                    if (seenLabels.has(label)) return false;
+                    seenLabels.add(label);
+                    return true;
+                });
 
-        function selectSuggestion(key) {
-            const input = document.getElementById('pokemon-input');
-            input.value = formatSuggestionName(key);
-            document.getElementById('suggestions').style.display = 'none';
-            fetchPokemon(key);
-        }
-
-        function searchPokemonByInput(){
-            const inp = document.getElementById('pokemon-input');
-            const raw = inp.value.trim();
-            if (!raw) return;
-
-            // if there are any suggestions, pick the first one
-            const items = document.querySelectorAll('#suggestions li');
-            if (items.length) {
-            return selectSuggestion(suggestionKeys[0]);
-            }
-
-            // otherwise fall back to raw
-            fetchPokemon(raw);
-        }
-
-
-        function handleEnterKey(e) {
-            const box   = document.getElementById('suggestions');
-            const items = Array.from(box.querySelectorAll('li'));
-
-            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                e.preventDefault();
-                selectedIndex += (e.key === 'ArrowDown') ? 1 : -1;
-                selectedIndex = Math.max(0, Math.min(items.length - 1, selectedIndex));
-                items.forEach((li,i)=> li.classList.toggle('highlighted', i===selectedIndex));
-            }
-            else if (e.key === 'Enter') {
-                e.preventDefault();
-                box.style.display = 'none';
-                if (items.length) {
-                    const idx = selectedIndex >= 0 ? selectedIndex : 0;
-                    selectSuggestion(suggestionKeys[idx]);
-                } else {
-                    // ← NEVER collapse here! always pass the raw string
-                    searchPokemonByInput();
-                }
+                // ✍️ Render suggestions
+                suggestionKeys = uniqueList.map(x => x.key);
+                box.innerHTML = uniqueList
+                    .map(x => `<li onclick="selectSuggestion('${x.key}')">${x.label}</li>`)
+                    .join('');
+                box.style.display = uniqueList.length ? 'block' : 'none';
                 selectedIndex = -1;
             }
-        }
 
-        function highlightSuggestion(suggestions) {
-            suggestions.forEach((suggestion, index) => {
-                if (index === selectedIndex) {
-                    suggestion.classList.add('highlighted');
-                } else {
-                    suggestion.classList.remove('highlighted');
+            function selectSuggestion(key) {
+                const input = document.getElementById('pokemon-input');
+                input.value = formatSuggestionName(key);
+                document.getElementById('suggestions').style.display = 'none';
+                fetchPokemon(key);
+            }
+
+            function searchPokemonByInput() {
+                const inp = document.getElementById('pokemon-input');
+                const raw = inp.value.trim();
+                if (!raw) return;
+
+                const items = document.querySelectorAll('#suggestions li');
+                if (items.length) {
+                    return selectSuggestion(suggestionKeys[0]);
                 }
-            });
-        }
 
-        function clearResults() {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '';
-            const input = document.getElementById('pokemon-input');
-            input.value = '';
-            input.focus();
-            document.getElementById('error-message').innerHTML = '';
-            localStorage.removeItem('activePokemonData'); // Clear local storage
-        }
-
-        function formatSuggestionName(key) {
-            const entry = POKEMON_REFERENCE_MAP?.[key.toLowerCase()];
-            const collapsedName = entry?.collapse_display_name_to || key;
-            const displayName = collapsedName.replace(/-/g, ' ');
-
-            // Capitalize each word
-            return displayName
-                .split(' ')
-                .map(w => w[0].toUpperCase() + w.slice(1))
-                .join(' ');
-        }
-
-        async function fetchPokemon(rawName) {
-            const inputEl = document.getElementById('pokemon-input');
-            const raw = (typeof rawName === 'string' ? rawName : inputEl.value).trim();
-            if (!raw) return;
-
-            // collapse → pick representative
-            let fetchKey = collapseKey(raw);
-            if (!(fetchKey in PROCESSED_CACHE)) {
-            const all = FORMS_BY_BASE[fetchKey] || [];
-            fetchKey = all.filter(f=>f in PROCESSED_CACHE).sort()[0] || fetchKey;
+                fetchPokemon(raw);
             }
 
-            // reset UI
-            inputEl.value = '';
-            inputEl.focus();
-            document.getElementById('suggestions').style.display = 'none';
-            document.getElementById('progress-bar-container')
-                    .classList.remove('hidden');
+            async function fetchPokemon(rawName) {
+                const inputEl = document.getElementById('pokemon-input');
+                const raw = (typeof rawName === 'string' ? rawName : inputEl.value).trim();
+                if (!raw) return;
 
-            // fetch
-            const res  = await fetch(
-            `/api/pokemon/stats?name=${encodeURIComponent(fetchKey)}`
-            );
-            const data = await res.json();
-            document.getElementById('progress-bar-container')
-                    .classList.add('hidden');
+                let fetchKey = collapseKey(raw);
+                if (!(fetchKey in PROCESSED_CACHE)) {
+                    const match = Object.keys(PROCESSED_CACHE).find(k => k.includes(fetchKey));
+                    fetchKey = match || fetchKey;
+                }
 
-            if (!res.ok) {
-            handleSuggestionError(data.error, raw);
-            return;
+                inputEl.value = '';
+                inputEl.focus();
+                document.getElementById('suggestions').style.display = 'none';
+                document.getElementById('progress-bar-container').classList.remove('hidden');
+
+                const res = await fetch(`/api/pokemon/stats?name=${encodeURIComponent(fetchKey)}`);
+                const data = await res.json();
+                document.getElementById('progress-bar-container').classList.add('hidden');
+
+                if (!res.ok) {
+                    handleSuggestionError(data.error, raw);
+                    return;
+                }
+
+                const results = document.getElementById('results');
+                for (const r of data) {
+                    const card = createStatsCard(r);
+                    if (card) {
+                        results.appendChild(card);
+                        scrollToNewCard(card);
+                    }
+                }
+                updateLocalStorage();
             }
 
-            // render (only append new cards)
-            const results = document.getElementById('results');
-            for (const r of data) {
-            const card = createStatsCard(r);
-            if (card) {
-                results.appendChild(card);
-                scrollToNewCard(card);
-            }
-            }
-            updateLocalStorage();
-        }
+            function createStatsCard(result) {
+                const canon = collapseKey(result.name);
+                const existing = document.querySelector(`.result-card[data-name="${canon}"]`);
+                if (existing) {
+                    scrollToNewCard(existing);
+                    return null;
+                }
 
-        function createStatsCard(result) {
-            const canon = collapseKey(result.name);
+                const formDiv = document.createElement('div');
+                formDiv.className = "bg-white dark:bg-zinc-700 rounded-lg p-4 shadow-md result-card";
+                formDiv.setAttribute('data-pokemon', JSON.stringify(result));
+                formDiv.setAttribute('data-name', canon);
 
-            // If we already have one for this canon, scroll there & bail
-            const existing = document.querySelector(
-                `.result-card[data-name="${canon}"]`
-            );
-            if (existing) {
-                scrollToNewCard(existing);
-                return null;
-            }
+                const species        = result.name.split('-',1)[0];
+                const displayName    = formatSuggestionName(result.name);
+                const speciesSlug    = species[0].toUpperCase() + species.slice(1);
+                const bulbapediaLink = `https://bulbapedia.bulbagarden.net/wiki/${speciesSlug}_(Pok%C3%A9mon)`;
 
-            // Build a fresh card
-            const formDiv = document.createElement('div');
-            formDiv.className = "bg-white dark:bg-zinc-700 rounded-lg p-4 shadow-md result-card";
-            formDiv.setAttribute('data-pokemon', JSON.stringify(result));
-            formDiv.setAttribute('data-name', canon);
-
-            const species        = result.name.split('-',1)[0];
-            const displayName    = formatSuggestionName(canon);
-            const speciesSlug    = species[0].toUpperCase() + species.slice(1);
-            const bulbapediaLink = `https://bulbapedia.bulbagarden.net/wiki/${speciesSlug}_(Pok%C3%A9mon)`;
-
-            formDiv.innerHTML = `
-                <button class="close-button" onclick="removeCard(this)">X</button>
-                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${result.id}.png"
-                    alt="${result.form}" class="mx-auto mb-2">
-                <h2 class="text-center mb-2">
-                <a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">
-                    ${displayName}
-                </a>
-                </h2>
-                <p class="text-center">
-                <span>Type:</span>
-                ${result.types.map(t=>
-                    `<span class="type-badge type-${t.toLowerCase()}">
-                    ${capitalizeFirstLetter(t)}
-                    </span>`
-                ).join(' ')}
-                </p>
-                <div class="content mt-2">
-                ${renderStatRow('HP',  result.stats.hp,               'hp-bar')}
-                ${renderStatRow('Attack', result.stats.attack,       'attack-bar')}
-                ${renderStatRow('Defense', result.stats.defense,     'defense-bar')}
-                ${renderStatRow('Sp. Atk',result.stats.special_attack,'special-attack-bar')}
-                ${renderStatRow('Sp. Def',result.stats.special_defense,'special-defense-bar')}
-                ${renderStatRow('Speed', result.stats.speed,         'speed-bar')}
-                ${renderStatRow('Total', result.stats.total)}
-                </div>
-            `;
-            return formDiv;
+                formDiv.innerHTML = `
+                    <button class="close-button" onclick="removeCard(this)">X</button>
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${result.id}.png"
+                        alt="${result.form}" class="mx-auto mb-2">
+                    <h2 class="text-center mb-2">
+                    <a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">
+                        ${displayName}
+                    </a>
+                    </h2>
+                    <p class="text-center">
+                    <span>Type:</span>
+                    ${result.types.map(t=>
+                        `<span class="type-badge type-${t.toLowerCase()}">
+                        ${t.charAt(0).toUpperCase() + t.slice(1)}
+                        </span>`
+                    ).join(' ')}
+                    </p>
+                    <div class="content mt-2">
+                    ${renderStatRow('HP',  result.stats.hp,               'hp-bar')}
+                    ${renderStatRow('Attack', result.stats.attack,       'attack-bar')}
+                    ${renderStatRow('Defense', result.stats.defense,     'defense-bar')}
+                    ${renderStatRow('Sp. Atk',result.stats.special_attack,'special-attack-bar')}
+                    ${renderStatRow('Sp. Def',result.stats.special_defense,'special-defense-bar')}
+                    ${renderStatRow('Speed', result.stats.speed,         'speed-bar')}
+                    ${renderStatRow('Total', result.stats.total)}
+                    </div>
+                `;
+                return formDiv;
             }
 
-            // helper to avoid repeating the separator + row markup
+            function handleEnterKey(e) {
+                const box   = document.getElementById('suggestions');
+                const items = Array.from(box.querySelectorAll('li'));
+
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedIndex += (e.key === 'ArrowDown') ? 1 : -1;
+                    selectedIndex = Math.max(0, Math.min(items.length - 1, selectedIndex));
+                    items.forEach((li,i)=> li.classList.toggle('highlighted', i===selectedIndex));
+                }
+                else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    box.style.display = 'none';
+                    if (items.length) {
+                        const idx = selectedIndex >= 0 ? selectedIndex : 0;
+                        selectSuggestion(suggestionKeys[idx]);
+                    } else {
+                        searchPokemonByInput();
+                    }
+                    selectedIndex = -1;
+                }
+            }
+
+            function clearResults() {
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '';
+                const input = document.getElementById('pokemon-input');
+                input.value = '';
+                input.focus();
+                document.getElementById('error-message').innerHTML = '';
+                localStorage.removeItem('activePokemonData');
+            }
+
             function renderStatRow(label, value, barClass) {
                 if (label === 'Total') {
-                    // just label + value, no bar, no separator
                     return `
-                    <div class="stat-row">
-                        <span class="stat-label">Total:</span>
-                        <span class="stat-value">${value}</span>
-                    </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total:</span>
+                            <span class="stat-value">${value}</span>
+                        </div>
                     `;
                 }
 
-                // all other stats get a bar + separator
                 return `
                     <div class="stat-row">
                     <span class="stat-label">${label}:</span>
@@ -760,59 +637,47 @@
                 `;
             }
 
-        function capitalizeFirstLetter(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
-        }
+            function removeCard(button) {
+                const card = button.parentElement;
+                card.remove();
+                updateLocalStorage();
+            }
 
-        function removeCard(button) {
-            const card = button.parentElement;
-            card.remove();
-            updateLocalStorage(); // Update local storage when a card is removed
-        }
+            function handleSuggestionError(error, pokemonName) {
+                const errorMessageDiv = document.getElementById('error-message');
+                errorMessageDiv.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center" role="alert">
+                        <strong class="font-bold">Error:</strong>
+                        <span class="block sm:inline">Pokémon ${pokemonName} could not be found. Please enter a new name.</span>
+                    </div>
+                `;
+                setTimeout(() => {
+                    errorMessageDiv.innerHTML = '';
+                }, 3000);
+            }
 
-        function handleSuggestionError(error, pokemonName) {
-            const errorMessageDiv = document.getElementById('error-message');
-            errorMessageDiv.innerHTML = `
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center" role="alert">
-                    <strong class="font-bold">Error:</strong>
-                    <span class="block sm:inline">Pokémon ${pokemonName} could not be found. Please enter a new name.</span>
-                </div>
-            `;
+            function scrollToNewCard(card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
 
-            // Hide the error message after 3 seconds
-            setTimeout(() => {
-                errorMessageDiv.innerHTML = '';
-            }, 3000);
-        }
+            function updateLocalStorage() {
+                const resultsDiv = document.getElementById('results');
+                const activeCards = [];
+                resultsDiv.querySelectorAll('.result-card').forEach(card => {
+                    activeCards.push(JSON.parse(card.getAttribute('data-pokemon')));
+                });
+                localStorage.setItem('activePokemonData', JSON.stringify(activeCards));
+            }
 
-        function scrollToNewCard(card) {
-            card.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }
-
-        function navigateToPage(page) {
-            updateLocalStorage();
-            window.location.href = page;
-        }
-
-        function updateLocalStorage() {
-            const resultsDiv = document.getElementById('results');
-            const activeCards = [];
-            resultsDiv.querySelectorAll('.result-card').forEach(card => {
-                activeCards.push(JSON.parse(card.getAttribute('data-pokemon')));
-            });
-            localStorage.setItem('activePokemonData', JSON.stringify(activeCards));
-        }
-
-        function loadDataFromLocalStorage() {
-            const stored = localStorage.getItem('activePokemonData');
-            if (!stored) return;
-            const resultsDiv = document.getElementById('results');
-            JSON.parse(stored).forEach(pokemonData => {
-                const card = createStatsCard(pokemonData);
-                resultsDiv.appendChild(card);
-            });
-        }
-        document.addEventListener('DOMContentLoaded', loadDataFromLocalStorage);
+            function loadDataFromLocalStorage() {
+                const stored = localStorage.getItem('activePokemonData');
+                if (!stored) return;
+                const resultsDiv = document.getElementById('results');
+                JSON.parse(stored).forEach(pokemonData => {
+                    const card = createStatsCard(pokemonData);
+                    if (card) resultsDiv.appendChild(card);
+                });
+            }
         </script>
     </body>
 </html>

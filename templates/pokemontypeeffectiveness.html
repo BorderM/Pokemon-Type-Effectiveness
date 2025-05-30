@@ -9,9 +9,16 @@
   <style>
     html, body {
       height: 100%;
-      margin: 0;
-      background: #0e131f; /* same as header */
+      min-height: 100%;
+      background: #0e131f;
     }
+
+    body::after {
+      content: "";
+      display: block;
+      height: 100px; /* add some space at the end to extend background */
+    }
+
 
     /* Progress bar */
     @keyframes progress {
@@ -118,21 +125,6 @@
       align-items: flex-start;
     }
 
-    #history {
-      width: 220px;
-      min-height: 60px;
-      background: #1f2937;
-      padding: 0.5rem;
-      border-radius: 0.5rem;
-      max-height: 80vh;
-      overflow-y: auto;
-      position: sticky;
-      top: 260px; /* previously 200px; adds spacing below header */
-    }
-    .hidden-history {
-      display: none !important;
-    }
-
     /* History cards styling */
     .small-card {
       display: flex;
@@ -155,20 +147,6 @@
       flex: 1;
       padding: 0.25rem 0;
       cursor: pointer;
-    }
-    .hidden-history {
-      display: none !important;
-    }
-
-    #main-result {
-      flex: 1;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      justify-content: center;
-      align-items: flex-start;
-      margin-top: 60px;
-      min-height: 675px;
     }
 
     .result-card {
@@ -273,52 +251,181 @@
       color: #fff;
     }
 
-    /* Mobile */
     @media (max-width: 640px) {
+      html {
+        scroll-padding-top: 80px;
+      }
+
+      body {
+        padding-top: 500px; /* ensures enough space below fixed header */
+      }
+
+      header {
+        height: 275px;
+      }
+
       .container {
         flex-direction: column;
-        padding-top: 100px;
+        margin-top: 0px;
         gap: 2rem;
       }
-      #main-result {
-        margin-top: 775px;
-        overflow-x: auto;
-        white-space: nowrap;
-        scroll-snap-type: x mandatory;
-        transform: scale(0.92);
-        transform-origin: top center;
+
+      .mode-toggle-container {
+        margin-top: 1rem;
+        display: flex;
+        justify-content: center;
       }
+
+      #main-result {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 0 1rem;
+        margin-left: -7px;
+      }
+      
+      body.dual-mode {
+        padding-top: 900px; /* or whatever height fits 2 cards + spacing */
+      }
+
+      #main-result::after {
+        content: '';
+        display: block;
+        height: 4rem; /* padding below cards */
+      }
+
       #history {
-        bottom: 70px;
+        position: fixed;
+        bottom: 90px;
         left: 20px;
         right: 20px;
-        display: none;
-        overflow-y: auto;
+        background: #1f2937;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
         max-height: 300px;
+        overflow-y: auto;
+        z-index: 999;
+        transition: all 0.3s ease;
       }
+
       .input-field {
-        padding: 12px;
-        font-size: 16px;
+        padding: 7px;
+        font-size: 12px;
       }
 
       .control-buttons button,
       #toggle-mode-btn {
-        padding: 10px 16px;
-        font-size: 16px;
+        padding: 4px 5px;
+        font-size: 12px;
       }
+
       .result-card {
-        width: 100%;
-        max-width: 500px;
-        min-width: 280px;
+        width: 95vw;
+        max-width: 95vw;
+        min-width: unset;
+        font-size: 0.9rem; /* Optional: reduce text slightly */
+        margin: 0 auto;
+      }
+      .effectiveness-row {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .effectiveness-label {
+        flex: 0 0 110px; /* fixed label width */
+        margin-bottom: 0;
+      }
+      .effectiveness-content {
+        flex: 1;
+        margin-left: -110px; /* pulls it back to align with label */
+        padding-left: 110px; /* indents wrapped lines */
         box-sizing: border-box;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+      }
+
+      header h1 {
+        margin-top: 0.4rem;
+      }
+      .hidden-history {
+        display: none !important;
+      }
+
+      .history-title {
+        display: none;
       }
     }
 
+
     /* Desktop hide mobile toggle */
     @media (min-width: 641px) {
+      body {
+        padding-top: 125px;
+      }
+
       #toggle-history-btn {
         display: none !important;
       }
+
+      .container {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 2rem;
+        max-width: 1200px;
+        width: 100%;
+        margin: 0 auto;
+        padding-top: 200px;
+      }
+      .history-title {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #E5E7EB; /* Tailwind gray-200 */
+        margin-bottom: 0.75rem;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+      }
+      #history {
+        width: 220px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 200px;
+        background: #1f2937;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        max-height: 80vh;
+        overflow-y: auto;
+        display: block; /* Ensure it isn't being hidden by display:none */
+        margin-left: -100px;
+        margin-top: -50px;
+      }
+
+      #history-items:empty::before {
+        content: 'No history yet';
+        display: block;
+        color: #9CA3AF; /* Tailwind gray-400 */
+        text-align: center;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+      }
+
+      #main-result {
+        flex: 1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+        align-items: flex-start;
+        margin-top: -75px;
+        min-height: 675px;
+        margin-left: -150px;
+      }
+      
     }
 
     /* Type badge colors */
@@ -343,10 +450,10 @@
     .type-none { background: #4B5563; }
   </style>
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen w-full">
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-full w-full">
   <header>
     <div class="watermark-fixed">Created by BorderM</div>
-    <h1 class="text-3xl font-bold text-white text-center mb-2">
+    <h1 class="text-3xl font-bold text-white text-center mb-2" style="margin-bottom: -25px;">
       Pokémon Type Effectiveness
     </h1>
     <div class="control-buttons">
@@ -361,7 +468,7 @@
       <input id="pokemon-input" class="input-field" placeholder="Enter Pokémon Name" autocomplete="off">
       <ul id="suggestions" class="suggestions"></ul>
     </div>
-    <div class="mode-toggle-container mt-2">
+     <div class="mode-toggle-container mt-2">
       <button id="toggle-mode-btn" class="bg-indigo-500 text-white p-2 rounded">2v2</button>
     </div>
     <div id="progress-bar-container" class="hidden">
@@ -369,11 +476,14 @@
     </div>
     <div id="error-message" class="error-message-fixed"></div>
   </header>
-  <button id="toggle-history-btn" class="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg z-50 sm:hidden">
+  <button id="toggle-history-btn" class="fixed bottom-7 right-6 bg-blue-500 text-white p-3 rounded-full shadow-lg z-50 sm:hidden">
     📜
   </button>
   <div class="container">
-    <aside id="history" class="hidden-history"></aside>
+    <aside id="history">
+      <div class="history-title">History</div>
+      <div class="history-items"></div>
+      </aside>
     <section id="main-result"></section>
   </div>
 
@@ -401,10 +511,11 @@
 
       // Fetch data
       Promise.all([
-        fetch('/static/pokemon_reference_map.json').then(r => r.json()),
+        fetch('/static/pokemon_reference_map_types.json').then(r => r.json()),
         fetch('/static/processed_pokemon_cache.json').then(r => r.json())
       ]).then(([refMap, cache]) => {
         REF_MAP = refMap;
+        POKEMON_REFERENCE_MAP = refMap;;
         cache.forEach(p => PROCESSED_CACHE[p.name] = p);
         ALL_POKEMON = Object.values(PROCESSED_CACHE);
         ALL_POKEMON.forEach(p => {
@@ -412,8 +523,19 @@
           COLLAPSED[c] = COLLAPSED[c] || [];
           COLLAPSED[c].push(p.name);
         });
+        start();
         restoreState();
       });
+
+      function start() {
+        // Functions that rely on POKEMON_REFERENCE_MAP
+        function collapseKey(rawKey) {
+          const key = rawKey.toLowerCase();
+          const entry = POKEMON_REFERENCE_MAP?.[key];
+          if (!entry) return key;
+          return entry.force_preserve_name ? key : (entry.collapse_display_name_to || entry.base_name || key);
+        }
+      }
 
       // Utility functions
       function collapseKey(rawKey) {
@@ -433,14 +555,13 @@
       function formatDisplayName(key) {
         const lc = key.toLowerCase();
         const entry = POKEMON_REFERENCE_MAP?.[lc];
-        if (!entry) return key;
+        const displayKey = entry?.collapse_display_name_to || lc;
 
-        const shouldPreserve = entry.force_preserve_name;
-        const nameToFormat = shouldPreserve ? lc : (entry.collapse_display_name_to ?? entry.base_name);
-
-        return nameToFormat
+        return displayKey
             .replace(/-/g, ' ')
-            .replace(/\b\w/g, c => c.toUpperCase());
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
     }
 
       function getSuggestions(query) {
@@ -493,6 +614,8 @@
       function toggleMode() {
         dualMode = !dualMode;
         toggleBtn.textContent = dualMode ? '1v1' : '2v2';
+
+        document.body.classList.toggle('dual-mode', dualMode); // 👈 this line
 
         const main = document.getElementById('main-result');
         const cards = [...main.children];
@@ -651,7 +774,7 @@
             <a href="https://bulbapedia.bulbagarden.net/wiki/${r.name.replace(/-/g,'_')}_(Pok%C3%A9mon)" 
               target="_blank"
               class="text-blue-400 underline text-xl font-semibold hover:text-blue-300 transition">
-              ${formatDisplayName(r.name)}
+              ${formatDisplayName(r.display_name)}
             </a>
           </h2>
           <p class="type-line">
@@ -704,6 +827,17 @@
         const h = document.getElementById('history');
         h.innerHTML = '';
 
+        // Create and add the title
+        const title = document.createElement('div');
+        title.className = 'history-title';
+        title.textContent = 'History';
+        h.appendChild(title);
+
+        // Create the history item container
+        const itemContainer = document.createElement('div');
+        itemContainer.className = 'history-items';
+        h.appendChild(itemContainer);
+
         historyList.forEach(r => {
           const v = document.createElement('div');
           v.className = 'small-card';
@@ -712,7 +846,7 @@
             <span class="delete-history-item cursor-pointer text-red-400 ml-2">×</span>
           `;
 
-          // Click to load Pokémon from history
+          // Load from history
           v.querySelector('.history-item').addEventListener('click', () => {
             const main = document.getElementById('main-result');
             const existing = [...main.children].map(c => JSON.parse(c.dataset.pokemon));
@@ -739,16 +873,14 @@
             saveState();
           });
 
-          // Click to delete from history only
+          // Delete from history
           v.querySelector('.delete-history-item').addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent triggering the parent click
+            e.stopPropagation();
             removeFromHistory(r.display_name);
           });
 
-          h.appendChild(v);
+          itemContainer.appendChild(v);
         });
-
-        h.className = historyList.length ? '' : 'hidden-history';
       }
 
       // Helpers
@@ -790,13 +922,13 @@
         }
         localStorage.setItem('pkmnHistory', JSON.stringify(historyList));
         localStorage.setItem('pkmnDualMode', JSON.stringify(dualMode));
-        localStorage.setItem('pkmnHistory', JSON.stringify(historyList));
-        localStorage.setItem('pkmnDualMode', JSON.stringify(dualMode));
       }
+
       function restoreState() {
         dualMode = JSON.parse(localStorage.getItem('pkmnDualMode') || 'false');
         toggleBtn.textContent = dualMode ? '1v1' : '2v2';
         // Load saved cards
+        document.body.classList.toggle('dual-mode', dualMode);
         const main = document.getElementById('main-result');
         main.innerHTML = '';
         const curRaw = localStorage.getItem('pkmnCurrent');
