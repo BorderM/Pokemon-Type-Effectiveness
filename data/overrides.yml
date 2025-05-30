@@ -294,3 +294,21 @@ kubfu:
   - to: urshifu-rapid-strike
     trigger: use-item
     item: scroll-of-waters
+
+eevee:
+  - to: glaceon
+    trigger: level-up or use-item
+    methods:
+      - method: level-up
+        location: near ice rock
+      - method: use-item
+        item: ice-stone
+    note: "Evolves into Glaceon by leveling up near an Ice Rock or using an Ice Stone."
+  - to: leafeon
+    trigger: level-up or use-item
+    methods:
+      - method: level-up
+        location: near moss rock
+      - method: use-item
+        item: leaf-stone
+    note: "Evolves into Leafeon by leveling up near a Moss Rock or using a Leaf Stone."
