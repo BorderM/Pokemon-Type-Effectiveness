@@ -194,6 +194,7 @@
             // Override map for niche cases
             const FORM_OVERRIDES = {
             basculin: 'basculin-white-striped',
+            basculegion: 'basculegion-male',
             pumpkaboo: 'pumpkaboo-average',
             gourgeist: 'gourgeist-average',
             // add more manual overrides here
@@ -201,43 +202,82 @@
 
             // Words indicating form suffixes to collapse
             const SHORTEN_SECOND = new Set([
-                "blade","blue","normal","standard","three","incarnate","altered",
-                "average","ordinary","family","disguised","full",
-                "droopy","school","50", "two", "white", "two-segment","three-segment", "plant", "small", "large", "super",
-                "disguised", "busted"
+                "average", "three", "two", "standard", "ordinary", "family",
+                "disguised", "busted", "plant", "sandy", "trash", "blade",
+                "shield", "midday", "midnight", "dusk", "school", "small",
+                "large", "super", "white"
             ]);
-            const PRESERVE = new Set([
-                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
-                "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
-                "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike", "lycanroc-midday","lycanroc-midnight",
-                "lycanroc-dusk", "toxtricity-amped","toxtricity-low-key", "mime-jr", "mr-mime", "mr-rime"
-              ]);
 
-            // Normalize form keys: collapse to base unless special
+            const PRESERVE = new Set([
+                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y",
+                "slowpoke-galar", "farfetchd-galar", "mime-jr", "mr-mime", "mr-rime",
+                "pumpkaboo", "gourgeist", "toxtricity-amped", "toxtricity-low-key"
+            ]);
+
+            const FULL_NAMES = new Set([
+                "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr"
+            ]);
+
+            const REGIONAL_SUFFIXES = ['alola', 'alolan', 'galar', 'galarian', 'hisui', 'hisuian', 'paldea', 'paldean'];
+
             function collapseKey(raw) {
-            const key = raw.toLowerCase().trim();
-            const parts = key.split('-');
-            // manual preserve
-            if (PRESERVE.has(key)) return key;
-            // base overrides for forms
-            if (parts[1] && SHORTEN_SECOND.has(parts[1])) return parts[0];
-            if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key][0];
-            const base = parts[0];
-            const sibs = FORMS_BY_BASE[base] || [base];
-            const signatures = new Set(
-                sibs.map(f => JSON.stringify((EVOLUTIONS_BY_FROM[f]||[]).map(e=>[e.to,e.trigger]).sort()))
-            );
-            return signatures.size > 1 ? key : base;
+                const key = raw.toLowerCase().trim();
+
+                // Fully preserve specific multi-word names
+                const FULL_NAMES = new Set([
+                    "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr",
+                    "type-null", "tapu-koko", "tapu-lele", "tapu-bulu", "tapu-fini"
+                ]);
+                if (FULL_NAMES.has(key)) return key;
+
+                // Preserve regional forms
+                if (REGIONAL_SUFFIXES.some(suffix => key.endsWith('-' + suffix))) {
+                    return key;
+                }
+
+                if (PRESERVE.has(key)) return key;
+
+                const parts = key.split('-');
+                const base = parts[0];
+
+                if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key][0];
+
+                const sibs = FORMS_BY_BASE[base] || [base];
+                const signatures = new Set(
+                    sibs.map(f =>
+                        JSON.stringify((EVOLUTIONS_BY_FROM[f] || []).map(e => [e.to, e.trigger]).sort())
+                    )
+                );
+
+                return signatures.size > 1 ? key : base;
             }
 
             function formatDisplayName(raw) {
                 if (typeof raw !== 'string') return raw;
-                const parts = raw.split('-');
-                const base = parts[0].replace(/\b\w/g, c => c.toUpperCase());
-                const suffix = parts.slice(1)
-                    .map(p => p.charAt(0).toUpperCase() + p.slice(1))
-                    .join(' ');
-                return suffix ? `${base} (${suffix})` : base;
+
+                const key = raw.toLowerCase();
+
+                const FULL_NAMES = new Set([
+                    "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr",
+                    "type-null", "tapu-koko", "tapu-lele", "tapu-bulu", "tapu-fini"
+                ]);
+
+                const HIDE_FORM_SUFFIX = new Set([
+                    "pumpkaboo-average", "gourgeist-average", "basculin-white-striped"
+                ]);
+
+                if (FULL_NAMES.has(key)) {
+                    return key.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                }
+
+                if (HIDE_FORM_SUFFIX.has(key)) {
+                    return key.split('-')[0].replace(/\b\w/g, c => c.toUpperCase());
+                }
+
+                const parts = key.split('-');
+                const base = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+                const suffix = parts.slice(1).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+                return suffix ? `${base} ${suffix}` : base;
             }
 
             // Debounce
@@ -269,17 +309,22 @@
             }
 
             function pickRepresentative(canon) {
-                // 1) if you explicitly overrode this base, use it
+                // 1) Use override if exists
                 if (FORM_OVERRIDES[canon]) {
                     return FORM_OVERRIDES[canon];
                 }
 
-                // 2) otherwise fall back to whichever form actually has evolutions
+                // 2) Try form that has evolutions
                 const forms = FORMS_BY_BASE[canon] || [canon];
                 const evoForm = forms.find(f => EVOLUTIONS_BY_FROM[f]?.length);
                 if (evoForm) return evoForm;
 
-                // 3) otherwise just give me the first one
+                // 3) Try base key directly
+                if (EVOLUTIONS_BY_FROM[canon]?.length) {
+                    return canon;
+                }
+
+                // 4) Default fallback
                 return forms[0];
             }
 
@@ -326,13 +371,15 @@
                 const items = Object.keys(buckets)
                     .sort((a, b) => formatDisplayName(a).localeCompare(formatDisplayName(b)))
                     .map(canon => {
-                    // pick a form that actually exists in your processed cache
-                    const forms = Array.from(buckets[canon]);
-                    const pick   = pickRepresentative(canon);
-                    return {
-                        display: formatDisplayName(canon),
-                        key:     pick
-                    };
+                        const forms = Array.from(buckets[canon]);
+                        const pick = pickRepresentative(canon);
+
+                        const display = formatDisplayName(canon);
+
+                        return {
+                            display,
+                            key: pick
+                        };
                     });
 
                 // 5) render them
@@ -384,93 +431,57 @@
                 const container = document.getElementById('results');
                 container.innerHTML = '';
 
-                // 1) build a map: parent_species -> [child entries]
-                const groups = data
-                    .filter(p => p.evolves_from)        // skip the root
-                    .reduce((m, p) => {
-                    m[p.evolves_from] = m[p.evolves_from]||[];
-                    m[p.evolves_from].push(p);
-                    return m;
-                    }, {});
-
-                // 2) determine which parents have >1 distinct form
-                const multiParent = new Set(
-                    Object.entries(groups)
-                    .filter(([_, children]) => children.length > 1)
-                    .map(([parent]) => parent)
-                );
+                const FULL_NAMES = new Set([
+                    "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr"
+                ]);
 
                 data.forEach(p => {
-                    // ---- compute title based on p.name and p.evolves_from ----
-                    const parts       = p.name.split('-');
-                    const base        = parts[0];
-                    const suffixParts = parts.slice(1);
+                    const name = p.name.toLowerCase();
                     let title;
 
-                    if (!p.evolves_from) {
-                    // ── ROOT form: show all parts
-                    title = [base, ...suffixParts]
-                        .map(capitalizeFirstLetter)
-                        .join(' ');
+                    if (FULL_NAMES.has(name)) {
+                        title = name
+                            .replace(/-/g, ' ')
+                            .replace(/\b\w/g, c => c.toUpperCase());
+
+                        if (name.endsWith('galar')) {
+                            title = title.replace(' Galar', ' (Galar)');
+                        }
                     } else {
-                    // ── EVOLUTION
-                    const parentBase = p.evolves_from.split('-',1)[0];
-
-                    // default child: exactly one suffix and it matches the parent
-                    if (
-                        suffixParts.length === 1 &&
-                        suffixParts[0] === parentBase
-                    ) {
-                        title = `${capitalizeFirstLetter(base)} ${capitalizeFirstLetter(suffixParts[0])}`;
+                        title = formatDisplayName(p.name);  // ✅ Assign to the declared `title`
                     }
-                    // alternate forms: first suffix matches parent, extra bits go in parens
-                    else if (
-                        suffixParts.length > 1 &&
-                        suffixParts[0] === parentBase
-                    ) {
-                        const extra = suffixParts
-                        .slice(1)
-                        .map(capitalizeFirstLetter)
-                        .join(' ');
-                        title = `${capitalizeFirstLetter(base)} (${extra})`;
-                    }
-                    // fallback: just join everything
-                    else {
-                        title = [base, ...suffixParts]
-                        .map(capitalizeFirstLetter)
-                        .join(' ');
-                    }
-            }
 
-                    title = title.replace(/ Average$/, '')
-
-                    const species = p.name.split('-',1)[0];
-                    const slug    = species.charAt(0).toUpperCase() + species.slice(1);
+                    const species = p.name.split('-', 1)[0];
+                    const slug = species.charAt(0).toUpperCase() + species.slice(1);
                     const bulbLink = `https://bulbapedia.bulbagarden.net/wiki/${slug}_(Pok%C3%A9mon)`;
 
                     const card = document.createElement('div');
                     card.className = 'result-card';
+
+                    let conditionsHtml = '';
+                    if (Array.isArray(p.evolution_conditions)) {
+                        conditionsHtml = p.evolution_conditions.map(cond => {
+                            return Object.entries(cond)
+                                .map(([k, v]) => `<p><strong>${k.replace(/_/g, ' ')}:</strong> ${v}</p>`)
+                                .join('');
+                        }).join('<hr class="my-2">');
+                    }
+
                     card.innerHTML = `
-                    <h2>
-                        <a href="${bulbLink}" target="_blank" class="text-blue-500 underline">
-                        ${title}
-                        </a>
-                    </h2>
-                    <img src="${p.sprite_url}" alt="${title}">
-                    ${p.evolves_from
-                        ? `<p>Evolves from: ${capitalizeFirstLetter(p.evolves_from.split('-')[0])}</p>`
-                        : ''}
-                    ${p.evolution_conditions.map(cond =>
-                        Object.entries(cond)
-                        .filter(([k,v]) => v && v !== 'N/A')
-                        .map(([k,v]) => `<p>${k.replace(/_/g,' ')}: ${v}</p>`)
-                        .join('')
-                    ).join('')}
-                    ${p.note ? `<p>Note: ${capitalizeFirstLetter(p.note)}</p>` : ''}
+                        <h2>
+                            <a href="${bulbLink}" target="_blank" class="text-blue-500 underline">
+                                ${title}
+                            </a>
+                        </h2>
+                        <img src="${p.sprite_url}" alt="${title}">
+                        ${p.evolves_from ? `<p><strong>Evolves from:</strong> ${p.evolves_from.charAt(0).toUpperCase() + p.evolves_from.slice(1)}</p>` : ''}
+                        ${conditionsHtml}
+                        ${p.note ? `<p><em>${p.note}</em></p>` : ''}
                     `;
+
                     container.appendChild(card);
                 });
-                }
+            }
 
             inputEl.addEventListener('input', debounce(handleInput,250));
             inputEl.addEventListener('keydown', handleArrows);

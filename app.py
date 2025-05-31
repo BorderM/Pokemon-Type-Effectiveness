@@ -69,6 +69,18 @@ def resolve_form_key(raw: str):
             return base
     return None
 
+def normalize_form(name):
+    # Collapse all wormadam variants into just "wormadam"
+    if name.startswith('wormadam-'):
+        return 'wormadam'
+    if name.startswith('gourgeist-'):
+        return 'gourgeist'
+    if name.startswith('pumpkaboo-'):
+        return 'pumpkaboo'
+    if name.startswith('basculin-'):
+        return 'basculin'
+    return name
+
 # ─── DIRECT EVOLUTIONS FILTER ──────────────────────────────────────────
 def get_direct_evolutions(form_key):
     src = FORM_BY_KEY[form_key]
@@ -287,33 +299,27 @@ def suggestions():
 @app.route('/api/pokemon/evolutions')
 def api_evo():
     raw = request.args.get('name','').lower().strip()
-    # 1) resolve any form back to its canonical key
+
+    # Resolve to canonical form
     key = resolve_form_key(raw) or raw
-    # 2) fallback to base species if needed
     if key not in FORM_BY_KEY:
         base = key.split('-',1)[0]
         key = resolve_form_key(base) or base
     if key not in FORM_BY_KEY:
         return jsonify([]), 200
 
-    # ─── NEW: climb up the tree to the ultimate chain root ─────────────
+    # Trace to chain root
     def find_chain_root(name):
-        # always work with your canonical form key
         candidate = resolve_form_key(name) or name
         while True:
-            # look for any evolution edge that targets this candidate
             parent = next((e for e in EVOLUTIONS if e['to'] == candidate), None)
             if not parent:
                 return candidate
-            # step up to its parent
             candidate = resolve_form_key(parent['from']) or parent['from']
 
     root = find_chain_root(key)
 
-
-
-    # ─────────────────────────────────────────────────────────────────
-
+    # Traverse evolution chain forward from root
     chain = []
     def trav(name, frm=None):
         if name not in FORM_BY_KEY:
@@ -327,7 +333,7 @@ def api_evo():
             'evolution_conditions': []
         }
         if frm:
-            edge = next((e for e in EVOLUTIONS if e['from']==frm and e['to']==name), None)
+            edge = next((e for e in EVOLUTIONS if e['from'] == frm and e['to'] == name), None)
             if edge:
                 node['evolution_conditions'] = get_evolution_conditions([edge])
                 if edge.get('note'):
