@@ -94,9 +94,9 @@ FALLBACK_EVOLUTIONS = [
     { 'from': 'poltchageist', 'to': 'sinistcha', 'trigger': 'use-item', 'item': 'unremarkable teacup OR masterpiece teacup', 'note': 'Form-dependent evolution method' },
     { 'from': 'toxel', 'to': 'toxtricity-amped', 'trigger': 'level-up', 'min_level': 30, 'note': 'Nature must be one of Hardy, Brave, Adamant, Naughty, Docile, Impish, Lax, Hasty, Jolly, Naive, Rash, Sassy, or Quirky.' },
     { 'from': 'toxel', 'to': 'toxtricity-low-key', 'trigger': 'level-up', 'min_level': 30, 'note': 'Nature must be one of Lonely, Bold, Relaxed, Timid, Serious, Modest, Mild, Quiet, Bashful, Calm, Gentle, or Careful.' },
-    { 'from': 'doublade', 'to': 'aegislash', 'trigger': 'use-item', 'min_level': 35, 'item': 'dusk-stone' },
+    { 'from': 'doublade', 'to': 'aegislash-shield', 'trigger': 'use-item', 'min_level': 35, 'item': 'dusk-stone' },
     { 'from': 'pumpkaboo-average', 'to': 'gourgeist-average', 'trigger': 'trade' },
-    { 'from': 'burmy', 'to': 'wormadam', 'trigger': 'level-up', 'min_level': 20, 'gender': 'female', 'note': 'Form depends on previous battle environment prior to level up (plant, sandy, trash)' },
+    { 'from': 'burmy', 'to': 'wormadam-plant', 'trigger': 'level-up', 'min_level': 20, 'gender': 'female', 'note': 'Form depends on previous battle environment prior to level up (plant, sandy, trash)' },
     { 'from': 'burmy', 'to': 'mothim', 'trigger': 'level-up', 'min_level': 20, 'gender': 'male' },
     { 'from': 'kubfu', 'to': 'urshifu-single-strike', 'trigger': 'use-item', 'item': 'scroll-of-darkness' },
     { 'from': 'kubfu', 'to': 'urshifu-rapid-strike', 'trigger': 'use-item', 'item': 'scroll-of-waters' }

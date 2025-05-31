@@ -197,6 +197,8 @@
             basculegion: 'basculegion-male',
             pumpkaboo: 'pumpkaboo-average',
             gourgeist: 'gourgeist-average',
+            aegislash: 'aegislash-shield', 
+            wormadam: 'wormadam-plant',
             // add more manual overrides here
             };
 
@@ -215,7 +217,10 @@
             ]);
 
             const FULL_NAMES = new Set([
-                "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr"
+                "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr",
+                "type-null", "tapu-koko", "tapu-lele", "tapu-bulu", "tapu-fini",
+                "pumpkaboo-average", "gourgeist-average", "basculin-white-striped",
+                "wormadam-plant", "aegislash-shield" 
             ]);
 
             const REGIONAL_SUFFIXES = ['alola', 'alolan', 'galar', 'galarian', 'hisui', 'hisuian', 'paldea', 'paldean'];
@@ -259,14 +264,18 @@
 
                 const FULL_NAMES = new Set([
                     "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr",
-                    "type-null", "tapu-koko", "tapu-lele", "tapu-bulu", "tapu-fini"
+                    "type-null", "tapu-koko", "tapu-lele", "tapu-bulu", "tapu-fini",
+                    "pumpkaboo-average", "gourgeist-average", "basculin-white-striped",
+                    "wormadam-plant", "aegislash-shield"
                 ]);
 
                 const HIDE_FORM_SUFFIX = new Set([
-                    "pumpkaboo-average", "gourgeist-average", "basculin-white-striped"
+                    "pumpkaboo-average", "gourgeist-average", "basculin-white-striped", "wormadam-plant", "aegislash-shield"
                 ]);
 
                 if (FULL_NAMES.has(key)) {
+                    if (key.startsWith('wormadam')) return 'Wormadam';
+                    if (key.startsWith('aegislash')) return 'Aegislash';
                     return key.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
                 }
 

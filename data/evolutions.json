@@ -10202,7 +10202,7 @@
   },
   {
     "from": "doublade",
-    "to": "aegislash",
+    "to": "aegislash-shield",
     "trigger": "use-item",
     "min_level": 35,
     "item": "dusk-stone",
@@ -10242,7 +10242,7 @@
   },
   {
     "from": "burmy",
-    "to": "wormadam",
+    "to": "wormadam-plant",
     "trigger": "level-up",
     "min_level": 20,
     "gender": "female",
