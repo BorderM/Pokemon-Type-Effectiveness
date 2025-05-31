@@ -2124,7 +2124,7 @@
     "to": "leafeon",
     "trigger": "level-up",
     "min_level": null,
-    "item": null,
+    "item": "leaf-stone",
     "min_happiness": null,
     "min_beauty": null,
     "gender": null,
@@ -2137,14 +2137,14 @@
     "party_type": null,
     "relative_physical_stats": null,
     "trade_species": null,
-    "note": null
+    "note": "evolves by level up or evolution stone depending on game"
   },
   {
     "from": "eevee",
     "to": "glaceon",
     "trigger": "level-up",
     "min_level": null,
-    "item": null,
+    "item": "ice-stone",
     "min_happiness": null,
     "min_beauty": null,
     "gender": null,
@@ -2157,7 +2157,7 @@
     "party_type": null,
     "relative_physical_stats": null,
     "trade_species": null,
-    "note": null
+    "note": "evolves by level up or evolution stone depending on game"
   },
   {
     "from": "eevee",

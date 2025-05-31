@@ -244,7 +244,7 @@ async def api_info():
     raw = request.args.get('name','').lower().strip()
     real = resolve_form_key(raw)
     if not real:
-        return jsonify({'error':'Unknown Pokémon'}),404
+        return jsonify({'error': 'Pokémon not found. Please check the name or select a suggestion.'}), 404
 
     proc = get_resource_path('processed_pokemon_cache.json')
     processed = json.load(open(proc))
@@ -357,7 +357,7 @@ def api_typeeffectiveness():
         return jsonify(result)
 
     except KeyError as e:
-        return jsonify({ 'error': f'Unknown type \"{e.args[0]}\"' }), 404
+        return jsonify({ 'error': f'Unknown type: {e.args[0].capitalize()}.' }), 404
 
     except Exception as e:
         # Log the traceback to help debug

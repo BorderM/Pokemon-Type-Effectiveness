@@ -1,1284 +1,964 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <script src="https://cdn.tailwindcss.com"></script>
-        <style>
-            html,
-            body {
-                height: 100%;
-                margin: 0;
-                background: #0e131f; /* same as header */
-            }
-            /* Progress bar */
-            @keyframes progress {
-                0% {
-                    width: 0;
-                }
-                100% {
-                    width: 100%;
-                }
-            }
-            .progress-bar {
-                width: 100%;
-                height: 10px;
-                border-radius: 9999px;
-                background: #3b82f6;
-                animation: progress 2s linear infinite;
-            }
-            .hidden {
-                display: none !important;
-            }
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/static/favicon.ico">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Pokémon Type Effectiveness</title>
+  <style>
+    html, body {
+      height: 100%;
+      min-height: 100%;
+      background: #0e131f;
+    }
 
-            /* Fixed header */
-            header {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                width: 100%;
-                background: #1f2937; /* gray-800 */
-                padding: 1rem 0;
-                z-index: 1000;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                height: auto;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            }
-            .watermark-fixed {
-                position: absolute;
-                top: 10px;
-                left: 10px;
-                font-size: 0.75rem;
-                color: #a0aec0;
-            }
+    body::after {
+      content: "";
+      display: block;
+      height: 100px; /* add some space at the end to extend background */
+    }
 
-            /* Input + suggestions */
-            .input-container {
-                position: relative;
-                width: 100%;
-                max-width: 450px;
-            }
-            header h1 {
-              margin-top: 20px;
-              margin-bottom: 10px;
-              text-align: center;
-            }
-            .input-field {
-                width: 100%;
-                padding: 8px;
-                border: none;
-                border-radius: 4px;
-                background: #374151; /* gray-700 – contrast vs header */
-                color: #000000;
-                background-color: white;
-            }
-            .suggestions {
-                position: absolute;
-                top: 100%;
-                left: 0;
-                width: 100%;
-                background: #fff;
-                color: #000;
-                border: 1px solid #ccc;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                display: none;
-                z-index: 1001;
-                margin-top: 2px;
-            }
-            .suggestions li {
-                list-style: none;
-                padding: 8px;
-                cursor: pointer;
-                border-bottom: 1px solid #eee;
-            }
-            .suggestions li:last-child {
-                border-bottom: none;
-            }
-            .suggestions li.highlighted,
-            .suggestions li:hover {
-                background: #BFC2BA;
-            }
 
-            /* ─── container / history / main-result ─── */
-            @media (max-width: 640px) {
-              .container {
-                  flex-direction: column;
-                  position: relative;
-                  max-width: 1200px;
-                  margin: 0 auto;
-                  padding-top: 100px; /* keep space for the header */
-                  border-top: 1px solid #374151; /* dark grey separator */
-                  background: #0e131f; /* your original gray-900 */
-                  display: flex;
-                  gap: 2rem;
+    /* Progress bar */
+    @keyframes progress {
+      0% { width: 0; }
+      100% { width: 100%; }
+    }
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      border-radius: 9999px;
+      background: #3b82f6;
+      animation: progress 2s linear infinite;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Fixed header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      background: #1a202c; /* updated header color */ /* gray-800 */
+      padding: 1rem 0;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .watermark-fixed {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 0.75rem;
+      color: #a0aec0;
+    }
+
+    /* Input + suggestions */
+    .input-container {
+      position: relative;
+      width: 100%;
+      max-width: 450px;
+    }
+    .input-field {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #fff; /* white border for clarity */
+      border-radius: 4px;
+      background: #fff;
+      color: #000;
+    }
+    .suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background: #fff;
+      color: #000;
+      border: 1px solid #ccc;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      display: none;
+      z-index: 1001;
+      margin-top: 2px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .suggestions li {
+      list-style: none;
+      padding: 8px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+    .suggestions li:last-child {
+      border-bottom: none;
+    }
+    .suggestions li.highlighted,
+    .suggestions li:hover {
+      background: #BFC2BA;
+    }
+
+    /* Controls */
+    .control-buttons {
+      margin-top: 2rem;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Layout */
+    .container {
+      display: flex;
+      flex-direction: row;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding-top: 200px;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+
+    /* History cards styling */
+    .small-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #374151;
+      color: #fff;
+      padding: 0.25rem 0.5rem;
+      margin-bottom: 0.25rem;
+      font-size: 0.875rem;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 0.25rem;
+    }
+    .small-card button {
+      background: transparent;
+      border: none;
+      color: white;
+      text-align: left;
+      flex: 1;
+      padding: 0.25rem 0;
+      cursor: pointer;
+    }
+
+    .result-card {
+      background: #1f2937; /* gray-800 */
+      color: white;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      max-width: 500px;
+      width: 90vw;
+      min-width: 280px;
+      scroll-snap-align: start;
+    }
+
+    .minimize-button,
+    .close-button {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      cursor: pointer;
+    }
+    .minimize-button {
+      top: 10px;
+      right: 40px;
+      background: #6b7280;
+    }
+    .close-button {
+      top: 10px;
+      right: 10px;
+      background: #ef4444;
+    }
+
+    .result-card img {
+      width: 100px;
+      height: 100px;
+    }
+    .type-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.3rem;
+      font-weight: bold;
+      margin: 0.2rem;
+      color: #fff;
+      text-transform: capitalize;
+    }
+
+    .separator {
+      width: 100%;
+      height: 1px;
+      background: #374151;
+      margin: 0.5rem 0;
+    }
+    .effectiveness-row {
+      display: flex;
+      width: 100%;
+      align-items: flex-start;
+    }
+    .effectiveness-label {
+      width: 100px;
+      font-weight: bold;
+      text-transform: capitalize;
+    }
+    .effectiveness-content {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .error-message-fixed {
+      position: absolute;
+      top: 80px;
+      left: 10px;
+      right: 10px;
+      z-index: 1001;
+    }
+
+    .delete-history-item {
+      background: #ef4444;
+      color: #ffffff; /* brighter white */
+      border: none;
+      border-radius: 9999px;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      text-align: center;
+      font-size: 14px;
+      margin-left: 8px;
+      cursor: pointer;
+      display: inline-block;
+      font-weight: bold; /* makes the "×" pop */
+    }
+    .delete-history-item:hover {
+      background: #dc2626;
+      color: #fff;
+    }
+
+    @media (max-width: 640px) {
+      html {
+        scroll-padding-top: 80px;
+      }
+
+      body {
+        padding-top: 500px; /* ensures enough space below fixed header */
+      }
+
+      header {
+        height: 275px;
+      }
+
+      .container {
+        flex-direction: column;
+        margin-top: 0px;
+        gap: 2rem;
+      }
+
+      .mode-toggle-container {
+        margin-top: 1rem;
+        display: flex;
+        justify-content: center;
+      }
+
+      #main-result {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 0 1rem;
+        margin-left: -7px;
+      }
+      
+      body.dual-mode {
+        padding-top: 900px; /* or whatever height fits 2 cards + spacing */
+      }
+
+      #main-result::after {
+        content: '';
+        display: block;
+        height: 4rem; /* padding below cards */
+      }
+
+      #history {
+        position: fixed;
+        bottom: 90px;
+        left: 20px;
+        right: 20px;
+        background: #1f2937;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 999;
+        transition: all 0.3s ease;
+      }
+
+      .input-field {
+        padding: 7px;
+        font-size: 12px;
+      }
+
+      .control-buttons button,
+      #toggle-mode-btn {
+        padding: 4px 5px;
+        font-size: 12px;
+      }
+
+      .result-card {
+        width: 95vw;
+        max-width: 95vw;
+        min-width: unset;
+        font-size: 0.9rem; /* Optional: reduce text slightly */
+        margin: 0 auto;
+      }
+      .effectiveness-row {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .effectiveness-label {
+        flex: 0 0 110px; /* fixed label width */
+        margin-bottom: 0;
+      }
+      .effectiveness-content {
+        flex: 1;
+        margin-left: -110px; /* pulls it back to align with label */
+        padding-left: 110px; /* indents wrapped lines */
+        box-sizing: border-box;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+      }
+
+      header h1 {
+        margin-top: 0.4rem;
+      }
+      .hidden-history {
+        display: none !important;
+      }
+
+      .history-title {
+        display: none;
+      }
+    }
+
+
+    /* Desktop hide mobile toggle */
+    @media (min-width: 641px) {
+      body {
+        padding-top: 125px;
+      }
+
+      #toggle-history-btn {
+        display: none !important;
+      }
+
+      .container {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 2rem;
+        max-width: 1200px;
+        width: 100%;
+        margin: 0 auto;
+        padding-top: 200px;
+      }
+      .history-title {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #E5E7EB; /* Tailwind gray-200 */
+        margin-bottom: 0.75rem;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+      }
+      #history {
+        width: 220px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 200px;
+        background: #1f2937;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        max-height: 80vh;
+        overflow-y: auto;
+        display: block; /* Ensure it isn't being hidden by display:none */
+        margin-left: -100px;
+        margin-top: -50px;
+      }
+
+      #history-items:empty::before {
+        content: 'No history yet';
+        display: block;
+        color: #9CA3AF; /* Tailwind gray-400 */
+        text-align: center;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+      }
+
+      #main-result {
+        flex: 1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+        align-items: flex-start;
+        margin-top: -75px;
+        min-height: 675px;
+        margin-left: -150px;
+      }
+      
+    }
+
+    /* Type badge colors */
+    .type-normal { background: #A8A77A; }
+    .type-fire { background: #EE8130; }
+    .type-water { background: #6390F0; }
+    .type-electric { background: #F7D02C; }
+    .type-grass { background: #7AC74C; }
+    .type-ice { background: #96D9D6; }
+    .type-fighting { background: #C22E28; }
+    .type-poison { background: #A33EA1; }
+    .type-ground { background: #E2BF65; }
+    .type-flying { background: #A98FF3; }
+    .type-psychic { background: #F95587; }
+    .type-bug { background: #A6B91A; }
+    .type-rock { background: #B6A136; }
+    .type-ghost { background: #735797; }
+    .type-dragon { background: #6F35FC; }
+    .type-dark { background: #705746; }
+    .type-steel { background: #C0C0C0; }
+    .type-fairy { background: #D685AD; }
+    .type-none { background: #4B5563; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-full w-full">
+  <header>
+    <div class="watermark-fixed">Created by BorderM</div>
+    <h1 class="text-3xl font-bold text-white text-center mb-2" style="margin-bottom: -25px;">
+      Pokémon Type Effectiveness
+    </h1>
+    <div class="control-buttons">
+      <button id="search-btn" class="bg-blue-500 text-white p-2 rounded-lg">Search</button>
+      <button id="clear-btn" class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
+      <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
+      <a href="/typecalculator" class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
+      <a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
+      <a href="/evolutions" class="bg-orange-500 text-white p-2 rounded-lg">Evolutions</a>
+    </div>
+    <div class="input-container mt-2">
+      <input id="pokemon-input" class="input-field" placeholder="Enter Pokémon Name" autocomplete="off">
+      <ul id="suggestions" class="suggestions"></ul>
+    </div>
+     <div class="mode-toggle-container mt-2">
+      <button id="toggle-mode-btn" class="bg-indigo-500 text-white p-2 rounded">2v2</button>
+    </div>
+    <div id="progress-bar-container" class="hidden">
+      <div class="progress-bar"></div>
+    </div>
+    <div id="error-message" class="error-message-fixed"></div>
+  </header>
+  <button id="toggle-history-btn" class="fixed bottom-7 right-6 bg-blue-500 text-white p-3 rounded-full shadow-lg z-50 sm:hidden">
+    📜
+  </button>
+  <div class="container">
+    <aside id="history">
+      <div class="history-title">History</div>
+      <div class="history-items"></div>
+      </aside>
+    <section id="main-result"></section>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // State & config
+      let PROCESSED_CACHE = {};
+      let ALL_POKEMON = [];
+      let REF_MAP = null;
+      let COLLAPSED = {};
+      let historyList = JSON.parse(localStorage.getItem('pkmnHistory') || '[]');
+      let currentPokemon = null;
+      let dualMode = JSON.parse(localStorage.getItem('pkmnDualMode') || 'false');
+      const MAX_HISTORY = 12;
+      let suggestionKeys = [];
+      let selectedIndex = null;
+
+      // DOM elements
+      const input = document.getElementById('pokemon-input');
+      const suggestionsBox = document.getElementById('suggestions');
+      const searchBtn = document.getElementById('search-btn');
+      const clearBtn = document.getElementById('clear-btn');
+      const toggleBtn = document.getElementById('toggle-mode-btn');
+      const historyBtn = document.getElementById('toggle-history-btn');
+
+      // Fetch data
+      Promise.all([
+        fetch('/static/pokemon_reference_map_types.json').then(r => r.json()),
+        fetch('/static/processed_pokemon_cache.json').then(r => r.json())
+      ]).then(([refMap, cache]) => {
+        REF_MAP = refMap;
+        POKEMON_REFERENCE_MAP = refMap;;
+        cache.forEach(p => PROCESSED_CACHE[p.name] = p);
+        ALL_POKEMON = Object.values(PROCESSED_CACHE);
+        ALL_POKEMON.forEach(p => {
+          const c = collapseKey(p.name);
+          COLLAPSED[c] = COLLAPSED[c] || [];
+          COLLAPSED[c].push(p.name);
+        });
+        start();
+        restoreState();
+      });
+
+      function start() {
+        // Functions that rely on POKEMON_REFERENCE_MAP
+        function collapseKey(rawKey) {
+          const key = rawKey.toLowerCase();
+          const entry = POKEMON_REFERENCE_MAP?.[key];
+          if (!entry) return key;
+          return entry.force_preserve_name ? key : (entry.collapse_display_name_to || entry.base_name || key);
+        }
+      }
+
+      // Utility functions
+      function collapseKey(rawKey) {
+        const key = rawKey.toLowerCase();
+        const entry = POKEMON_REFERENCE_MAP?.[key];
+        if (!entry) return key;
+
+        return entry.force_preserve_name
+            ? key
+            : (entry.collapse_display_name_to || entry.base_name || key);
+    }
+
+      function pickRepresentative(canon) {
+        return (COLLAPSED[canon] || [canon])[0];
+      }
+
+      function formatDisplayName(key) {
+        const lc = key.toLowerCase();
+        const entry = POKEMON_REFERENCE_MAP?.[lc];
+        const displayKey = entry?.collapse_display_name_to || lc;
+
+        return displayKey
+            .replace(/-/g, ' ')
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+
+      function getSuggestions(query) {
+        const q = query.trim().toLowerCase();
+        if (!q) return [];
+        const set = new Set();
+        ALL_POKEMON.forEach(p => {
+          const c = collapseKey(p.name);
+          if (c.includes(q)) set.add(c);
+        });
+        return Array.from(set).sort().slice(0, 10);
+      }
+
+      // Input & suggestions handling
+      input.addEventListener('input', () => {
+        const list = getSuggestions(input.value);
+        suggestionKeys = list;
+        selectedIndex = 0;
+        suggestionsBox.innerHTML = list
+          .map((key, i) => `
+            <li class="${i === selectedIndex ? 'highlighted' : ''}">
+              ${formatDisplayName(key)}
+            </li>
+          `)
+          .join('');
+        Array.from(suggestionsBox.children).forEach((li, idx) => {
+          li.onclick = () => chooseSuggestion(idx);
+        });
+        suggestionsBox.style.display = list.length ? 'block' : 'none';
+      });
+
+      input.addEventListener('keydown', e => {
+        const items = Array.from(suggestionsBox.children);
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (!items.length) return;
+          items[selectedIndex]?.classList.remove('highlighted');
+          selectedIndex = (
+            selectedIndex + (e.key === 'ArrowDown' ? 1 : -1) +
+            items.length
+          ) % items.length;
+          items[selectedIndex].classList.add('highlighted');
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (suggestionKeys.length) chooseSuggestion(selectedIndex);
+            else performSearch();
+          }
+      });
+
+      function toggleMode() {
+        dualMode = !dualMode;
+        toggleBtn.textContent = dualMode ? '1v1' : '2v2';
+
+        document.body.classList.toggle('dual-mode', dualMode); // 👈 this line
+
+        const main = document.getElementById('main-result');
+        const cards = [...main.children];
+
+        if (!dualMode && cards.length > 1) {
+          const removed = JSON.parse(cards[1].dataset.pokemon);
+          main.removeChild(main.children[1]);
+          addToHistory(removed);
+          renderHistory();
+        }
+
+        if (dualMode && cards.length === 1 && historyList.length > 0) {
+          const restored = historyList.shift();
+          main.appendChild(createCard(restored));
+          renderHistory();
+        }
+
+        saveState();
+      }
+
+      function chooseSuggestion(idx) {
+        const key = suggestionKeys[idx];
+        if (!key) return;
+
+        lastChosenSuggestionKey = key; // <- This is important
+        input.value = formatDisplayName(key);
+        selectedIndex = 0;
+        suggestionsBox.style.display = 'none';
+
+        setTimeout(() => performSearch(), 0);
+      }
+
+      // Button handlers
+      searchBtn.addEventListener('click', performSearch);
+      clearBtn.addEventListener('click', clearAll);
+      toggleBtn.addEventListener('click', toggleMode);
+      historyBtn.addEventListener('click', () => {
+        document.getElementById('history').classList.toggle('hidden-history');
+      });
+
+      // Fetch & render Pokémon
+      function performSearch() {
+        let canon = null;
+
+        // If a suggestion was chosen manually, use that
+        if (lastChosenSuggestionKey) {
+          canon = lastChosenSuggestionKey;
+          lastChosenSuggestionKey = null; // reset it after use
+        } else {
+          const query = input.value.trim();
+          if (!query) return;
+          canon = suggestionKeys.length ? suggestionKeys[0] : collapseKey(query);
+        }
+
+        const rep = pickRepresentative(canon);
+
+        const alreadyDisplayed = [...document.getElementById('main-result').children].some(
+          c => JSON.parse(c.dataset.pokemon).display_name === canon
+        );
+        if (alreadyDisplayed) {
+          input.value = '';
+          input.focus();
+          suggestionsBox.style.display = 'none';
+          return;
+        }
+
+        showProgress(true);
+        if (window.innerWidth < 640) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        fetch(`/api/pokemon/info?name=${encodeURIComponent(rep)}`)
+          .then(res => res.json().then(data => {
+            if (res.ok) renderPokemon(data[0]);
+            else showError(data.error);
+          }))
+          .finally(() => {
+            showProgress(false);
+            input.value = '';
+            suggestionsBox.style.display = 'none';
+          });
+      }
+
+      function renderPokemon(r) {
+        r.display_name = collapseKey(r.name);
+        const main = document.getElementById('main-result');
+        const cards = [...main.children].map(c => JSON.parse(c.dataset.pokemon));
+
+        const isInResult = cards.some(p => p.display_name === r.display_name);
+        const isInHistory = historyList.some(p => p.display_name === r.display_name);
+
+        if (isInResult) return; // Skip if already showing
+
+        if (isInHistory) {
+          // Move from history to result
+          removeFromHistory(r.display_name);
+          if (dualMode && cards.length >= 2) {
+            const removed = cards[0];
+            main.removeChild(main.children[0]);
+            addToHistory(removed);
+          } else if (!dualMode && cards.length === 1) {
+            const removed = cards[0];
+            main.removeChild(main.children[0]);
+            addToHistory(removed);
+          }
+          main.appendChild(createCard(r));
+        } else {
+          // Fresh search
+          if (dualMode && cards.length >= 2) {
+            const removed = cards[0];
+            main.removeChild(main.children[0]);
+            addToHistory(removed);
+          } else if (!dualMode && cards.length === 1) {
+            const removed = cards[0];
+            main.removeChild(main.children[0]);
+            addToHistory(removed);
+          }
+          main.appendChild(createCard(r));
+        }
+
+        currentPokemon = r;
+        saveState();
+      }
+
+      function renderSingle(r) {
+        const main = document.getElementById('main-result');
+        if (main.children.length > 0) {
+          const removed = JSON.parse(main.removeChild(main.children[0]).dataset.pokemon);
+          addToHistory(removed);
+        }
+        main.innerHTML = '';
+        main.appendChild(createCard(r));
+      }
+
+      function renderDual(r) {
+        const main = document.getElementById('main-result');
+        if (main.children.length >= 2) {
+          const removed = JSON.parse(main.removeChild(main.children[0]).dataset.pokemon);
+          addToHistory(removed);
+        }
+
+        const exists = [...main.children].some(
+          c => JSON.parse(c.dataset.pokemon).display_name === r.display_name
+        );
+        if (!exists) main.appendChild(createCard(r));
+      }
+
+      function createCard(r) {
+        const d = document.createElement('div');
+        d.className = 'result-card';
+        d.dataset.pokemon = JSON.stringify(r);
+        d.innerHTML = `
+          <button class="minimize-button">−</button>
+          <button class="close-button">×</button>
+          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.display_name}">
+          <h2>
+            <a href="https://bulbapedia.bulbagarden.net/wiki/${r.name.replace(/-/g,'_')}_(Pok%C3%A9mon)" 
+              target="_blank"
+              class="text-blue-400 underline text-xl font-semibold hover:text-blue-300 transition">
+              ${formatDisplayName(r.display_name)}
+            </a>
+          </h2>
+          <p class="type-line">
+            Type: ${r.types.map(t => `<span class="type-badge type-${t}">${t}</span>`).join(' ')}
+          </p>
+          ${[ 'four_times_effective','super_effective','normal_effective',
+               'two_times_resistant','four_times_resistant','immune' ]
+            .map(label => `
+              <div class="separator"></div>
+              <div class="effectiveness-row">
+                <span class="effectiveness-label">${label.replace(/_/g,' ')}:</span>
+                <div class="effectiveness-content">
+                  ${(r.effectiveness[label] || [])
+                    .map(t => `<span class="type-badge type-${t}">${t}</span>`)
+                    .join('') || '<span class="type-badge type-none">None</span>'}
+                </div>
+              </div>`)
+            .join('')}
+        `;
+        d.querySelector('.minimize-button').addEventListener('click', () => {
+          addToHistory(r);
+          d.remove();
+          saveState();
+        });
+        d.querySelector('.close-button').addEventListener('click', () => {
+          d.remove();
+          if (!dualMode) currentPokemon = null;
+          saveState();
+        });
+        return d;
+      }
+
+      // History
+      function addToHistory(r) {
+        if (!historyList.find(x => x.display_name === r.display_name)) {
+          historyList.unshift(r);
+          if (historyList.length > MAX_HISTORY) historyList.pop();
+          renderHistory();
+          saveState();
+        }
+      }
+
+      function removeFromHistory(name) {
+        historyList = historyList.filter(x => x.display_name !== name);
+        renderHistory();
+        saveState();
+      }
+
+      function renderHistory() {
+        const h = document.getElementById('history');
+        h.innerHTML = '';
+
+        // Create and add the title
+        const title = document.createElement('div');
+        title.className = 'history-title';
+        title.textContent = 'History';
+        h.appendChild(title);
+
+        // Create the history item container
+        const itemContainer = document.createElement('div');
+        itemContainer.className = 'history-items';
+        h.appendChild(itemContainer);
+
+        historyList.forEach(r => {
+          const v = document.createElement('div');
+          v.className = 'small-card';
+          v.innerHTML = `
+            <button class="history-item">${formatDisplayName(r.display_name)}</button>
+            <span class="delete-history-item cursor-pointer text-red-400 ml-2">×</span>
+          `;
+
+          // Load from history
+          v.querySelector('.history-item').addEventListener('click', () => {
+            const main = document.getElementById('main-result');
+            const existing = [...main.children].map(c => JSON.parse(c.dataset.pokemon));
+
+            if (!dualMode) {
+              if (existing.length === 1) {
+                const removed = existing[0];
+                main.removeChild(main.children[0]);
+                addToHistory(removed);
               }
-              /* main-result grows to fill the rest of the flex container */
-              #main-result {
-                position: relative;
-                margin-top: 775px;
-                overflow-x: auto;
-                white-space: nowrap;
-                scroll-snap-type: x mandatory;
-                width: 100%;
-                display: flex;
-                flex-wrap: nowrap;
-                gap: 1rem;
-                padding: 0 1rem;
-                transform: scale(0.92);
-                transform-origin: top center;
-                margin-left: 10px;
+              main.innerHTML = '';
+              main.appendChild(createCard(r));
+            } else {
+              if (existing.length >= 2) {
+                const removed = existing[0];
+                main.removeChild(main.children[0]);
+                addToHistory(removed);
               }
-              /* ───── result-card (original size & aesthetic) ───── */
-              .result-card {
-                background: #1f2937; /* gray-800 */
-                color: white;
-                position: relative;
-                padding: 1rem;
-                border-radius: 0.5rem;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                max-width: 500px;
-                width: 90vw;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                flex: 0 0 90%;
-                min-width: 280px;
-                scroll-snap-align: start;
-                
-              }
-              #results {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 1rem;
-                padding-top: 100px;
-                flex-direction: column;
-                align-items: center;
-                margin-top: 240px;
-                padding: 0 1rem;
-              }
-              /* Controls */
-              .control-buttons {
-                display: flex;
-                gap: 10px;
-                margin-bottom: 10px;
-              }
-              #history {
-                transition: all 0.3s ease;
-                background: #1f2937;
-                position: fixed;
-                bottom: 70px;
-                right: 20px;
-                left: 20px;
-                padding: 0.5rem;
-                border-radius: 0.5rem;
-                max-height: 300px;
-                overflow-y: auto;
-                z-index: 999;
-                display: none;
-                max-width: 90%;
-              }
-                  
-            }
-            .control-buttons {
-              display: flex;
-              gap: 10px;
-              margin-bottom: 10px;
+              main.appendChild(createCard(r));
             }
 
-            /* ───── result-card (original size & aesthetic) ───── */
-              .result-card {
-                background: #1f2937; /* gray-800 */
-                color: white;
-                position: relative;
-                padding: 1rem;
-                border-radius: 0.5rem;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                max-width: 500px;
-                width: 90vw;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                flex: 0 0 90%;
-                min-width: 280px;
-                scroll-snap-align: start;
-              }
-              #results {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 1rem;
-                padding-top: 220px;
-                flex-direction: column;
-                align-items: center;
-                margin-top: 300px;
-                padding: 0 1rem;
-              }
-            /* history cards */
-            .small-card {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                background: #374151; /* slightly lighter */
-                color: #fff;
-                padding: 0.25rem 0.5rem;
-                margin-bottom: 0.25rem;
-                font-size: 0.875rem;
-                width: 100%;
-                box-sizing: border-box;
-            }
-
-            .small-card .history-btn {
-                background: transparent;
-                border: none;
-                color: white;
-                text-align: left; /* label flush left */
-                flex: 1; /* fill the remaining space */
-                padding: 0.25rem 0; /* vertical hit-area */
-                font-size: 0.875rem;
-                cursor: pointer;
-            }
-
-            /* give the “×” a pop of color */
-            .small-card .remove-btn {
-                background: #ef4444;
-                color: white;
-                border: none;
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 0.75rem;
-                line-height: 1;
-                cursor: pointer;
-            }
-            .small-card:hover {
-                background: #374151;
-            }
-            .mode-toggle-container {
-              margin-top: 0.5rem;
-              display: flex;
-              justify-content: center;
-            }
-            .close-button {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                background: #ef4444; /* red-500 */
-                color: white;
-                border: none;
-                border-radius: 50%;
-                width: 24px;
-                height: 24px;
-                cursor: pointer;
-            }
-            .result-card img {
-                width: 100px;
-                height: 100px;
-            }
-            .result-card h2 {
-                margin: 0;
-                font-size: 1.25rem;
-                font-weight: 700;
-                text-align: center;
-                text-transform: capitalize;
-            }
-            .result-card p.type-line {
-                margin: 0.5rem 0 1rem;
-                font-weight: 600;
-                text-align: center;
-            }
-
-            /* Type badges */
-            .type-badge {
-                display: inline-block;
-                padding: 0.25rem 0.5rem;
-                border-radius: 0.3rem;
-                color: #fff;
-                font-weight: bold;
-                margin: 0.2rem;
-                text-transform: capitalize;
-            }
-            .type-normal {
-                background: #A8A77A;
-            }
-            .type-fire {
-                background: #EE8130;
-            }
-            .type-water {
-                background: #6390F0;
-            }
-            .type-electric {
-                background: #F7D02C;
-            }
-            .type-grass {
-                background: #7AC74C;
-            }
-            .type-ice {
-                background: #96D9D6;
-            }
-            .type-fighting {
-                background: #C22E28;
-            }
-            .type-poison {
-                background: #A33EA1;
-            }
-            .type-ground {
-                background: #E2BF65;
-            }
-            .type-flying {
-                background: #A98FF3;
-            }
-            .type-psychic {
-                background: #F95587;
-            }
-            .type-bug {
-                background: #A6B91A;
-            }
-            .type-rock {
-                background: #B6A136;
-            }
-            .type-ghost {
-                background: #735797;
-            }
-            .type-dragon {
-                background: #6F35FC;
-            }
-            .type-dark {
-                background: #705746;
-            }
-            .type-steel {
-                background: #C0C0C0;
-            }
-            .type-fairy {
-                background: #D685AD;
-            }
-            .type-none {
-                background: #4B5563;
-            }
-
-            .separator {
-                width: 100%;
-                height: 1px;
-                background: #374151;
-                margin: 1rem 0;
-                margin: 0.5rem;
-            }
-            .effectiveness-row {
-                display: flex;
-                width: 100%;
-                align-items: flex-start;
-            }
-            .effectiveness-label {
-                width: 100px;
-                font-weight: bold;
-                text-transform: capitalize;
-            }
-            .effectiveness-content {
-                flex: 1;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 0.5rem;
-            }
-
-            /* Error message */
-            .error-message-fixed {
-                position: absolute;
-                top: 80px;
-                left: 10px;
-                right: 10px;
-                z-index: 1001;
-            }
-
-            .minimize-button {
-              position: absolute;
-              top: 10px;
-              /* place it just left of the close button (which is at right:10px) */
-              right: 40px;
-              background: #6b7280;    /* gray-500 */
-              color: white;
-              border: none;
-              border-radius: 50%;
-              width: 24px;
-              height: 24px;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 1rem;
-              line-height: 1;
-            }
-            @media (min-width: 641px) {
-              .container {
-                display: flex;
-                flex-direction: row;
-                max-width: 1200px;
-                margin: 0 auto;
-                padding-top: 200px;
-                gap: 2rem;
-              }
-
-              #main-result {
-                flex: 1;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 1rem;
-                justify-content: center;
-                align-items: flex-start;
-                margin-top: 50px;
-                margin-right: 230px;
-                min-height: 675px; /* ← KEEP THIS */
-              }
-
-              #history {
-                width: 220px;
-                max-height: 80vh;
-                overflow-y: auto;
-                background: #1f2937;
-                padding: 1rem;
-                border-radius: 0.5rem;
-                display: block;
-                position: sticky;
-                top: 200px;
-                height: fit-content;
-                margin-top: 50px;
-                margin-left: -30px;
-                flex-shrink: 0;
-                min-height: 50px;
-              }
-              #history.hidden-history {
-                visibility: hidden !important;
-                height: 0 !important;
-                padding: 0 !important;
-                overflow: hidden !important;
-              }
-              #toggle-history-btn {
-                display: none !important; /* hide floating button */
-              }
-            }
-        </style>
-        <title>Pokémon Type Effectiveness</title>
-    </head>
-    <body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen w-full">
-        <header>
-            <div class="watermark-fixed">Created by BorderM</div>
-            <h1 class="text-3xl font-bold text-white text-center mb-2">Pokémon Type Effectiveness</h1>
-            <div class="control-buttons flex flex-wrap justify-center gap-2">
-                <button onclick="performSearch()"class="bg-blue-500 text-white p-2 rounded-lg">Search</button>
-                <button onclick="clearHistory()"class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
-                <a href="/stats"class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
-                <a href="/typecalculator"class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
-                <a href="/natures"class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
-                <a href="/evolutions"class="bg-orange-500 text-white p-2 rounded-lg">Evolutions</a>
-            </div>
-            <div class="input-container">
-                <input
-                    id="pokemon-input"
-                    class="input-field"
-                    placeholder="Enter Pokémon Name"
-                    oninput="handleInput(event)"
-                    onkeydown="handleEnterKey(event)"
-                />
-                <ul id="suggestions" class="suggestions"></ul>
-            </div>
-            <div class="mode-toggle-container">
-              <button id="toggle-mode-btn" class="bg-indigo-500 text-white p-2 rounded">2v2</button>
-            </div>
-            <div id="progress-bar-container" class="hidden">
-                <div class="progress-bar"></div>
-            </div>
-            <div id="error-message" class="error-message-fixed"></div>
-        </header>
-        <button id="toggle-history-btn" class="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg z-50 sm:hidden">
-          📜
-        </button>
-        <div class="container">
-            <aside id="history"></aside>
-            <section id="main-result"></section>
-        </div>
-        <script id="formsByBase" type="application/json">
-          {{ forms_by_base_json | tojson | safe }}
-        </script>
-        <script id="formCollapseMap" type="application/json">
-          {{ collapse_map | tojson | safe }}
-        </script>
-        <script>
-            let PROCESSED_CACHE = {};      // name → full record
-            let COLLAPSED_TO_FORMS = {};
-            CURRENT_MODE = 'typeeffectiveness'
-            const MAX_HISTORY = 9;
-            // — state & persistence —
-            let historyList = JSON.parse(localStorage.getItem("historyList") || "[]");
-            let currentPokemon = null;
-            // when false: 1v1 mode (single card). when true: 2v2 mode (two cards)
-            let dualMode = false;
-
-            const FORMS_BY_BASE = JSON.parse(
-              document.getElementById('formsByBase').textContent
-            );
-
-            const FORM_COLLAPSE_MAP = JSON.parse(
-              document.getElementById('formCollapseMap').textContent
-            );
-            // Fetch the JSON on page‐load
-            fetch('/static/processed_pokemon_cache.json')
-            .then(r=>r.json())
-            .then(list => {
-                for (const p of list) {
-                PROCESSED_CACHE[p.name] = p;
-                }
-                // build the inverse of your collapse‐map
-                Object.keys(PROCESSED_CACHE).forEach(raw => {
-                  const canon = collapseKey(raw);
-                  COLLAPSED_TO_FORMS[canon] = COLLAPSED_TO_FORMS[canon] || [];
-                  if (!COLLAPSED_TO_FORMS[canon].includes(raw)) {
-                    COLLAPSED_TO_FORMS[canon].push(raw);
-                  }
-                });
-                SPECIES_SIGS = {};
-                Object.keys(PROCESSED_CACHE).forEach(form => {
-                  const base = form.split('-',1)[0];
-                  SPECIES_SIGS[base] = SPECIES_SIGS[base] || { type: new Set(), stat: new Set(), forms: [] };
-                  const p = PROCESSED_CACHE[form];
-                  SPECIES_SIGS[base].type.add(p.types.join(','));
-                  SPECIES_SIGS[base].stat.add(JSON.stringify(p.stats));
-                  SPECIES_SIGS[base].forms.push(form);
-                });
-                loadState();
-              });
-              document.getElementById('toggle-history-btn').addEventListener('click', () => {
-                const historyPanel = document.getElementById('history');
-                const isVisible = historyPanel.style.display === 'block';
-                historyPanel.style.display = isVisible ? 'none' : 'block';
-              });
-              
-              
-              const SHORTEN_SECOND = new Set([
-                "blade","blue","normal","standard","three","incarnate","altered",
-                "average","ordinary","family","disguised","full",
-                "droopy","school","50", "two", "white", "two-segment","three-segment", "plant",
-                "shield", "blade", "disguised", "busted"
-              ]);
-
-              const FULL_PRESERVE = new Set([
-                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
-                "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
-                "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike", "lycanroc-midday","lycanroc-midnight",
-                "lycanroc-dusk", "toxtricity-amped","toxtricity-low-key"
-              ]);
-
-              function collapseKey(rawKey) {
-                if (typeof rawKey !== 'string') return rawKey;
-                const key = rawKey.toLowerCase().trim();
-
-                // 1) Strip purely aesthetic suffixes if they add no mechanical
-                //    difference (same types & stats).
-                for (const suffix of ['-gmax', '-gigantamax']) {
-                  if (key.endsWith(suffix)) {
-                    const base = key.slice(0, -suffix.length);
-                    const P = PROCESSED_CACHE[key];
-                    const Q = PROCESSED_CACHE[base];
-                    if (
-                      P && Q &&
-                      JSON.stringify(P.stats) === JSON.stringify(Q.stats) &&
-                      P.types.join(',') === Q.types.join(',')
-                    ) {
-                      // collapse to the base form (and re-run collapseKey in case
-                      // that base itself has an override)
-                      return collapseKey(base);
-                    }
-                  }
-                }
-
-                // 2) Honor any Python‐side override map:
-                if (FORM_COLLAPSE_MAP[key]) {
-                  const mapped = FORM_COLLAPSE_MAP[key];
-                  return Array.isArray(mapped) ? mapped[0] : mapped;
-                }
-
-                // 3) Never collapse your “full preserve” exceptions:
-                if (FULL_PRESERVE.has(key)) {
-                  return key;
-                }
-
-                // 4) If **every** form of this species has identical type+stats,
-                //    collapse to the bare species name:
-                const species = key.split('-',1)[0];
-                const sig = SPECIES_SIGS[species] || { type: new Set(), stat: new Set() };
-                if (sig.type.size === 1 && sig.stat.size === 1) {
-                  return species;
-                }
-
-                // 5) Otherwise keep the full form:
-                return key;
-              }
-
-
-
-              function pickRepresentative(canon) {
-                const forms = COLLAPSED_TO_FORMS[canon] || [canon];
-                // You can refine this to pick the first with the right property,
-                // but as a fallback, just return the first form in the list:
-                return forms[0];
-              }
-
-              function formatDisplayName(raw) {
-                // 0) nothing to do on non-strings:
-                if (typeof raw !== 'string') return raw;
-
-                // 1) full Python overrides: always pick the first string
-                if (FORM_COLLAPSE_MAP[raw]) {
-                  const mapped = FORM_COLLAPSE_MAP[raw];
-                  // mapped might be an array or a single string:
-                  return Array.isArray(mapped) ? mapped[0] : mapped;
-                }
-
-                // 2) mega/other forms never collapse
-                if (FULL_PRESERVE.has(raw)) {
-                  return raw.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-                }
-
-                // 3) tauros-paldea special case
-                if (raw.startsWith("tauros-paldea-") && raw.endsWith("-breed")) {
-                  return raw.replace(/-breed$/, "").replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-                }
-
-                // 4) otherwise split on “-”
-                const parts = raw.split("-");
-                if (parts.length > 1) {
-                  // drop the form entirely if it’s a blacklisted suffix
-                  if (SHORTEN_SECOND.has(parts[1].toLowerCase())) {
-                    return parts[0].replace(/\b\w/g,c=>c.toUpperCase());
-                  }
-                  // keep two chunks (e.g. "charizard-mega" → "Charizard Mega")
-                  return parts
-                    .slice(0,2)
-                    .join("-")
-                    .replace(/-/g,' ')
-                    .replace(/\b\w/g,c=>c.toUpperCase());
-                }
-
-                // 5) no hyphens at all
-                return parts[0].replace(/\b\w/g,c=>c.toUpperCase());
-              }
-
-              function saveState() {
-                const secEl = document.getElementById('main-result');
-
-                // Save left card (slot 1)
-                if (secEl.children.length > 0) {
-                  const leftData = JSON.parse(secEl.children[0].dataset.pokemon);
-                  localStorage.setItem('pkmnCurrent', JSON.stringify(leftData));
-                  currentPokemon = leftData; // sync memory
-                } else {
-                  localStorage.removeItem('pkmnCurrent');
-                  currentPokemon = null;
-                }
-
-                // Save right card (slot 2) if in 2v2 mode
-                if (dualMode && secEl.children.length > 1) {
-                  const rightData = JSON.parse(secEl.children[1].dataset.pokemon);
-                  localStorage.setItem('pkmnSecondary', JSON.stringify(rightData));
-                } else {
-                  localStorage.removeItem('pkmnSecondary');
-                }
-
-                // Save mode and history
-                localStorage.setItem('pkmnDualMode', JSON.stringify(dualMode));
-                localStorage.setItem('pkmnHistory', JSON.stringify(historyList));
-              }
-
-              function loadState() {
-                const histRaw = localStorage.getItem('pkmnHistory');
-                const historyEl = document.getElementById('history');
-
-                if (histRaw) {
-                  historyList = JSON.parse(histRaw).slice(0, MAX_HISTORY);
-                  historyList.forEach(r => renderHistoryEntry(r));
-                }
-
-                if (historyList.length === 0) {
-                  historyEl.classList.add('hidden-history');
-                }
-              }
-                
-                // 2) restore dualMode flag & button text
-                const dmRaw = localStorage.getItem('pkmnDualMode')
-                if (dmRaw !== null) {
-                  dualMode = JSON.parse(dmRaw)
-                  document.getElementById('toggle-mode-btn').textContent = dualMode ? '1v1' : '2v2'
-                }
-                
-                // 3) clear result area and draw cards in order
-                const sec = document.getElementById('main-result')
-                sec.innerHTML = ''
-
-                // primary slot
-                const curRaw = localStorage.getItem('pkmnCurrent')
-                if (curRaw) {
-                  currentPokemon = JSON.parse(curRaw)
-                  const card1 = createCard(currentPokemon)
-                  card1.dataset.name = currentPokemon.name
-                  sec.appendChild(card1)
-                }
-
-                // secondary slot if in 2v2
-                if (dualMode) {
-                  const secRaw = localStorage.getItem('pkmnSecondary')
-                  if (secRaw) {
-                    const secondary = JSON.parse(secRaw)
-                    const card2 = createCard(secondary)
-                    card2.dataset.name = secondary.name
-                    sec.appendChild(card2)
-                  }
-                }
-
-              // — scrolling helper —
-              function scrollWithGap(el) {
-                const headerHeight = document.querySelector('header').offsetHeight;
-                const y = el.getBoundingClientRect().top + window.scrollY;
-                window.scrollTo({ top: y - headerHeight - 16, behavior: 'smooth' });
-              }
-
-              // — render the main result card —
-              function renderMainCard(r) {
-                const sec = document.getElementById('main-result');
-                // in single‐mode we clear; in dual‐mode we just append (and later evict if >2)
-                if (!dualMode) {
-                sec.innerHTML = '';
-                }
-                const card = createCard(r);
-                card.dataset.name = r.display_name;
-                sec.appendChild(card);
-                // ensure at most 2 cards side‐by‐side
-                if (dualMode && sec.children.length > 2) {
-                sec.removeChild(sec.children[0]);
-                }
-                saveState();
-                scrollWithGap(card);
-              }
-
-              // — when you click a history entry —
-              function swapToMain(r) {
-                // 1) remove the clicked one from history
-                removeHistoryEntry(r.display_name);
-                
-                const sec = document.getElementById('main-result')
-                // 2v2 mode: replace the right card
-                if (dualMode) {
-                  if (sec.children.length === 0) {
-                    renderMainCard(r);
-                  } else if (sec.children.length === 1) {
-                    //just append as second
-                    const card = createCard(r);
-                    card.dataset.name = r.display_name;
-                    sec.appendChild(card);
-                  } else {
-                    //two cards: move rightmose to history, then swap in new
-                    const right = sec.children[1];
-                    const data = JSON.parse(right.dataset.pokemon);
-                    pushToHistory(data);
-                    right.remove();
-                    const card = createCard(r);
-                    card.dataset.name = r.display_name;
-                    sec.appendChild(card);
-                  }
-                }
-                // 1v1 mode: Original swap order
-                else {
-                  if (currentPokemon && currentPokemon.name !== r.display_name) {
-                    pushToHistory(currentPokemon)
-                  }
-                  renderMainCard(r);
-                }
-                saveState();
-              }
-
-              function formatSuggestionName(key) {
-                const parts = key.split('-');
-                const base  = parts.shift();
-                const suffix= parts.join(' ');
-                const baseDisp  = base[0].toUpperCase() + base.slice(1);
-                if (!suffix) return baseDisp;
-                const suffixDisp = suffix
-                    .split(' ')
-                    .map(w=>w[0].toUpperCase()+w.slice(1))
-                    .join(' ');
-                return `${baseDisp} (${suffixDisp})`;
-              }
-
-              // — render a single history button —
-              function renderHistoryEntry(r, prepend = false) {
-                // skip duplicates
-                if (document.querySelector(`#history .small-card[data-name="${r.display_name}"]`)) return;
-
-                const btn = document.createElement('div');
-                btn.className = 'small-card';
-                btn.dataset.name = r.display_name;
-                btn.innerHTML = `
-                  <button class="history-btn">${formatDisplayName(r.display_name)}</button>
-                  <button class="remove-btn">×</button>
-                `;
-
-                btn.querySelector('.history-btn').onclick = () => swapToMain(r);
-                btn.querySelector('.remove-btn').onclick = e => {
-                  e.stopPropagation();
-                  removeHistoryEntry(r.display_name);
-                };
-
-                const container = document.getElementById('history'); // <- this was missing
-                if (prepend && container.firstChild) {
-                  container.insertBefore(btn, container.firstChild);
-                } else {
-                  container.appendChild(btn);
-                }
-
-                // ✅ Unhide if previously hidden
-                container.classList.remove('hidden-history');
-
-                saveState();
-              }
-
-              function pushToHistory(r) {
-                // skip if already in history or is current
-                if (historyList.some(x => x.name === r.display_name)) {
-                  return;
-                }
-
-                historyList.unshift(r);
-
-                if (historyList.length > MAX_HISTORY) {
-                  historyList.pop();
-                  const cards = document.querySelectorAll('#history .small-card');
-                  if (cards.length > MAX_HISTORY) {
-                    cards[cards.length - 1].remove();
-                  }
-                }
-
-                renderHistoryEntry(r, /*prepend=*/true);
-
-                // ✅ Ensure history is visible
-                const container = document.getElementById('history');
-                container.classList.remove('hidden-history');
-
-                saveState();
-              }
-
-              function removeHistoryEntry(name) {
-                historyList = historyList.filter(x => x.display_name !== name);
-
-                const btn = document.querySelector(`#history .small-card[data-name="${name}"]`);
-                if (btn) btn.remove();
-
-                const container = document.getElementById('history');
-                if (historyList.length === 0) {
-                  container.classList.add('hidden-history');
-                }
-
-                localStorage.setItem("pkmnHistory", JSON.stringify(historyList));
-                saveState();
-              }
-
-              function clearHistory() {
-                historyList = [];
-                currentPokemon = null;
-                document.getElementById('history').innerHTML = '';
-                document.getElementById('main-result').innerHTML = '';
-                localStorage.removeItem('pkmnHistory');
-                localStorage.removeItem('pkmnCurrent');
-                localStorage.removeItem('pkmnSecondary');
-                localStorage.setItem("pkmnHistory", JSON.stringify(historyList)); // If not already included
-                historyEl.style.display = 'none';
-                saveState(); // <-- Force saving the empty state
-              }
-
-              // — suggestions & search flow (unchanged) —
-              let suggestionKeys = [];
-              let selectedIndex = -1;
-              let SPECIES_SIGS = {};
-
-
-              async function handleInput(e) {
-                const q = e.target.value.trim().toLowerCase();
-                const box = e.target.parentElement.querySelector('.suggestions');
-                if (q.length < 2) {
-                  box.style.display = 'none';
-                  suggestionKeys = [];
-                  return;
-                }
-
-                // fetch raw form keys
-                const { suggestions: rawSuggestions } = await fetch(
-                  `/api/pokemon/suggestions?query=${encodeURIComponent(q)}`
-                ).then(r => r.json());
-                const rawKeys = rawSuggestions.map(s => s.key);
-
-                // bucket by species → then cluster by (types+stats) signature
-                const list = [];
-                const buckets = rawKeys.reduce((acc, raw) => {
-                  const sp = raw.split('-',1)[0];
-                  (acc[sp] = acc[sp]||[]).push(raw);
-                  return acc;
-                }, {});
-
-                for (const sp of Object.keys(buckets).sort()) {
-                  const clusterMap = buckets[sp].reduce((c, form) => {
-                    const p = PROCESSED_CACHE[form];
-                    const sig = JSON.stringify({ t: p.types, s: p.stats });
-                    (c[sig] = c[sig]||[]).push(form);
-                    return c;
-                  }, {});
-
-                  for (const sig of Object.keys(clusterMap)) {
-                    const forms = clusterMap[sig].sort();
-                    if (forms.length === 1) {
-                      // only one mechanically‐distinct form
-                      list.push({ key: forms[0], label: formatSuggestionName(forms[0]) });
-                    } else {
-                      // multiple forms share the same sig → collapse to one entry
-                      const rep = collapseKey(forms[0]);
-                      list.push({ key: rep, label: formatSuggestionName(rep) });
-                    }
-                  }
-                }
-
-                // render dropdown
-                suggestionKeys = list.map(x => x.key);
-                box.innerHTML = list
-                  .map(x => `<li onclick="selectSuggestion('${x.key}')">${x.label}</li>`)
-                  .join('');
-                box.style.display = list.length ? 'block' : 'none';
-                selectedIndex = -1;
-              }
-
-
-              function handleEnterKey(e) {
-                const box   = document.getElementById('suggestions');
-                const items = Array.from(box.querySelectorAll('li'));
-
-                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    // move highlight
-                    selectedIndex += (e.key === 'ArrowDown') ? 1 : -1;
-                    selectedIndex = Math.max(0, Math.min(items.length - 1, selectedIndex));
-                    items.forEach((li, i) => 
-                    li.classList.toggle('highlighted', i === selectedIndex)
-                    );
-                }
-                else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    box.style.display = 'none';
-
-                    if (items.length) {
-                    // pick the canon key you stored in suggestionKeys
-                    const idx = selectedIndex >= 0 ? selectedIndex : 0;
-                    selectSuggestion(suggestionKeys[idx]);
-                    } else {
-                    // no suggestions: do the page’s search call
-                    // stats page calls fetchPokemon()
-                    // typeeffectiveness page calls performSearch()
-                    // evolutions page calls fetchPokemonData()
-                    const page = window.location.pathname;
-                    if (page.includes('stats')) {
-                        fetchPokemon();
-                    } else if (page.includes('typeeffectiveness')) {
-                        performSearch();
-                    } else {
-                        fetchPokemonData();
-                    }
-                    }
-                    // reset highlight
-                    selectedIndex = -1;
-                }
-              }
-
-              function selectSuggestion(name) {
-                document.getElementById('pokemon-input').value = name;
-                document.getElementById('suggestions').style.display='none';
-                performSearch();
-              }
-
-              function performSearch() {
-                const inp = document.getElementById('pokemon-input');
-                const raw = inp.value.trim();
-                if (!raw) return;
-                // 1) collapse to your canonical key
-                const canon = collapseKey(raw);
-                const fetchKey = pickRepresentative(canon);
-                document.getElementById('suggestions').style.display = 'none';
-                document.getElementById('progress-bar-container').classList.remove('hidden');
-                fetchPokemon(fetchKey)
-                  .finally(() => {
-                    document.getElementById('progress-bar-container').classList.add('hidden');
-                    inp.value = '';
-                    inp.focus();
-                  });
-              }
-
-              async function fetchPokemon(rawName) {
-                // 1) collapse any cosmetic or mechanic‐duplicate forms (eg “-gmax”)
-                let canon = collapseKey(rawName);
-                // 2) if that canon isn't a real form, pick the first valid sibling
-                let name = pickRepresentative(canon);
-                const sec = document.getElementById('main-result');
-
-                // — if it’s already showing as the main card, just scroll to it —
-                if (currentPokemon && currentPokemon.name === name && !dualMode) {
-                  scrollWithGap(sec.querySelector(`.result-card[data-name="${name}"]`));
-                  return;
-                }
-
-                // — 2v2 MODE: sliding‐window of 2 cards —
-                if (dualMode) {
-                  // 1) Fetch the data
-                  const ep   = location.pathname.includes('stats') ? 'stats' : 'info';
-                  const res  = await fetch(`/api/pokemon/info?name=${encodeURIComponent(name)}`);
-                  const data = await res.json();
-                  document.getElementById('error-message').innerHTML = '';
-
-                  if (!res.ok) {
-                    // Show error and bail
-                    document.getElementById('error-message').innerHTML =
-                      `<div class="bg-red-600 text-white p-2 rounded">${data.error}</div>`;
-                    return;
-                  }
-                  const r = data[0];
-                  removeHistoryEntry(r.display_name);
-
-                  // ── DUPLICATE CHECK ──
-                  for (let i = 0; i < sec.children.length; i++) {
-                    const existing = JSON.parse(sec.children[i].dataset.pokemon);
-                    if (existing.display_name === r.display_name) {
-                      sec.children[i].scrollIntoView({ behavior:'smooth', block:'end' });
-                      return;
-                    }
-                  }
-
-                  // 2) Zero cards yet → show first slot only
-                  if (sec.children.length === 0) {
-                    renderMainCard(r);
-                    return;
-                  }
-
-                  // 3) One card → append as the second (if not duplicate)
-                  if (sec.children.length === 1) {
-                    if (sec.children[0].dataset.name !== r.display_name) {
-                      const card = createCard(r);
-                      card.dataset.name = r.display_name;
-                      sec.appendChild(card);
-                      saveState();
-                    }
-                    return;
-                  }
-
-                  // 4) Two cards: slide window
-                  let leftData;
-                  {
-                    const leftCard = sec.children[0];
-                    leftData = JSON.parse(leftCard.dataset.pokemon);
-                    sec.removeChild(leftCard);
-                    // immediately push that one into history
-                    pushToHistory(leftData);
-                  }
-                  // b) append the new one (if it isn’t the same as what’s left)
-                  if (sec.children[0].dataset.name !== r.display_name) {
-                    const card = createCard(r);
-                    card.dataset.name = r.display_name;
-                    sec.appendChild(card);
-                  }
-                  saveState();
-                  return;
-                }  
-                
-                // — 1v1 MODE: original single-card behavior —
-                // fetch & render the new one
-                const epSingle   = location.pathname.includes('stats') ? 'stats' : 'info';
-                const resSingle  = await fetch(`/api/pokemon/${epSingle}?name=${encodeURIComponent(name)}`);
-                const dataSingle = await resSingle.json();
-                document.getElementById('error-message').innerHTML = '';
-
-                if (resSingle.ok) {
-                  const r = dataSingle[0];
-                  // remove from history (in case it was there)
-                  removeHistoryEntry(r.display_name);
-                  // ── DUPLICATE CHECK ──
-                  {
-                    const existing = sec.querySelector(`.result-card[data-name="${r.display_name}"]`);
-                    if (existing) {
-                      existing.scrollIntoView({ behavior:'smooth', block:'end' });
-                      return;
-                    }
-                  }
-                  removeHistoryEntry(r.display_name);
-
-                  // now push the old main into history (if any), before we render the new one
-                  if (currentPokemon && currentPokemon.name !== r.display_name) {
-                    pushToHistory(currentPokemon);
-                  }
-
-                  // render single slot
-                  renderMainCard(r);
-                } else {
-                  document.getElementById('error-message').innerHTML =
-                    `<div class="bg-red-600 text-white p-2 rounded">${dataSingle.error}</div>`;
-                }
-              }
-
-
-              function createCard(r) {
-                const species = r.name.split('-',1)[0];
-                const title   = formatDisplayName(r.name);
-                const slug    = species[0].toUpperCase() + species.slice(1);
-                const bulbapediaLink = `https://bulbapedia.bulbagarden.net/wiki/${slug}_(Pok%C3%A9mon)`;
-                const d = document.createElement('div');
-                d.className = 'result-card';
-                d.dataset.pokemon = JSON.stringify(r);
-                d.innerHTML = `
-                  <button class="minimize-button" onclick="minimizeCard(this)">−</button>
-                  <button class="close-button" onclick="closeCard(this)">×</button>
-                  <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.display_name}">
-                  <h2><a href="${bulbapediaLink}" target="_blank" class="text-blue-500 underline">${title}</a></h2>
-                  <p class="type-line">Type: ${r.types.map(
-                    t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`
-                  ).join(' ')}</p>
-                  <div class="separator"></div>
-                  ${renderRow('4x Weak', r.effectiveness.four_times_effective)}
-                  <div class="separator"></div>
-                  ${renderRow('2x Weak', r.effectiveness.super_effective)}
-                  <div class="separator"></div>
-                  ${renderRow('Normal', r.effectiveness.normal_effective)}
-                  <div class="separator"></div>
-                  ${renderRow('2x Resistant', r.effectiveness.two_times_resistant)}
-                  <div class="separator"></div>
-                  ${renderRow('4x Resistant', r.effectiveness.four_times_resistant)}
-                  <div class="separator"></div>
-                  ${renderRow('Immune', r.effectiveness.immune)}
-                `;
-                return d;
-              }
-
-              function renderRow(label, types) {
-                const items = types.length
-                  ? types.map(t=>`<span class="type-badge type-${t.toLowerCase()}">${t}</span>`).join(' ')
-                  : `<span class="type-badge type-none">None</span>`;
-                return `
-                  <div class="effectiveness-row">
-                    <span class="effectiveness-label">${label}:</span>
-                    <div class="effectiveness-content">${items}</div>
-                  </div>`;
-              }
-              function closeMainCard() {
-                // 1) Wipe out the DOM
-                const sec = document.getElementById('main-result');
-                sec.innerHTML = '';
-                // 2) Clear state & storage
-                currentPokemon = null;
-                localStorage.removeItem('pkmnCurrent');
-                // 3) Persist everything (historyList + dualMode)
-                saveState();
-              }
-
-              /**
-              * Move this card’s Pokémon into history,
-              * then remove it from the main-result area.
-              */
-              function minimizeCard(btn) {
-                const card = btn.closest('.result-card');
-                const data = JSON.parse(card.dataset.pokemon);
-                pushToHistory(data);
-                card.remove();
-                saveState();
-              }
-
-              // — 1v1 ⇄ 2v2 toggle button handler —
-              const toggleBtn = document.getElementById('toggle-mode-btn');
-              toggleBtn.addEventListener('click', () => {
-                const sec = document.getElementById('main-result');
-
-                if (!dualMode) {
-                  // switch into 2v2
-                  dualMode = true;
-                  toggleBtn.textContent = '1v1';
-                  // auto-fill slot 2 from history if available
-                  if (historyList.length > 0) {
-                    const nextUp = historyList.shift();
-                    removeHistoryEntry(nextUp.display_name);
-                    renderMainCard(nextUp);
-                  }
-                } else {
-                  // switch back to 1v1
-                  dualMode = false;
-                  toggleBtn.textContent = '2v2';
-
-                  // if you had two cards, move the right one into history
-                  if (sec.children.length > 1) {
-                    const rightCard = sec.children[1];
-                    const obj = JSON.parse(rightCard.dataset.pokemon);
-                    removeHistoryEntry(obj.display_name);
-                    historyList.unshift(obj);
-                    renderHistoryEntry(obj, /*prepend=*/true);
-                    rightCard.remove();
-                  }
-                  // then collapse down to exactly one card
-                  if (sec.children.length > 0) {
-                    const firstData = JSON.parse(sec.children[0].dataset.pokemon);
-                    renderMainCard(firstData);
-                  }
-                }
-
-                // Persist your new mode + history
-                saveState();
-              });
-
-              function closeCard(btn) {
-                const sec  = document.getElementById('main-result');
-                const card = btn.closest('.result-card');
-                // --- 1v1: identical to your old closeMainCard ---
-                if (!dualMode) {
-                  sec.innerHTML = '';
-                  localStorage.removeItem('pkmnCurrent');
-                  saveState();
-                  return;
-                }
-
-                // --- 2v2: remove just this slot ---
-                // find its index 0 or 1
-                const idx = Array.prototype.indexOf.call(sec.children, card);
-                card.remove();
-
-                if (idx === 0) {
-                  // left slot closed: right automatically shifts into left
-                  // nothing else to do, DOM does that for us when we removed [0]
-                }
-                // if idx===1 then right slot closed: left remains as-is
-
-                // --- now update our JS state & localStorage to reflect
-                //     whatever is now in slot#0 (or none) and slot#1 (or none) ---
-                if (sec.children.length >= 1) {
-                  const newPrimary = JSON.parse(sec.children[0].dataset.pokemon);
-                  localStorage.setItem('pkmnCurrent', JSON.stringify(newPrimary));
-                } else {
-                  currentPokemon = null;
-                  localStorage.removeItem('pkmnCurrent');
-                }
-
-                if (sec.children.length === 2) {
-                  const newSecondary = JSON.parse(sec.children[1].dataset.pokemon);
-                  localStorage.setItem('pkmnSecondary', JSON.stringify(newSecondary));
-                } else {
-                  localStorage.removeItem('pkmnSecondary');
-                }
-
-                // persist the rest of your state (history + dualMode)
-                saveState();
-              }
-
-              window.addEventListener('DOMContentLoaded', loadState);
-        </script>
-    </body>
+            removeFromHistory(r.display_name);
+            currentPokemon = r;
+            saveState();
+          });
+
+          // Delete from history
+          v.querySelector('.delete-history-item').addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeFromHistory(r.display_name);
+          });
+
+          itemContainer.appendChild(v);
+        });
+      }
+
+      // Helpers
+      function showError(msg) {
+        const container = document.getElementById('error-message');
+        const errorBox = document.createElement('div');
+        errorBox.className = 'bg-red-600 text-white p-3 rounded relative max-w-md mx-auto shadow-lg';
+        errorBox.innerHTML = `
+          <span class="absolute top-1 right-2 text-white text-lg font-bold cursor-pointer" onclick="this.parentElement.remove()">×</span>
+          <span>${msg}</span>
+        `;
+        container.innerHTML = '';
+        container.appendChild(errorBox);
+
+        setTimeout(() => {
+          if (container.contains(errorBox)) container.removeChild(errorBox);
+        }, 5000);
+      }
+      function showProgress(on) {
+        document.getElementById('progress-bar-container').style.display =
+          on ? 'block' : 'none';
+      }
+
+      // Persistence & mode toggle
+      function saveState() {
+        // Save current and secondary
+        const main = document.getElementById('main-result');
+        if (main.children.length > 0) {
+          const cur = JSON.parse(main.children[0].dataset.pokemon);
+          localStorage.setItem('pkmnCurrent', JSON.stringify(cur));
+        } else {
+          localStorage.removeItem('pkmnCurrent');
+        }
+        if (dualMode && main.children.length > 1) {
+          const sec = JSON.parse(main.children[1].dataset.pokemon);
+          localStorage.setItem('pkmnSecondary', JSON.stringify(sec));
+        } else {
+          localStorage.removeItem('pkmnSecondary');
+        }
+        localStorage.setItem('pkmnHistory', JSON.stringify(historyList));
+        localStorage.setItem('pkmnDualMode', JSON.stringify(dualMode));
+      }
+
+      function restoreState() {
+        dualMode = JSON.parse(localStorage.getItem('pkmnDualMode') || 'false');
+        toggleBtn.textContent = dualMode ? '1v1' : '2v2';
+        // Load saved cards
+        document.body.classList.toggle('dual-mode', dualMode);
+        const main = document.getElementById('main-result');
+        main.innerHTML = '';
+        const curRaw = localStorage.getItem('pkmnCurrent');
+        if (curRaw) {
+          const cur = JSON.parse(curRaw);
+          main.appendChild(createCard(cur));
+        }
+        if (dualMode) {
+          const secRaw = localStorage.getItem('pkmnSecondary');
+          if (secRaw) {
+            const sec = JSON.parse(secRaw);
+            main.appendChild(createCard(sec));
+          }
+        }
+        renderHistory();
+      }
+      
+      function clearAll() {
+        historyList = [];
+        currentPokemon = null;
+        document.getElementById('main-result').innerHTML = '';
+        renderHistory();
+        saveState();
+      }
+
+      // Expose legacy handlers (if any inline remain)
+      window.performSearch = performSearch;
+      window.clearHistory = clearAll;
+      window.toggleMode = toggleMode;
+    });
+  </script>
+</body>
 </html>
