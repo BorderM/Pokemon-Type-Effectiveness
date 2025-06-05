@@ -382,7 +382,7 @@
   {
     "from": "sandshrew-alola",
     "to": "sandslash-alola",
-    "trigger": "level-up",
+    "trigger": "use-item",
     "min_level": 22,
     "item": "ice-stone",
     "min_happiness": null,
@@ -544,7 +544,7 @@
     "to": "ninetales-alola",
     "trigger": "use-item",
     "min_level": null,
-    "item": "fire-stone",
+    "item": "ice-stone",
     "min_happiness": null,
     "min_beauty": null,
     "gender": null,
@@ -817,7 +817,6 @@
     "party_type": null,
     "relative_physical_stats": null,
     "trade_species": null,
-    "min_happines": 160,
     "note": null
   },
   {
@@ -1283,7 +1282,7 @@
   {
     "from": "slowpoke-galar",
     "to": "slowbro-galar",
-    "trigger": "level-up",
+    "trigger": "use-item",
     "min_level": 37,
     "item": "galarica-cuff",
     "min_happiness": null,
@@ -1331,7 +1330,7 @@
     "gender": null,
     "time_of_day": null,
     "location": null,
-    "held_item": null,
+    "held_item": "kings-rock",
     "known_move": null,
     "known_move_type": null,
     "party_species": null,
@@ -1623,7 +1622,7 @@
   {
     "from": "voltorb-hisui",
     "to": "electrode-hisui",
-    "trigger": "level-up",
+    "trigger": "use-item",
     "min_level": 30,
     "item": "leaf-stone",
     "min_happiness": null,
@@ -3983,7 +3982,7 @@
   {
     "from": "nincada",
     "to": "shedinja",
-    "trigger": "shed",
+    "trigger": "level-up",
     "min_level": 20,
     "item": null,
     "min_happiness": null,

@@ -185,14 +185,20 @@ for fb in FALLBACK_EVOLUTIONS:
         print(f"↳ Injected fallback: {fb['from']} → {fb['to']}")
         added += 1
     else:
-        # Merge missing fields from fallback (especially note)
+# Overwrite critical evolution fields with fallback values
+        critical_fields = [
+            'trigger', 'item', 'min_level', 'time_of_day', 'note',
+            'held_item', 'known_move', 'known_move_type', 'gender',
+            'min_happiness', 'min_beauty', 'relative_physical_stats',
+            'party_species', 'party_type', 'trade_species'
+        ]
         updated = False
-        for k, v in fb.items():
-            if k not in existing or not existing[k]:
-                existing[k] = v
+        for k in critical_fields:
+            if k in fb and (fb[k] is not None and fb[k] != existing.get(k)):
+                existing[k] = fb[k]
                 updated = True
         if updated:
-            print(f"↳ Merged fallback note/fields into: {fb['from']} → {fb['to']}")
+            print(f"↳ Overwrote with fallback: {fb['from']} → {fb['to']}")
 print(f"↳ Added {added} fallback evolutions")
 
 priority = {

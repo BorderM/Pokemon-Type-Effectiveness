@@ -268,7 +268,7 @@
     "min_happiness": null,
     "min_beauty": null,
     "gender": null,
-    "time_of_day": null,
+    "time_of_day": "night",
     "location": null,
     "held_item": null,
     "known_move": null,
@@ -384,7 +384,7 @@
     "to": "sandslash-alola",
     "trigger": "level-up",
     "min_level": 22,
-    "item": null,
+    "item": "ice-stone",
     "min_happiness": null,
     "min_beauty": null,
     "gender": null,
@@ -817,6 +817,7 @@
     "party_type": null,
     "relative_physical_stats": null,
     "trade_species": null,
+    "min_happines": 160,
     "note": null
   },
   {
@@ -1217,7 +1218,7 @@
     "party_type": null,
     "relative_physical_stats": null,
     "trade_species": null,
-    "note": null
+    "note": "Some versions have link items to fake a trade to evolve."
   },
   {
     "from": "ponyta",
@@ -1284,7 +1285,7 @@
     "to": "slowbro-galar",
     "trigger": "level-up",
     "min_level": 37,
-    "item": null,
+    "item": "galarica-cuff",
     "min_happiness": null,
     "min_beauty": null,
     "gender": null,
@@ -1624,7 +1625,7 @@
     "to": "electrode-hisui",
     "trigger": "level-up",
     "min_level": 30,
-    "item": null,
+    "item": "leaf-stone",
     "min_happiness": null,
     "min_beauty": null,
     "gender": null,
@@ -3983,7 +3984,7 @@
     "from": "nincada",
     "to": "shedinja",
     "trigger": "shed",
-    "min_level": null,
+    "min_level": 20,
     "item": null,
     "min_happiness": null,
     "min_beauty": null,
@@ -3997,7 +3998,7 @@
     "party_type": null,
     "relative_physical_stats": null,
     "trade_species": null,
-    "note": null
+    "note": "Upon evolving Nincada to Ninjask, if there is at least one space in your party and a pokeball in your bag."
   },
   {
     "from": "whismur",
@@ -7557,7 +7558,7 @@
     "party_type": null,
     "relative_physical_stats": null,
     "trade_species": null,
-    "note": null
+    "note": "Must be raining."
   },
   {
     "from": "phantump",
@@ -10060,8 +10061,8 @@
     "gender": null
   },
   {
-    "from": "basculin",
-    "to": "basculegion",
+    "from": "basculin-white-striped",
+    "to": "basculegion-male",
     "trigger": "level-up",
     "note": "Basculin White Striped evolves after losing at least 294 HP from recoil damage without fainting",
     "item": null,
@@ -10201,7 +10202,7 @@
   },
   {
     "from": "doublade",
-    "to": "aegislash",
+    "to": "aegislash-shield",
     "trigger": "use-item",
     "min_level": 35,
     "item": "dusk-stone",
@@ -10220,8 +10221,8 @@
     "note": null
   },
   {
-    "from": "pumpkaboo",
-    "to": "gourgeist",
+    "from": "pumpkaboo-average",
+    "to": "gourgeist-average",
     "trigger": "trade",
     "item": null,
     "min_level": null,
@@ -10241,7 +10242,7 @@
   },
   {
     "from": "burmy",
-    "to": "wormadam",
+    "to": "wormadam-plant",
     "trigger": "level-up",
     "min_level": 20,
     "gender": "female",
