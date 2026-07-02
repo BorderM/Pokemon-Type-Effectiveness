@@ -4,282 +4,498 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/app_mobile.css">
     <style>
-        body {
-            background-color: #1a202c;
+        :root {
+            --page-bg: #111827;
+            --header-bg: #1a202c;
+            --panel-bg: #1f2937;
+            --panel-border: #374151;
+            --muted: #a0aec0;
+            --green: #34d399;
+            --red: #f87171;
+            --blue: #60a5fa;
+        }
+
+        html, body {
+            min-height: 100%;
+            background-color: var(--page-bg) !important;
             color: white;
             font-family: Arial, sans-serif;
         }
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            text-align: center;
+
+        body {
+            margin: 0;
+            overflow-y: auto;
+            justify-content: flex-start !important;
         }
-        h2 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-        table {
-            width: 100%;
-            margin: 1rem auto;
-            border-collapse: collapse;
-            overflow-x: auto;
-            display: block;
-        }
-        th, td {
-            padding: 0.5rem;
-            border: 1px solid #444;
-            text-align: center;
-        }
-        th {
-            background-color: #2d3748;
-        }
-        .increase {
-            color: #48bb78; /* green */
-        }
-        .decrease {
-            color: #f56565; /* red */
-        }
-        .control-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .watermark {
-            position: absolute;
-            top: 0;
-            left: 0;
-            margin: 1rem;
-            font-size: 0.75rem;
-            color: #a0aec0;
-        }
+
         .fixed-header {
             position: fixed;
             top: 0;
             width: 100%;
-            background-color: #1a202c;
-            padding: 1rem 0;
+            background-color: var(--header-bg);
+            padding: 1rem 0 1.25rem;
             z-index: 1000;
             display: flex;
             flex-direction: column;
             align-items: center;
-            height: 200px;
-            padding-top: 2rem;
-            padding-bottom: 1rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
         }
+
         .watermark-fixed {
             position: absolute;
             top: 10px;
             left: 10px;
             font-size: 0.75rem;
-            color: #a0aec0;
+            color: var(--muted);
         }
+
+        h1 {
+            font-size: 2.25rem;
+            margin: 0.25rem 0 0.75rem;
+            text-align: center;
+            font-weight: 800;
+        }
+
+        .control-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            justify-content: center;
+            padding: 0 0.75rem;
+        }
+
+        .nature-controls {
+            width: min(920px, calc(100% - 2rem));
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 0.75rem;
+            align-items: end;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .field-group label {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #dbeafe;
+        }
+
+        select.nature-select {
+            width: 100%;
+            background-color: #334155;
+            color: white;
+            border: 1px solid #64748b;
+            border-radius: 0.5rem;
+            padding: 0.55rem 0.75rem;
+            min-height: 42px;
+        }
+
+        select.nature-select option {
+            background-color: #1f2937;
+            color: white;
+        }
+
+        .clear-filter-btn {
+            min-height: 42px;
+            background-color: #6b7280;
+            color: white;
+            border-radius: 0.5rem;
+            padding: 0.55rem 0.9rem;
+            font-weight: 700;
+        }
+
+        .clear-filter-btn:hover {
+            background-color: #4b5563;
+        }
+
         .main-content {
-            padding-top: 220px; 
+            padding: 245px 1rem 3rem;
             width: 100%;
-            max-width: 1000px;
+            max-width: 980px;
             margin: 0 auto;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
         }
-        .table-container {
-			padding-left: 1rem;
-            padding-right: 1rem;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            width: 100%;
-        }
-        .table-wrapper {
-            width: 48%;
+
+        .summary-card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 1rem;
+            padding: 1rem;
             margin-bottom: 1rem;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
-        .table-wrapper table {
-            max-height: calc(100vh - 260px); /* Adjust table height to fit within the viewable area */
-            overflow-y: auto; /* Allows scrolling within the table */
-            display: block; /* Ensure table is displayed as a block element */
+
+        .summary-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
         }
+
+        .match-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.55rem;
+        }
+
+        .nature-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background-color: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 999px;
+            padding: 0.45rem 0.75rem;
+            font-weight: 700;
+        }
+
+        .increase {
+            color: var(--green);
+        }
+
+        .decrease {
+            color: var(--red);
+        }
+
+        .neutral-pill {
+            color: #cbd5e1;
+            background-color: #475569;
+            border-radius: 999px;
+            padding: 0.15rem 0.45rem;
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
+
+        .table-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--panel-border);
+            background-color: #172033;
+        }
+
+        .table-header h2 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .result-count {
+            color: var(--muted);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 0.65rem 0.75rem;
+            border-bottom: 1px solid #334155;
+            text-align: center;
+        }
+
+        th {
+            background-color: #111827;
+            color: white;
+            font-weight: 800;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr.is-match {
+            background-color: rgba(96, 165, 250, 0.12);
+        }
+
+        .nature-name {
+            font-weight: 800;
+        }
+
+        .no-results {
+            padding: 1rem;
+            color: var(--muted);
+            text-align: center;
+        }
+
         @media (max-width: 768px) {
-            .table-wrapper {
-                width: 100%;
+            .fixed-header {
+                position: relative;
+                padding-top: 1.25rem;
             }
-        }
-        body {
-            overflow-y: auto;
+
+            .watermark-fixed {
+                position: static;
+                margin-bottom: 0.5rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+                line-height: 1.1;
+            }
+
+            .control-buttons {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                width: 100%;
+                padding: 0 0.75rem 0.25rem;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .control-buttons a {
+                flex: 0 0 auto;
+            }
+
+            .nature-controls {
+                grid-template-columns: 1fr;
+                width: calc(100% - 1.5rem);
+            }
+
+            .main-content {
+                padding-top: 1rem;
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+
+            .summary-card,
+            .table-panel {
+                border-radius: 0.85rem;
+            }
+
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+
+            th, td {
+                padding: 0.55rem 0.4rem;
+                font-size: 0.92rem;
+            }
         }
     </style>
     <title>Pokémon Natures</title>
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen w-full">
+<body class="bg-gray-900 text-white flex flex-col items-center min-h-screen w-full">
     <div class="fixed-header">
         <div class="watermark-fixed">Created by BorderM</div>
         <h1 class="text-3xl font-bold text-center mb-2">Pokémon Natures</h1>
         <div class="control-buttons flex flex-wrap justify-center gap-2">
+            <a href="/pokedex" class="bg-purple-500 text-white p-2 rounded-lg">Pokédex</a>
             <a href="/typeeffectiveness" class="bg-green-500 text-white p-2 rounded-lg">Type Effectiveness</a>
             <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
-			<a href="/typecalculator" class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
-			<a href="/evolutions" class="bg-orange-500 text-white p-2 rounded-lg">Evolutions</a>
+            <a href="/typecalculator" class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
+            <a href="/evolutions" class="bg-orange-500 text-white p-2 rounded-lg">Evolutions</a>
+        </div>
+        <div class="nature-controls" aria-label="Nature filters">
+            <div class="field-group">
+                <label for="increase-select">Stat to increase</label>
+                <select id="increase-select" class="nature-select">
+                    <option value="">Any increased stat</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label for="decrease-select">Stat to decrease</label>
+                <select id="decrease-select" class="nature-select">
+                    <option value="">Any decreased stat</option>
+                </select>
+            </div>
+            <button id="clear-filters" class="clear-filter-btn" type="button">Clear</button>
         </div>
     </div>
-    <div class="main-content">
-        <div class="table-container">
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nature</th>
-                            <th>Increases</th>
-                            <th>Decreases</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Adamant</td>
-                            <td class="increase">Attack</td>
-                            <td class="decrease">Sp. Atk</td>
-                        </tr>
-                        <tr>
-                            <td>Bashful</td>
-                            <td class="increase">Sp. Atk</td>
-                            <td class="decrease">Sp. Atk</td>
-                        </tr>
-                        <tr>
-                            <td>Bold</td>
-                            <td class="increase">Defense</td>
-                            <td class="decrease">Attack</td>
-                        </tr>
-                        <tr>
-                            <td>Brave</td>
-                            <td class="increase">Attack</td>
-                            <td class="decrease">Speed</td>
-                        </tr>
-                        <tr>
-                            <td>Calm</td>
-                            <td class="increase">Sp. Def</td>
-                            <td class="decrease">Attack</td>
-                        </tr>
-                        <tr>
-                            <td>Careful</td>
-                            <td class="increase">Sp. Def</td>
-                            <td class="decrease">Sp. Atk</td>
-                        </tr>
-                        <tr>
-                            <td>Docile</td>
-                            <td class="increase">Defense</td>
-                            <td class="decrease">Defense</td>
-                        </tr>
-                        <tr>
-                            <td>Gentle</td>
-                            <td class="increase">Sp. Def</td>
-                            <td class="decrease">Defense</td>
-                        </tr>
-                        <tr>
-                            <td>Hardy</td>
-                            <td class="increase">Attack</td>
-                            <td class="decrease">Attack</td>
-                        </tr>
-                        <tr>
-                            <td>Hasty</td>
-                            <td class="increase">Speed</td>
-                            <td class="decrease">Defense</td>
-                        </tr>
-                        <tr>
-                            <td>Impish</td>
-                            <td class="increase">Defense</td>
-                            <td class="decrease">Sp. Atk</td>
-                        </tr>
-                        <tr>
-                            <td>Jolly</td>
-                            <td class="increase">Speed</td>
-                            <td class="decrease">Sp. Atk</td>
-                        </tr>
-                        <tr>
-                            <td>Lax</td>
-                            <td class="increase">Defense</td>
-                            <td class="decrease">Sp. Def</td>
-                        </tr>
-					</tbody>
-                </table>
+
+    <main class="main-content">
+        <section class="summary-card" aria-live="polite">
+            <div class="summary-title" id="summary-title">Select one or both stats to find matching natures.</div>
+            <div class="match-list" id="match-list"></div>
+        </section>
+
+        <section class="table-panel">
+            <div class="table-header">
+                <h2>All Natures</h2>
+                <span class="result-count" id="result-count">25 shown</span>
             </div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nature</th>
-                            <th>Increases</th>
-                            <th>Decreases</th>
-                        </tr>
-                    </thead>
-                        <tr>
-                            <td>Lonely</td>
-                            <td class="increase">Attack</td>
-                            <td class="decrease">Defense</td>
-                        </tr>
-                        <tr>
-                            <td>Mild</td>
-                            <td class="increase">Sp. Atk</td>
-                            <td class="decrease">Defense</td>
-                        </tr>
-                        <tr>
-                            <td>Modest</td>
-                            <td class="increase">Sp. Atk</td>
-                            <td class="decrease">Attack</td>
-                        </tr>
-                        <tr>
-                            <td>Naive</td>
-                            <td class="increase">Speed</td>
-                            <td class="decrease">Sp. Def</td>
-                        </tr>
-                        <tr>
-                            <td>Naughty</td>
-                            <td class="increase">Attack</td>
-                            <td class="decrease">Sp. Def</td>
-                        </tr>
-                        <tr>
-                            <td>Quiet</td>
-                            <td class="increase">Sp. Atk</td>
-                            <td class="decrease">Speed</td>
-                        </tr>
-                        <tr>
-                            <td>Quirky</td>
-                            <td class="increase">Sp. Def</td>
-                            <td class="decrease">Sp. Def</td>
-                        </tr>
-                        <tr>
-                            <td>Rash</td>
-                            <td class="increase">Sp. Atk</td>
-                            <td class="decrease">Sp. Def</td>
-                        </tr>
-                        <tr>
-                            <td>Relaxed</td>
-                            <td class="increase">Defense</td>
-                            <td class="decrease">Speed</td>
-                        </tr>
-                        <tr>
-                            <td>Sassy</td>
-                            <td class="increase">Sp. Def</td>
-                            <td class="decrease">Speed</td>
-                        </tr>
-                        <tr>
-                            <td>Serious</td>
-                            <td class="increase">Speed</td>
-                            <td class="decrease">Speed</td>
-                        </tr>
-                        <tr>
-                            <td>Timid</td>
-                            <td class="increase">Speed</td>
-                            <td class="decrease">Attack</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+            <div id="nature-table-wrap"></div>
+        </section>
+    </main>
+
     <script>
-        function navigateToPage(page) {
-            window.location.href = page;
+        const STATS = ['Attack', 'Defense', 'Sp. Atk', 'Sp. Def', 'Speed'];
+
+        const NATURES = [
+            { name: 'Adamant', increase: 'Attack', decrease: 'Sp. Atk' },
+            { name: 'Bashful', increase: 'Sp. Atk', decrease: 'Sp. Atk' },
+            { name: 'Bold', increase: 'Defense', decrease: 'Attack' },
+            { name: 'Brave', increase: 'Attack', decrease: 'Speed' },
+            { name: 'Calm', increase: 'Sp. Def', decrease: 'Attack' },
+            { name: 'Careful', increase: 'Sp. Def', decrease: 'Sp. Atk' },
+            { name: 'Docile', increase: 'Defense', decrease: 'Defense' },
+            { name: 'Gentle', increase: 'Sp. Def', decrease: 'Defense' },
+            { name: 'Hardy', increase: 'Attack', decrease: 'Attack' },
+            { name: 'Hasty', increase: 'Speed', decrease: 'Defense' },
+            { name: 'Impish', increase: 'Defense', decrease: 'Sp. Atk' },
+            { name: 'Jolly', increase: 'Speed', decrease: 'Sp. Atk' },
+            { name: 'Lax', increase: 'Defense', decrease: 'Sp. Def' },
+            { name: 'Lonely', increase: 'Attack', decrease: 'Defense' },
+            { name: 'Mild', increase: 'Sp. Atk', decrease: 'Defense' },
+            { name: 'Modest', increase: 'Sp. Atk', decrease: 'Attack' },
+            { name: 'Naive', increase: 'Speed', decrease: 'Sp. Def' },
+            { name: 'Naughty', increase: 'Attack', decrease: 'Sp. Def' },
+            { name: 'Quiet', increase: 'Sp. Atk', decrease: 'Speed' },
+            { name: 'Quirky', increase: 'Sp. Def', decrease: 'Sp. Def' },
+            { name: 'Rash', increase: 'Sp. Atk', decrease: 'Sp. Def' },
+            { name: 'Relaxed', increase: 'Defense', decrease: 'Speed' },
+            { name: 'Sassy', increase: 'Sp. Def', decrease: 'Speed' },
+            { name: 'Serious', increase: 'Speed', decrease: 'Speed' },
+            { name: 'Timid', increase: 'Speed', decrease: 'Attack' }
+        ];
+
+        const increaseSelect = document.getElementById('increase-select');
+        const decreaseSelect = document.getElementById('decrease-select');
+        const clearButton = document.getElementById('clear-filters');
+        const matchList = document.getElementById('match-list');
+        const summaryTitle = document.getElementById('summary-title');
+        const resultCount = document.getElementById('result-count');
+        const tableWrap = document.getElementById('nature-table-wrap');
+
+        function populateSelects() {
+            STATS.forEach(stat => {
+                const incOption = document.createElement('option');
+                incOption.value = stat;
+                incOption.textContent = stat;
+                increaseSelect.appendChild(incOption);
+
+                const decOption = document.createElement('option');
+                decOption.value = stat;
+                decOption.textContent = stat;
+                decreaseSelect.appendChild(decOption);
+            });
+
+            increaseSelect.value = localStorage.getItem('natureIncrease') || '';
+            decreaseSelect.value = localStorage.getItem('natureDecrease') || '';
         }
+
+        function isNeutralNature(nature) {
+            return nature.increase === nature.decrease;
+        }
+
+        function getMatches() {
+            const inc = increaseSelect.value;
+            const dec = decreaseSelect.value;
+            return NATURES.filter(nature => {
+                const incOk = !inc || nature.increase === inc;
+                const decOk = !dec || nature.decrease === dec;
+                return incOk && decOk;
+            });
+        }
+
+        function renderChip(nature) {
+            const neutral = isNeutralNature(nature);
+            const detail = neutral
+                ? `<span class="neutral-pill">Neutral</span>`
+                : `<span class="increase">+${nature.increase}</span><span class="decrease">−${nature.decrease}</span>`;
+            return `<span class="nature-chip"><span>${nature.name}</span>${detail}</span>`;
+        }
+
+        function renderTable(matches) {
+            const matchNames = new Set(matches.map(n => n.name));
+            const inc = increaseSelect.value;
+            const dec = decreaseSelect.value;
+            const shouldHighlight = Boolean(inc || dec);
+
+            const rows = NATURES.map(nature => {
+                const neutral = isNeutralNature(nature);
+                const matchClass = shouldHighlight && matchNames.has(nature.name) ? ' class="is-match"' : '';
+                const effect = neutral
+                    ? '<span class="neutral-pill">Neutral</span>'
+                    : `<span class="increase">+${nature.increase}</span> / <span class="decrease">−${nature.decrease}</span>`;
+                return `
+                    <tr${matchClass}>
+                        <td class="nature-name">${nature.name}</td>
+                        <td class="increase">${nature.increase}</td>
+                        <td class="decrease">${nature.decrease}</td>
+                    </tr>`;
+            }).join('');
+
+            tableWrap.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nature</th>
+                            <th>Increases</th>
+                            <th>Decreases</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
+        }
+
+        function render() {
+            const inc = increaseSelect.value;
+            const dec = decreaseSelect.value;
+            const matches = getMatches();
+
+            localStorage.setItem('natureIncrease', inc);
+            localStorage.setItem('natureDecrease', dec);
+
+            if (!inc && !dec) {
+                summaryTitle.textContent = 'Select one or both stats to find matching natures.';
+            } else if (inc && dec) {
+                summaryTitle.innerHTML = `Natures that increase <span class="increase">${inc} ↑</span> and decrease <span class="decrease">${dec} ↓</span>`;
+            } else if (inc) {
+                summaryTitle.innerHTML = `Natures that increase <span class="increase">${inc}</span>`;
+            } else {
+                summaryTitle.innerHTML = `Natures that decrease <span class="decrease">${dec}</span>`;
+            }
+
+            if (matches.length === 0) {
+                matchList.innerHTML = '<div class="no-results">No matching nature found.</div>';
+            } else if (!inc && !dec) {
+                matchList.innerHTML = '<span class="text-gray-300">All 25 natures are shown below.</span>';
+            } else {
+                matchList.innerHTML = matches.map(renderChip).join('');
+            }
+
+            resultCount.textContent = `${matches.length} matching / 25 total`;
+            if (!inc && !dec) resultCount.textContent = '25 shown';
+            renderTable(matches);
+        }
+
+        function clearFilters() {
+            increaseSelect.value = '';
+            decreaseSelect.value = '';
+            localStorage.removeItem('natureIncrease');
+            localStorage.removeItem('natureDecrease');
+            render();
+        }
+
+        populateSelects();
+        render();
+
+        increaseSelect.addEventListener('change', render);
+        decreaseSelect.addEventListener('change', render);
+        clearButton.addEventListener('click', clearFilters);
     </script>
 </body>
 </html>

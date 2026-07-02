@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/app_mobile.css">
         <style>
         /* Fixed header shared styling */
         .fixed-header {
             position: fixed;
             top: 0;
             width: 100%;
-            background-color: #1a202c;
+            background-color: #111827;
             padding: 1rem 0;
             z-index: 1000;
             display: flex;
@@ -31,16 +32,26 @@
             color: #a0aec0;
         }
 
+        html, body {
+            min-height: 100%;
+            background-color: #111827 !important;
+        }
+
         body {
             padding-top: 200px; /* Ensure all content scrolls below header */
+            justify-content: flex-start !important;
+            background-color: #111827 !important;
         }
 
         #results {
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding-top: 0.5rem; /* Small consistent gap under header */
+            align-items: flex-start;
+            padding: 0 1rem 3rem; /* Sits closer to the fixed header */
             margin-top: 0;
+            width: 100%;
+            min-height: calc(100vh - 200px);
+            background-color: #111827;
         }
 
         .input-container {
@@ -87,7 +98,7 @@
             word-wrap: break-word;
             justify-content: space-between;
             position: relative;
-            margin-top: 20px;
+            margin-top: 0;
             scroll-margin-top: 200px; /* Aligns scrolling just below header */
         }
 
@@ -187,8 +198,9 @@
     <div class="fixed-header">
         <div class="watermark-fixed">Created by BorderM</div>
         <h1 class="text-3xl font-bold text-center mb-2">Pokémon Type Calculator</h1>
-        <div class="control-buttons flex flex-wrap justify-center gap-2"">
+        <div class="control-buttons flex flex-wrap justify-center gap-2">
             <button onclick="clearResults()" class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
+      <a href="/pokedex" class="bg-purple-500 text-white p-2 rounded-lg">Pokédex</a>
             <a href="/typeeffectiveness" class="bg-green-500 text-white p-2 rounded-lg">Type Effectiveness</a>
             <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
             <a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
@@ -428,11 +440,11 @@
                     <div class="separator"></div>
                     ${createEffectivenessRow('2x Weak', data.super_effective)}
                     <div class="separator"></div>
-                    ${createEffectivenessRow('Normal', data.normal_effective)}
+                    ${createEffectivenessRow('Neutral', data.normal_effective)}
                     <div class="separator"></div>
-                    ${createEffectivenessRow('2x Resistant', data.two_times_resistant)}
+                    ${createEffectivenessRow('½ Resist', data.two_times_resistant)}
                     <div class="separator"></div>
-                    ${createEffectivenessRow('4x Resistant', data.four_times_resistant)}
+                    ${createEffectivenessRow('¼ Resist', data.four_times_resistant)}
                     <div class="separator"></div>
                     ${createEffectivenessRow('Immune', data.immune)}
                 </div>

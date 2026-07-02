@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            .input-container {
+                position: relative;
+                width: 100%;
+                max-width: 450px;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+            }
+            .input-field {
+                background-color: white;
+                border: 1px solid #ccc;
+                padding: 8px;
+                border-radius: 4px;
+                flex-grow: 1;
+                color: black;
+                width: 100%;
+            }
+            .control-buttons {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+            .result-card {
+                background-color: #2d2d2d;
+                color: white;
+                height: auto;
+                width: 300px;
+                display: flex;
+                flex-direction: column;
+                margin-bottom: 1rem;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                word-wrap: break-word;
+                justify-content: space-between;
+                position: relative;
+                text-align: center;
+            }
+            .result-card img {
+                width: 115px;
+                height: 115px;
+                align-self: center;
+            }
+            .result-card h2 {
+                font-size: 1.25rem;
+                font-weight: bold;
+                margin-bottom: 1rem;
+            }
+            .result-card p {
+                font-size: 1rem;
+                margin-bottom: 0.5rem;
+            }
+            .fixed-header {
+                position: fixed;
+                top: 0;
+                width: 100%;
+                background-color: #1a202c;
+                padding: 1rem 0;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                height: auto;
+                padding-top: 2rem;
+                padding-bottom: 2rem;
+            }
+            .watermark-fixed {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                font-size: 0.75rem;
+                color: #a0aec0;
+            }
+            .progress-bar-container {
+                width: 100%;
+                max-width: 450px;
+                margin-top: 10px;
+                height: 20px;
+            }
+            
+            .suggestions {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background-color: white;
+                border: 1px solid #ccc;
+                width: 100%;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                display: none; /* hidden by default */
+                color: black;
+            }
+            .suggestions li {
+                padding: 8px;
+                cursor: pointer;
+                border-bottom: 1px solid #eee;
+            }
+            .suggestions li:last-child {
+                border-bottom: none;
+            }
+            .suggestions li.highlighted,
+            .suggestions li:hover {
+                background-color: #BFC2BA;
+            }
+
+            #results {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: flex-start;
+                gap: 20px;
+                padding: 1rem;
+                margin-top: 250px; /* height of fixed-header (approx) + some spacing */
+                width: 100%;
+            }
+
+        </style>
+        <title>Pokémon Evolution Search</title>
+    </head>
+    <body
+        class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen w-full"
+    >
+        <div class="fixed-header">
+            <div class="watermark-fixed">Created by BorderM</div>
+            <h1 class="text-3xl font-bold text-center mb-2">
+                Pokémon Evolutions
+            </h1>
+            <div class="control-buttons flex flex-wrap justify-center gap-2">
+                <button id="search-btn"
+                    class="bg-blue-500 text-white p-2 rounded-lg"
+                >
+                    Search
+                </button>
+                <button id="clear-btn"
+                    class="bg-gray-500 text-white p-2 rounded-lg"
+                >
+                    Clear
+                </button>
+                <a
+                    href="/typeeffectiveness"
+                    class="bg-green-500 text-white p-2 rounded-lg"
+                    >Type Effectiveness</a
+                >
+                <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg"
+                    >Stats</a
+                >
+                <a
+                    href="/typecalculator"
+                    class="bg-red-500 text-white p-2 rounded-lg"
+                    >Type Calcs</a
+                >
+                <a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg"
+                    >Natures</a
+                >
+            </div>
+            <div class="input-container">
+                <input type="text" class="input-field" id="pokemon-search" placeholder="Enter Pokémon Name" autocomplete="off" />
+                <ul class="suggestions" id="suggestions"></ul>
+            </div>
+            <div
+                id="progress-bar-container"
+                class="progress-bar-container hidden"
+            >
+                <div class="progress-bar"></div>
+            </div>
+            <div id="error-message" class="error-message-fixed"></div>
+        </div>
+        <div id="results"></div>
+        <script id="formsByBase"   type="application/json">{{ forms_by_base_json|tojson }}</script>
+        <script id="formCollapseMap" type="application/json">{{ collapse_map|tojson }}</script>
+        <script id="processedCache" type="application/json">{{ processed_cache_json|safe }}</script>
+        <script id="evolutionsData" type="application/json">{{ evolutions_json|safe }}</script>
+
+        <script>
+            // Static JSON data
+            const FORM_COLLAPSE_MAP = JSON.parse(document.getElementById('formCollapseMap').textContent);
+            const FORMS_BY_BASE = JSON.parse(document.getElementById('formsByBase').textContent);
+            const EVOLUTIONS = JSON.parse(document.getElementById('evolutionsData').textContent);
+
+            // Build evolutions lookup by form key
+            const EVOLUTIONS_BY_FROM = {};
+            EVOLUTIONS.forEach(e => {
+            EVOLUTIONS_BY_FROM[e.from] = EVOLUTIONS_BY_FROM[e.from] || [];
+            EVOLUTIONS_BY_FROM[e.from].push(e);
+            });
+
+            // Override map for niche cases
+            const FORM_OVERRIDES = {
+            basculin: 'basculin-white-striped',
+            basculegion: 'basculegion-male',
+            pumpkaboo: 'pumpkaboo-average',
+            gourgeist: 'gourgeist-average',
+            aegislash: 'aegislash-shield', 
+            wormadam: 'wormadam-plant',
+            // add more manual overrides here
+            };
+
+            // Words indicating form suffixes to collapse
+            const SHORTEN_SECOND = new Set([
+                "average", "three", "two", "standard", "ordinary", "family",
+                "disguised", "busted", "plant", "sandy", "trash", "blade",
+                "shield", "midday", "midnight", "dusk", "school", "small",
+                "large", "super", "white"
+            ]);
+
+            const PRESERVE = new Set([
+                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y",
+                "slowpoke-galar", "farfetchd-galar", "mime-jr", "mr-mime", "mr-rime",
+                "pumpkaboo", "gourgeist", "toxtricity-amped", "toxtricity-low-key"
+            ]);
+
+            const FULL_NAMES = new Set([
+                "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr",
+                "type-null", "tapu-koko", "tapu-lele", "tapu-bulu", "tapu-fini",
+                "pumpkaboo-average", "gourgeist-average", "basculin-white-striped",
+                "wormadam-plant", "aegislash-shield" 
+            ]);
+
+            const REGIONAL_SUFFIXES = ['alola', 'alolan', 'galar', 'galarian', 'hisui', 'hisuian', 'paldea', 'paldean'];
+
+            function collapseKey(raw) {
+                const key = raw.toLowerCase().trim();
+
+                // Fully preserve specific multi-word names
+                const FULL_NAMES = new Set([
+                    "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr",
+                    "type-null", "tapu-koko", "tapu-lele", "tapu-bulu", "tapu-fini"
+                ]);
+                if (FULL_NAMES.has(key)) return key;
+
+                // Preserve regional forms
+                if (REGIONAL_SUFFIXES.some(suffix => key.endsWith('-' + suffix))) {
+                    return key;
+                }
+
+                if (PRESERVE.has(key)) return key;
+
+                const parts = key.split('-');
+                const base = parts[0];
+
+                if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key][0];
+
+                const sibs = FORMS_BY_BASE[base] || [base];
+                const signatures = new Set(
+                    sibs.map(f =>
+                        JSON.stringify((EVOLUTIONS_BY_FROM[f] || []).map(e => [e.to, e.trigger]).sort())
+                    )
+                );
+
+                return signatures.size > 1 ? key : base;
+            }
+
+            function formatDisplayName(raw) {
+                if (typeof raw !== 'string') return raw;
+
+                const key = raw.toLowerCase();
+
+                const FULL_NAMES = new Set([
+                    "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr",
+                    "type-null", "tapu-koko", "tapu-lele", "tapu-bulu", "tapu-fini",
+                    "pumpkaboo-average", "gourgeist-average", "basculin-white-striped",
+                    "wormadam-plant", "aegislash-shield"
+                ]);
+
+                const HIDE_FORM_SUFFIX = new Set([
+                    "pumpkaboo-average", "gourgeist-average", "basculin-white-striped", "wormadam-plant", "aegislash-shield"
+                ]);
+
+                if (FULL_NAMES.has(key)) {
+                    if (key.startsWith('wormadam')) return 'Wormadam';
+                    if (key.startsWith('aegislash')) return 'Aegislash';
+                    return key.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                }
+
+                if (HIDE_FORM_SUFFIX.has(key)) {
+                    return key.split('-')[0].replace(/\b\w/g, c => c.toUpperCase());
+                }
+
+                const parts = key.split('-');
+                const base = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+                const suffix = parts.slice(1).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+                return suffix ? `${base} ${suffix}` : base;
+            }
+
+            // Debounce
+            function debounce(fn, ms) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn.apply(this, args), ms);
+            };
+            }
+
+            // DOM refs
+            const inputEl = document.getElementById('pokemon-search');
+            const suggestionsBox = document.getElementById('suggestions');
+            const resultsContainer = document.getElementById('results');
+
+            function showSuggestions() { suggestionsBox.style.display = 'block'; }
+            function hideSuggestions() { suggestionsBox.style.display = 'none'; selectedIndex = -1; }
+
+            function selectSuggestion(idx) {
+            if (idx < 0 || idx >= collapsedItems.length) return;
+            const { display, key } = collapsedItems[idx];
+            inputEl.value = display;
+            hideSuggestions();
+            fetchEvolutions(key);
+            // 📦 Save state
+            localStorage.setItem('evoLastKey', key);
+            localStorage.setItem('evoLastDisplay', display);;
+            }
+
+            function pickRepresentative(canon) {
+                // 1) Use override if exists
+                if (FORM_OVERRIDES[canon]) {
+                    return FORM_OVERRIDES[canon];
+                }
+
+                // 2) Try form that has evolutions
+                const forms = FORMS_BY_BASE[canon] || [canon];
+                const evoForm = forms.find(f => EVOLUTIONS_BY_FROM[f]?.length);
+                if (evoForm) return evoForm;
+
+                // 3) Try base key directly
+                if (EVOLUTIONS_BY_FROM[canon]?.length) {
+                    return canon;
+                }
+
+                // 4) Default fallback
+                return forms[0];
+            }
+
+            let collapsedItems = [];
+            let selectedIndex  = -1;
+
+            // when the user types
+            function handleInput(e) {
+                const q = e.target.value.toLowerCase().trim();
+                if (q.length < 2) {
+                    hideSuggestions();
+                    return;
+                }
+                fetchSuggestions(q);
+            }
+
+            async function fetchSuggestions(query) {
+                const res = await fetch(
+                    `/api/pokemon/suggestions?query=${encodeURIComponent(query)}`
+                );
+                const { suggestions: raw } = await res.json();
+                if (!raw.length) {
+                    hideSuggestions();
+                    return;
+                }
+
+                // 1) extract and dedupe the raw keys
+                let keys = Array.from(new Set(raw.map(s => s.key)));
+
+                // 2) remove any purely cosmetic Dynamax/G-Max
+                keys = keys.filter(k => {
+                    const l = k.toLowerCase();
+                    return !l.endsWith('-gmax') && !l.endsWith('-gigantamax');
+                });
+
+                // 3) bucket by your collapseKey so mechanical-duplicates collapse
+                const buckets = {};
+                keys.forEach(k => {
+                    const canon = collapseKey(k);
+                    (buckets[canon] ||= new Set()).add(k);
+                });
+
+                // 4) pick a representative from each bucket
+                const items = Object.keys(buckets)
+                    .sort((a, b) => formatDisplayName(a).localeCompare(formatDisplayName(b)))
+                    .map(canon => {
+                        const forms = Array.from(buckets[canon]);
+                        const pick = pickRepresentative(canon);
+
+                        const display = formatDisplayName(canon);
+
+                        return {
+                            display,
+                            key: pick
+                        };
+                    });
+
+                // 5) render them
+                collapsedItems = items;
+                suggestionsBox.innerHTML = '';
+                items.forEach((it, i) => {
+                    const li = document.createElement('li');
+                    li.textContent   = it.display;
+                    li.dataset.idx   = i;
+                    if (i === 0) li.classList.add('highlighted');
+                    li.addEventListener('click', () => selectSuggestion(i));
+                    suggestionsBox.appendChild(li);
+                });
+
+                selectedIndex = 0;
+                showSuggestions();
+            }
+
+            function handleArrows(e) {
+                const items = Array.from(suggestionsBox.children);
+                if (!items.length) {
+                    if (e.key==='Enter') fetchEvolutions();
+                    return;
+                }
+                if (e.key==='ArrowDown')  selectedIndex = (selectedIndex+1)%items.length;
+                if (e.key==='ArrowUp')    selectedIndex = (selectedIndex-1+items.length)%items.length;
+                if (e.key==='Enter') {
+                    e.preventDefault();
+                    selectSuggestion(selectedIndex);
+                    return;
+                }
+                items.forEach((li,i)=> li.classList.toggle('highlighted', i===selectedIndex));
+            }
+
+            function fetchEvolutions(nameKey) {
+            const name = nameKey || collapseKey(inputEl.value.trim());
+            hideSuggestions();
+            inputEl.value = '';
+            resultsContainer.innerHTML = '';
+            fetch(`/api/pokemon/evolutions?name=${encodeURIComponent(name)}`)
+                .then(r=>r.json()).then(renderResults);
+            }
+
+            function capitalizeFirstLetter(str) {
+                return str.replace(/^(\w)/, (m,p) => p.toUpperCase());
+            }
+
+            function renderResults(data) {
+                const container = document.getElementById('results');
+                container.innerHTML = '';
+
+                const FULL_NAMES = new Set([
+                    "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr"
+                ]);
+
+                data.forEach(p => {
+                    const name = p.name.toLowerCase();
+                    let title;
+
+                    if (FULL_NAMES.has(name)) {
+                        title = name
+                            .replace(/-/g, ' ')
+                            .replace(/\b\w/g, c => c.toUpperCase());
+
+                        if (name.endsWith('galar')) {
+                            title = title.replace(' Galar', ' (Galar)');
+                        }
+                    } else {
+                        title = formatDisplayName(p.name);  // ✅ Assign to the declared `title`
+                    }
+
+                    const species = p.name.split('-', 1)[0];
+                    const slug = species.charAt(0).toUpperCase() + species.slice(1);
+                    const bulbLink = `https://bulbapedia.bulbagarden.net/wiki/${slug}_(Pok%C3%A9mon)`;
+
+                    const card = document.createElement('div');
+                    card.className = 'result-card';
+
+                    let conditionsHtml = '';
+                    if (Array.isArray(p.evolution_conditions)) {
+                        conditionsHtml = p.evolution_conditions.map(cond => {
+                            return Object.entries(cond)
+                                .map(([k, v]) => `<p><strong>${k.replace(/_/g, ' ')}:</strong> ${v}</p>`)
+                                .join('');
+                        }).join('<hr class="my-2">');
+                    }
+
+                    card.innerHTML = `
+                        <h2>
+                            <a href="${bulbLink}" target="_blank" class="text-blue-500 underline">
+                                ${title}
+                            </a>
+                        </h2>
+                        <img src="${p.sprite_url}" alt="${title}">
+                        ${p.evolves_from ? `<p><strong>Evolves from:</strong> ${p.evolves_from.charAt(0).toUpperCase() + p.evolves_from.slice(1)}</p>` : ''}
+                        ${conditionsHtml}
+                        ${p.note ? `<p><em>${p.note}</em></p>` : ''}
+                    `;
+
+                    container.appendChild(card);
+                });
+            }
+
+            inputEl.addEventListener('input', debounce(handleInput,250));
+            inputEl.addEventListener('keydown', handleArrows);
+            document.getElementById('search-btn').addEventListener('click', ()=> {  
+                fetchEvolutions();
+                // if user manually typed and hit Search without picking from dropdown,
+                // you may also want to save raw collapseKey/input here:
+                const raw = inputEl.value.trim().toLowerCase();
+                if (raw) {
+                    const canon = collapseKey(raw);
+                    const fetchKey = FORM_OVERRIDES[canon] || canon;
+                    localStorage.setItem('evoLastKey', fetchKey);
+                    localStorage.setItem('evoLastDisplay', inputEl.value);
+                }   
+            });           
+            document.getElementById('clear-btn').addEventListener('click', ()=>{inputEl.value='';hideSuggestions();resultsContainer.innerHTML='';
+                // 🗑️ Clear saved state
+                localStorage.removeItem('evoLastKey');
+                localStorage.removeItem('evoLastDisplay');
+            });
+
+            // ▶️ On load, restore last search
+            document.addEventListener('DOMContentLoaded', () => {
+                const key     = localStorage.getItem('evoLastKey');
+                const display = localStorage.getItem('evoLastDisplay');
+                if (key && display) {
+                    inputEl.value = display;
+                    fetchEvolutions(key);
+                }
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "pokemon_entries": 1302,
+  "sprite_directory": "/mnt/data/Pokemon typing version 1.14/static/sprites",
+  "missing_before_fix": 0,
+  "repaired": 0,
+  "unrepaired_without_source": 0,
+  "unresolved_after_fix": 0,
+  "missing": [],
+  "repaired_items": [],
+  "unrepaired_items": [],
+  "unresolved_after_fix_items": []
+}

@@ -5,18 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/static/favicon.ico">
   <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/app_mobile.css">
   <title>Pokémon Type Effectiveness</title>
   <style>
+    :root {
+      --page-bg: #111827;
+      --header-height-desktop: 205px;
+      --header-height-mobile: 275px;
+      --content-gap: 18px;
+    }
+
     html, body {
-      height: 100%;
       min-height: 100%;
-      background: #0e131f;
+      background: var(--page-bg) !important;
+    }
+
+    html {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      justify-content: flex-start;
     }
 
     body::after {
       content: "";
       display: block;
-      height: 100px; /* add some space at the end to extend background */
+      height: 140px; /* breathing room below scrollable cards */
     }
 
 
@@ -44,7 +61,7 @@
       left: 0;
       right: 0;
       width: 100%;
-      background: #1a202c; /* updated header color */ /* gray-800 */
+      background: var(--page-bg);
       padding: 1rem 0;
       z-index: 1000;
       display: flex;
@@ -120,7 +137,7 @@
       max-width: 1200px;
       width: 100%;
       margin: 0 auto;
-      padding-top: 200px;
+      padding-top: calc(var(--header-height-desktop) + var(--content-gap));
       gap: 2rem;
       align-items: flex-start;
     }
@@ -163,6 +180,12 @@
       width: 90vw;
       min-width: 280px;
       scroll-snap-align: start;
+    }
+
+    .card-slot-label,
+    .mode-helper,
+    .history-note {
+      display: none !important;
     }
 
     .minimize-button,
@@ -223,6 +246,96 @@
       gap: 0.5rem;
     }
 
+    .neutral-dropdown {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 100px minmax(0, 1fr);
+      align-items: start;
+      column-gap: 0;
+    }
+
+    .neutral-dropdown summary {
+      list-style: none;
+      cursor: pointer;
+      grid-column: 1;
+    }
+
+    .neutral-dropdown summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .neutral-summary {
+      display: block;
+      width: 100%;
+      min-height: 2rem;
+    }
+
+    .neutral-summary-control {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+
+    .neutral-summary .effectiveness-label {
+      width: auto;
+      display: block;
+    }
+
+    .neutral-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: #bfdbfe;
+      white-space: nowrap;
+      font-size: 0.86rem;
+      font-weight: 700;
+      line-height: 1.15;
+      user-select: none;
+    }
+
+    .neutral-caret {
+      display: inline-block;
+      color: #93c5fd;
+      font-size: 0.75rem;
+      line-height: 1;
+      transform: rotate(0deg);
+      transition: transform 0.15s ease;
+    }
+
+    .neutral-count-open {
+      display: none;
+    }
+
+    .neutral-dropdown[open] .neutral-caret {
+      transform: rotate(90deg);
+    }
+
+    .neutral-dropdown[open] .neutral-count-collapsed {
+      display: none;
+    }
+
+    .neutral-dropdown[open] .neutral-count-open {
+      display: inline;
+    }
+
+    .neutral-summary:hover .neutral-action {
+      color: #e5e7eb;
+    }
+
+    .neutral-content {
+      grid-column: 2;
+      margin: 0;
+      padding: 0.1rem 0 0.2rem 0;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .neutral-dropdown:not([open]) .neutral-content {
+      display: none !important;
+    }
+
     .error-message-fixed {
       position: absolute;
       top: 80px;
@@ -253,21 +366,32 @@
 
     @media (max-width: 640px) {
       html {
-        scroll-padding-top: 80px;
+        scroll-padding-top: 16px;
       }
 
       body {
-        padding-top: 500px; /* ensures enough space below fixed header */
+        padding-top: 0 !important;
+        align-items: stretch !important;
+        min-height: 100svh;
       }
 
       header {
-        height: 275px;
+        position: sticky;
+        height: auto;
+        min-height: 0;
+        padding: 0.65rem 0.75rem 0.85rem;
+      }
+
+      header h1 {
+        margin: 0.35rem 0 0.65rem !important;
       }
 
       .container {
         flex-direction: column;
-        margin-top: 0px;
-        gap: 2rem;
+        margin-top: 0;
+        padding-top: 1rem !important;
+        gap: 1rem;
+        width: 100%;
       }
 
       .mode-toggle-container {
@@ -281,13 +405,13 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1.5rem;
-        padding: 0 1rem;
-        margin-left: -7px;
+        gap: 1rem;
+        padding: 0 0.75rem;
+        margin-left: 0;
       }
       
       body.dual-mode {
-        padding-top: 900px; /* or whatever height fits 2 cards + spacing */
+        padding-top: 0 !important;
       }
 
       #main-result::after {
@@ -348,11 +472,82 @@
         gap: 0.25rem;
       }
 
+      .neutral-dropdown {
+        display: grid !important;
+        grid-template-columns: 110px minmax(0, 1fr);
+        align-items: start;
+        width: 100%;
+        min-height: 0 !important;
+        padding: 0 !important;
+      }
+
+      .neutral-dropdown summary {
+        display: block !important;
+        grid-column: 1;
+        width: 110px;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .neutral-summary {
+        width: 110px;
+        min-height: 0 !important;
+        margin: 0 !important;
+      }
+
+      .neutral-summary-control {
+        display: inline-flex !important;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.28rem;
+        line-height: 1.15;
+      }
+
+      .neutral-summary .effectiveness-label {
+        flex: none;
+        width: auto;
+        margin: 0;
+      }
+
+      .neutral-action {
+        font-size: 0.95rem;
+        line-height: 1.15;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .neutral-dropdown:not([open]) {
+        max-height: none;
+        overflow: visible;
+      }
+
+      .neutral-dropdown:not([open]) .neutral-content {
+        display: none !important;
+      }
+
+      .neutral-content {
+        grid-column: 2;
+        display: flex;
+        width: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box;
+        gap: 0.35rem;
+        justify-content: flex-start;
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+      }
+
       header h1 {
         margin-top: 0.4rem;
       }
       .hidden-history {
         display: none !important;
+      }
+
+      #history.mobile-history-open {
+        display: block !important;
       }
 
       .history-title {
@@ -364,7 +559,7 @@
     /* Desktop hide mobile toggle */
     @media (min-width: 641px) {
       body {
-        padding-top: 125px;
+        padding-top: 0;
       }
 
       #toggle-history-btn {
@@ -379,7 +574,7 @@
         max-width: 1200px;
         width: 100%;
         margin: 0 auto;
-        padding-top: 200px;
+        padding-top: calc(var(--header-height-desktop) + var(--content-gap));
       }
       .history-title {
         font-size: 1rem;
@@ -394,15 +589,15 @@
         width: 220px;
         flex-shrink: 0;
         position: sticky;
-        top: 200px;
+        top: calc(var(--header-height-desktop) + var(--content-gap));
         background: #1f2937;
         padding: 0.5rem;
         border-radius: 0.5rem;
-        max-height: 80vh;
+        max-height: calc(100vh - var(--header-height-desktop) - 40px);
         overflow-y: auto;
         display: block; /* Ensure it isn't being hidden by display:none */
         margin-left: -100px;
-        margin-top: -50px;
+        margin-top: 0;
       }
 
       #history-items:empty::before {
@@ -421,11 +616,112 @@
         gap: 1rem;
         justify-content: center;
         align-items: flex-start;
-        margin-top: -75px;
+        margin-top: 0;
         min-height: 675px;
         margin-left: -150px;
       }
       
+    }
+
+
+
+    /* Robust mobile override for iOS/Safari and narrow browsers.
+       Keeps the search area at the top, hides History until the button is tapped,
+       and prevents the result cards from being pushed below a large blank area. */
+    @media (max-width: 900px), (hover: none) and (pointer: coarse) {
+      html, body {
+        min-height: 100svh !important;
+        overflow-x: hidden !important;
+        scroll-padding-top: 0 !important;
+      }
+
+      body {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        padding-top: 0 !important;
+      }
+
+      body::after {
+        height: 2rem !important;
+      }
+
+      header {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        width: 100% !important;
+        padding: 0.85rem 0.75rem 0.95rem !important;
+      }
+
+      header h1 {
+        margin: 0.45rem 0 0.8rem !important;
+        font-size: clamp(1.8rem, 8vw, 2.6rem) !important;
+        line-height: 1.05 !important;
+      }
+
+      .watermark-fixed {
+        position: static !important;
+        text-align: center !important;
+        margin: 0.15rem 0 0.25rem !important;
+      }
+
+      .control-buttons {
+        margin-top: 0.4rem !important;
+        margin-bottom: 0.65rem !important;
+      }
+
+      .input-container {
+        width: min(100%, calc(100vw - 28px)) !important;
+        max-width: none !important;
+      }
+
+      .container {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 0.85rem 0 0 !important;
+      }
+
+      #main-result {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 1rem !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 0.75rem 1.25rem !important;
+      }
+
+      #main-result:empty {
+        min-height: 0 !important;
+      }
+
+      #main-result::after {
+        height: 1.5rem !important;
+      }
+
+      #history {
+        display: none !important;
+        position: fixed !important;
+        bottom: 90px !important;
+        left: 18px !important;
+        right: 18px !important;
+        max-height: min(300px, 50svh) !important;
+        overflow-y: auto !important;
+        z-index: 1005 !important;
+      }
+
+      #history:not(.hidden-history),
+      #history.mobile-history-open {
+        display: block !important;
+      }
     }
 
     /* Type badge colors */
@@ -450,7 +746,7 @@
     .type-none { background: #4B5563; }
   </style>
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-full w-full">
+<body class="text-white flex flex-col items-center min-h-full w-full">
   <header>
     <div class="watermark-fixed">Created by BorderM</div>
     <h1 class="text-3xl font-bold text-white text-center mb-2" style="margin-bottom: -25px;">
@@ -459,6 +755,7 @@
     <div class="control-buttons">
       <button id="search-btn" class="bg-blue-500 text-white p-2 rounded-lg">Search</button>
       <button id="clear-btn" class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
+      <a href="/pokedex" class="bg-purple-500 text-white p-2 rounded-lg">Pokédex</a>
       <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
       <a href="/typecalculator" class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
       <a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
@@ -471,6 +768,7 @@
      <div class="mode-toggle-container mt-2">
       <button id="toggle-mode-btn" class="bg-indigo-500 text-white p-2 rounded">2v2</button>
     </div>
+    <div id="mode-helper" class="mode-helper"></div>
     <div id="progress-bar-container" class="hidden">
       <div class="progress-bar"></div>
     </div>
@@ -480,7 +778,7 @@
     📜
   </button>
   <div class="container">
-    <aside id="history">
+    <aside id="history" class="hidden-history">
       <div class="history-title">History</div>
       <div class="history-items"></div>
       </aside>
@@ -489,6 +787,11 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      if (window.matchMedia('(max-width: 900px), (hover: none) and (pointer: coarse)').matches) {
+        setTimeout(() => window.scrollTo(0, 0), 0);
+      }
+      const INITIAL_NAME = {{ initial_name|tojson }};
       // State & config
       let PROCESSED_CACHE = {};
       let ALL_POKEMON = [];
@@ -500,6 +803,7 @@
       const MAX_HISTORY = 12;
       let suggestionKeys = [];
       let selectedIndex = null;
+      let lastChosenSuggestionKey = null;
 
       // DOM elements
       const input = document.getElementById('pokemon-input');
@@ -508,6 +812,11 @@
       const clearBtn = document.getElementById('clear-btn');
       const toggleBtn = document.getElementById('toggle-mode-btn');
       const historyBtn = document.getElementById('toggle-history-btn');
+      const modeHelper = document.getElementById('mode-helper');
+      const mainResult = document.getElementById('main-result');
+
+      const cardObserver = new MutationObserver(() => refreshCardSlots());
+      cardObserver.observe(mainResult, { childList: true });
 
       // Fetch data
       Promise.all([
@@ -525,27 +834,26 @@
         });
         start();
         restoreState();
+        if (INITIAL_NAME && String(INITIAL_NAME).trim()) {
+          input.value = INITIAL_NAME;
+          performSearch();
+        }
       });
 
       function start() {
         // Functions that rely on POKEMON_REFERENCE_MAP
         function collapseKey(rawKey) {
-          const key = rawKey.toLowerCase();
+          const key = String(rawKey || '').toLowerCase();
           const entry = POKEMON_REFERENCE_MAP?.[key];
-          if (!entry) return key;
-          return entry.force_preserve_name ? key : (entry.collapse_display_name_to || entry.base_name || key);
+          return entry?.type_key || entry?.collapse_display_name_to || key;
         }
       }
 
       // Utility functions
       function collapseKey(rawKey) {
-        const key = rawKey.toLowerCase();
+        const key = String(rawKey || '').toLowerCase();
         const entry = POKEMON_REFERENCE_MAP?.[key];
-        if (!entry) return key;
-
-        return entry.force_preserve_name
-            ? key
-            : (entry.collapse_display_name_to || entry.base_name || key);
+        return entry?.type_key || entry?.collapse_display_name_to || key;
     }
 
       function pickRepresentative(canon) {
@@ -553,26 +861,62 @@
       }
 
       function formatDisplayName(key) {
-        const lc = key.toLowerCase();
+        const lc = String(key || '').toLowerCase();
         const entry = POKEMON_REFERENCE_MAP?.[lc];
-        const displayKey = entry?.collapse_display_name_to || lc;
+        if (entry?.type_display) return entry.type_display;
 
-        return displayKey
+        return lc
             .replace(/-/g, ' ')
             .split(' ')
+            .filter(Boolean)
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
     }
 
+      function pokemonIdentity(r) {
+        return String(r?.lookup_key || r?.context_key || r?.name || r?.display_name || '').toLowerCase();
+      }
+
+      function pokemonDisplay(r) {
+        return r?.display_name || formatDisplayName(r?.lookup_key || r?.context_key || r?.name);
+      }
+
+      function updateModeHelper() {
+        if (modeHelper) modeHelper.textContent = '';
+        toggleBtn.title = dualMode ? 'Switch to 1v1' : 'Switch to 2v2';
+      }
+
+      function refreshCardSlots() {
+        const cards = [...document.getElementById('main-result').children];
+        cards.forEach((card, idx) => {
+          const label = card.querySelector('.card-slot-label');
+          if (!label) return;
+          if (dualMode) {
+            label.textContent = idx === 0 ? 'Active 1 • Older' : 'Active 2 • Newer';
+          } else {
+            label.textContent = 'Active';
+          }
+        });
+      }
+
       function getSuggestions(query) {
         const q = query.trim().toLowerCase();
         if (!q) return [];
-        const set = new Set();
+        const byKey = new Map();
         ALL_POKEMON.forEach(p => {
+          const meta = POKEMON_REFERENCE_MAP?.[p.name] || {};
+          if (meta.searchable === false) return;
           const c = collapseKey(p.name);
-          if (c.includes(q)) set.add(c);
+          const display = meta.type_display || formatDisplayName(c);
+          const haystack = [p.name, p.display_name, meta.raw_display, meta.form_display, meta.species_display, display, c]
+            .filter(Boolean).join(' ').toLowerCase().replace(/-/g, ' ');
+          const normalizedQ = q.replace(/-/g, ' ');
+          if (haystack.includes(normalizedQ)) byKey.set(c, display);
         });
-        return Array.from(set).sort().slice(0, 10);
+        return Array.from(byKey.entries())
+          .sort((a, b) => a[1].localeCompare(b[1]))
+          .slice(0, 10)
+          .map(([key]) => key);
       }
 
       // Input & suggestions handling
@@ -612,27 +956,25 @@
       });
 
       function toggleMode() {
+        const wasDualMode = dualMode;
         dualMode = !dualMode;
         toggleBtn.textContent = dualMode ? '1v1' : '2v2';
-
-        document.body.classList.toggle('dual-mode', dualMode); // 👈 this line
+        document.body.classList.toggle('dual-mode', dualMode);
 
         const main = document.getElementById('main-result');
-        const cards = [...main.children];
 
-        if (!dualMode && cards.length > 1) {
-          const removed = JSON.parse(cards[1].dataset.pokemon);
-          main.removeChild(main.children[1]);
-          addToHistory(removed);
-          renderHistory();
+        // 2v2 → 1v1: keep the newer card visible and move the older card to History.
+        // Cards are appended left-to-right, so the first card is the older one.
+        if (wasDualMode && !dualMode && main.children.length > 1) {
+          const older = JSON.parse(main.children[0].dataset.pokemon);
+          main.removeChild(main.children[0]);
+          addToHistory(older);
         }
 
-        if (dualMode && cards.length === 1 && historyList.length > 0) {
-          const restored = historyList.shift();
-          main.appendChild(createCard(restored));
-          renderHistory();
-        }
-
+        // 1v1 → 2v2 intentionally does not pull a card from History automatically.
+        // This keeps the movement predictable: search or click a History item to fill slot 2.
+        updateModeHelper();
+        refreshCardSlots();
         saveState();
       }
 
@@ -653,7 +995,9 @@
       clearBtn.addEventListener('click', clearAll);
       toggleBtn.addEventListener('click', toggleMode);
       historyBtn.addEventListener('click', () => {
-        document.getElementById('history').classList.toggle('hidden-history');
+        const h = document.getElementById('history');
+        h.classList.toggle('hidden-history');
+        h.classList.toggle('mobile-history-open', !h.classList.contains('hidden-history'));
       });
 
       // Fetch & render Pokémon
@@ -673,7 +1017,7 @@
         const rep = pickRepresentative(canon);
 
         const alreadyDisplayed = [...document.getElementById('main-result').children].some(
-          c => JSON.parse(c.dataset.pokemon).display_name === canon
+          c => (JSON.parse(c.dataset.pokemon).lookup_key || JSON.parse(c.dataset.pokemon).display_name) === canon
         );
         if (alreadyDisplayed) {
           input.value = '';
@@ -683,10 +1027,7 @@
         }
 
         showProgress(true);
-        if (window.innerWidth < 640) {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        fetch(`/api/pokemon/info?name=${encodeURIComponent(rep)}`)
+        fetch(`/api/pokemon/info?name=${encodeURIComponent(rep)}&context=types`)
           .then(res => res.json().then(data => {
             if (res.ok) renderPokemon(data[0]);
             else showError(data.error);
@@ -699,18 +1040,19 @@
       }
 
       function renderPokemon(r) {
-        r.display_name = collapseKey(r.name);
+        r.lookup_key = r.context_key || collapseKey(r.name);
+        r.display_name = r.context_display || formatDisplayName(r.lookup_key);
         const main = document.getElementById('main-result');
         const cards = [...main.children].map(c => JSON.parse(c.dataset.pokemon));
 
-        const isInResult = cards.some(p => p.display_name === r.display_name);
-        const isInHistory = historyList.some(p => p.display_name === r.display_name);
+        const isInResult = cards.some(p => (p.lookup_key || p.display_name) === r.lookup_key);
+        const isInHistory = historyList.some(p => (p.lookup_key || p.display_name) === r.lookup_key);
 
         if (isInResult) return; // Skip if already showing
 
         if (isInHistory) {
           // Move from history to result
-          removeFromHistory(r.display_name);
+          removeFromHistory(r);
           if (dualMode && cards.length >= 2) {
             const removed = cards[0];
             main.removeChild(main.children[0]);
@@ -737,6 +1079,10 @@
 
         currentPokemon = r;
         saveState();
+        if (window.matchMedia('(max-width: 900px), (hover: none) and (pointer: coarse)').matches) {
+          const lastCard = main.lastElementChild;
+          if (lastCard) setTimeout(() => lastCard.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+        }
       }
 
       function renderSingle(r) {
@@ -757,7 +1103,7 @@
         }
 
         const exists = [...main.children].some(
-          c => JSON.parse(c.dataset.pokemon).display_name === r.display_name
+          c => (JSON.parse(c.dataset.pokemon).lookup_key || JSON.parse(c.dataset.pokemon).display_name) === (r.lookup_key || r.display_name)
         );
         if (!exists) main.appendChild(createCard(r));
       }
@@ -766,15 +1112,27 @@
         const d = document.createElement('div');
         d.className = 'result-card';
         d.dataset.pokemon = JSON.stringify(r);
+        const displayName = pokemonDisplay(r);
+        const localSprite = r.sprite_url || `/static/sprites/${r.lookup_key || r.context_key || r.name}.png`;
+        const fallbackSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png`;
+        const profileUrl = `/pokemon/${encodeURIComponent(r.profile_key || r.lookup_key || r.context_key || r.name)}`;
+        const effectivenessLabels = {
+          four_times_effective: '4× Weak',
+          super_effective: '2× Weak',
+          normal_effective: 'Neutral',
+          two_times_resistant: '½ Resist',
+          four_times_resistant: '¼ Resist',
+          immune: 'Immune'
+        };
         d.innerHTML = `
-          <button class="minimize-button">−</button>
-          <button class="close-button">×</button>
-          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${r.id}.png" alt="${r.display_name}">
+          <button class="minimize-button" title="Move to History">−</button>
+          <button class="close-button" title="Close card">×</button>
+          <div class="card-slot-label">Active</div>
+          <img src="${localSprite}" alt="${displayName}" onerror="this.onerror=null; this.src='${fallbackSprite}'">
           <h2>
-            <a href="https://bulbapedia.bulbagarden.net/wiki/${r.name.replace(/-/g,'_')}_(Pok%C3%A9mon)" 
-              target="_blank"
+            <a href="${profileUrl}"
               class="text-blue-400 underline text-xl font-semibold hover:text-blue-300 transition">
-              ${formatDisplayName(r.display_name)}
+              ${displayName}
             </a>
           </h2>
           <p class="type-line">
@@ -782,16 +1140,39 @@
           </p>
           ${[ 'four_times_effective','super_effective','normal_effective',
                'two_times_resistant','four_times_resistant','immune' ]
-            .map(label => `
-              <div class="separator"></div>
-              <div class="effectiveness-row">
-                <span class="effectiveness-label">${label.replace(/_/g,' ')}:</span>
-                <div class="effectiveness-content">
-                  ${(r.effectiveness[label] || [])
-                    .map(t => `<span class="type-badge type-${t}">${t}</span>`)
-                    .join('') || '<span class="type-badge type-none">None</span>'}
-                </div>
-              </div>`)
+            .map(label => {
+              const values = r.effectiveness[label] || [];
+              const badges = values
+                .map(t => `<span class="type-badge type-${t}">${t}</span>`)
+                .join('') || '<span class="type-badge type-none">None</span>';
+
+              if (label === 'normal_effective') {
+                const count = values.length;
+                const countText = count === 1 ? '1 type' : `${count} types`;
+                return `
+                  <div class="separator"></div>
+                  <details class="effectiveness-row neutral-dropdown">
+                    <summary class="neutral-summary" title="Show/hide ${countText} neutral effectiveness types">
+                      <span class="neutral-summary-control">
+                        <span class="effectiveness-label">${effectivenessLabels[label]}:</span>
+                        <span class="neutral-action" aria-hidden="true">
+                          <span class="neutral-caret">▸</span>
+                          <span class="neutral-count-collapsed">Show ${countText}</span>
+                          <span class="neutral-count-open">Hide</span>
+                        </span>
+                      </span>
+                    </summary>
+                    <div class="effectiveness-content neutral-content">${badges}</div>
+                  </details>`;
+              }
+
+              return `
+                <div class="separator"></div>
+                <div class="effectiveness-row">
+                  <span class="effectiveness-label">${effectivenessLabels[label]}:</span>
+                  <div class="effectiveness-content">${badges}</div>
+                </div>`;
+            })
             .join('')}
         `;
         d.querySelector('.minimize-button').addEventListener('click', () => {
@@ -808,17 +1189,20 @@
       }
 
       // History
-      function addToHistory(r) {
-        if (!historyList.find(x => x.display_name === r.display_name)) {
-          historyList.unshift(r);
-          if (historyList.length > MAX_HISTORY) historyList.pop();
-          renderHistory();
-          saveState();
-        }
+      function addToHistory(r, note = null) {
+        const item = { ...r };
+        if (note) item.history_note = note;
+        const id = pokemonIdentity(item);
+        historyList = historyList.filter(x => pokemonIdentity(x) !== id);
+        historyList.unshift(item);
+        if (historyList.length > MAX_HISTORY) historyList.pop();
+        renderHistory();
+        saveState();
       }
 
-      function removeFromHistory(name) {
-        historyList = historyList.filter(x => x.display_name !== name);
+      function removeFromHistory(itemOrName) {
+        const id = typeof itemOrName === 'object' ? pokemonIdentity(itemOrName) : String(itemOrName || '').toLowerCase();
+        historyList = historyList.filter(x => pokemonIdentity(x) !== id && String(x.display_name || '').toLowerCase() !== id);
         renderHistory();
         saveState();
       }
@@ -827,13 +1211,11 @@
         const h = document.getElementById('history');
         h.innerHTML = '';
 
-        // Create and add the title
         const title = document.createElement('div');
         title.className = 'history-title';
         title.textContent = 'History';
         h.appendChild(title);
 
-        // Create the history item container
         const itemContainer = document.createElement('div');
         itemContainer.className = 'history-items';
         h.appendChild(itemContainer);
@@ -841,12 +1223,13 @@
         historyList.forEach(r => {
           const v = document.createElement('div');
           v.className = 'small-card';
+          const display = pokemonDisplay(r);
+          const note = r.history_note ? `<span class="history-note">${r.history_note}</span>` : '';
           v.innerHTML = `
-            <button class="history-item">${formatDisplayName(r.display_name)}</button>
+            <button class="history-item"><span>${display}</span>${note}</button>
             <span class="delete-history-item cursor-pointer text-red-400 ml-2">×</span>
           `;
 
-          // Load from history
           v.querySelector('.history-item').addEventListener('click', () => {
             const main = document.getElementById('main-result');
             const existing = [...main.children].map(c => JSON.parse(c.dataset.pokemon));
@@ -865,18 +1248,19 @@
                 main.removeChild(main.children[0]);
                 addToHistory(removed);
               }
-              main.appendChild(createCard(r));
+              const exists = existing.some(x => pokemonIdentity(x) === pokemonIdentity(r));
+              if (!exists) main.appendChild(createCard(r));
             }
 
-            removeFromHistory(r.display_name);
+            removeFromHistory(r);
             currentPokemon = r;
+            refreshCardSlots();
             saveState();
           });
 
-          // Delete from history
           v.querySelector('.delete-history-item').addEventListener('click', (e) => {
             e.stopPropagation();
-            removeFromHistory(r.display_name);
+            removeFromHistory(r);
           });
 
           itemContainer.appendChild(v);
@@ -929,6 +1313,7 @@
         toggleBtn.textContent = dualMode ? '1v1' : '2v2';
         // Load saved cards
         document.body.classList.toggle('dual-mode', dualMode);
+        updateModeHelper();
         const main = document.getElementById('main-result');
         main.innerHTML = '';
         const curRaw = localStorage.getItem('pkmnCurrent');
@@ -943,7 +1328,13 @@
             main.appendChild(createCard(sec));
           }
         }
+        refreshCardSlots();
         renderHistory();
+        if (window.matchMedia('(max-width: 900px), (hover: none) and (pointer: coarse)').matches) {
+          const h = document.getElementById('history');
+          h.classList.add('hidden-history');
+          h.classList.remove('mobile-history-open');
+        }
       }
       
       function clearAll() {

@@ -1,0 +1,536 @@
+{
+  "schema_version": "1.1",
+  "description": "Evolution method display audit. Curated overrides prefer general/modern methods while preserving game-specific alternatives as notes.",
+  "summary": {
+    "evolution_edges": 525,
+    "overrides_checked": 21,
+    "differences_before_apply": 0,
+    "fields_changed": 0,
+    "differences_after_apply": 0,
+    "unresolved_review_items_count": 0,
+    "intentional_specific_cases_count": 30
+  },
+  "override_details": [
+    {
+      "key": "bisharp->kingambit",
+      "status": "ok",
+      "differences": {},
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    {
+      "key": "bramblin->brambleghast",
+      "status": "ok",
+      "differences": {},
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    {
+      "key": "charjabug->vikavolt",
+      "status": "ok",
+      "differences": {},
+      "reason": "Prefer the item method and fill in a missing/older method."
+    },
+    {
+      "key": "crabrawler->crabominable",
+      "status": "ok",
+      "differences": {},
+      "reason": "Avoid showing the Alola-specific Mount Lanakila method as the primary method."
+    },
+    {
+      "key": "eevee->glaceon",
+      "status": "ok",
+      "differences": {},
+      "reason": "Prefer the item method over older Ice Rock location methods."
+    },
+    {
+      "key": "eevee->leafeon",
+      "status": "ok",
+      "differences": {},
+      "reason": "Prefer the item method over older Moss Rock location methods."
+    },
+    {
+      "key": "farfetchd->sirfetchd",
+      "status": "ok",
+      "differences": {},
+      "reason": "Normalize the trigger and show a clear note."
+    },
+    {
+      "key": "gimmighoul->gholdengo",
+      "status": "ok",
+      "differences": {},
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    {
+      "key": "magneton->magnezone",
+      "status": "ok",
+      "differences": {},
+      "reason": "Avoid showing a specific magnetic-field location as the primary method."
+    },
+    {
+      "key": "milcery->alcremie",
+      "status": "ok",
+      "differences": {},
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    {
+      "key": "nosepass->probopass",
+      "status": "ok",
+      "differences": {},
+      "reason": "Avoid showing a specific magnetic-field location as the primary method."
+    },
+    {
+      "key": "pawmo->pawmot",
+      "status": "ok",
+      "differences": {},
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    {
+      "key": "primeape->annihilape",
+      "status": "ok",
+      "differences": {},
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    {
+      "key": "qwilfish->overqwil",
+      "status": "ok",
+      "differences": {},
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    {
+      "key": "rellor->rabsca",
+      "status": "ok",
+      "differences": {},
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    {
+      "key": "sandshrew-alola->sandslash-alola",
+      "status": "ok",
+      "differences": {},
+      "reason": "Correct display to the item method; do not show an unnecessary level requirement."
+    },
+    {
+      "key": "slowpoke-galar->slowbro-galar",
+      "status": "ok",
+      "differences": {},
+      "reason": "Correct display to the Galarica Cuff item method; do not show an unnecessary level requirement."
+    },
+    {
+      "key": "stantler->wyrdeer",
+      "status": "ok",
+      "differences": {},
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    {
+      "key": "voltorb-hisui->electrode-hisui",
+      "status": "ok",
+      "differences": {},
+      "reason": "Correct display to the Leaf Stone item method; do not show an unnecessary level requirement."
+    },
+    {
+      "key": "yamask->runerigus",
+      "status": "ok",
+      "differences": {},
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    {
+      "key": "yamask-galar->runerigus",
+      "status": "ok",
+      "differences": {},
+      "reason": "Normalize wording for a game-specific special evolution."
+    }
+  ],
+  "unresolved_review_items": [],
+  "intentional_specific_cases": [
+    {
+      "key": "bramblin->brambleghast",
+      "from": "bramblin",
+      "to": "brambleghast",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": null,
+      "location": null,
+      "note": "Level up after walking 1,000 steps with Bramblin using Let’s Go.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "charjabug->vikavolt",
+      "from": "charjabug",
+      "to": "vikavolt",
+      "trigger": "use-item",
+      "item": "thunder-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use a Thunder Stone. Older games may require leveling up in a special magnetic field.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "crabrawler->crabominable",
+      "from": "crabrawler",
+      "to": "crabominable",
+      "trigger": "use-item",
+      "item": "ice-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use an Ice Stone. Older games may require leveling up at Mount Lanakila.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "cubone->marowak-alola",
+      "from": "cubone",
+      "to": "marowak-alola",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": 28,
+      "location": null,
+      "note": "Only evolves into Alolan Marowak in the Alola region.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "dartrix->decidueye-hisui",
+      "from": "dartrix",
+      "to": "decidueye-hisui",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": 36,
+      "location": null,
+      "note": "Only evolves into Hisuian Decidueye in the Hisui region.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "dewott->samurott-hisui",
+      "from": "dewott",
+      "to": "samurott-hisui",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": 36,
+      "location": null,
+      "note": "Only evolves into Hisuian Samurott in the Hisui region.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "eevee->glaceon",
+      "from": "eevee",
+      "to": "glaceon",
+      "trigger": "use-item",
+      "item": "ice-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use an Ice Stone. Older games may require leveling up near an Ice Rock.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "eevee->leafeon",
+      "from": "eevee",
+      "to": "leafeon",
+      "trigger": "use-item",
+      "item": "leaf-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use a Leaf Stone. Older games may require leveling up near a Moss Rock.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "exeggcute->exeggutor-alola",
+      "from": "exeggcute",
+      "to": "exeggutor-alola",
+      "trigger": "use-item",
+      "item": "leaf-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Only evolves into Alolan Exeggutor in the Alola region.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "farfetchd->sirfetchd",
+      "from": "farfetchd",
+      "to": "sirfetchd",
+      "trigger": "other",
+      "item": null,
+      "min_level": null,
+      "location": null,
+      "note": "Land three critical hits in one battle.",
+      "reasons": [
+        "has-unusual-trigger"
+      ]
+    },
+    {
+      "key": "farfetchd-galar->sirfetchd",
+      "from": "farfetchd-galar",
+      "to": "sirfetchd",
+      "trigger": "other",
+      "item": null,
+      "min_level": null,
+      "location": null,
+      "note": "Requires 3 critical hits in one battle.",
+      "reasons": [
+        "has-unusual-trigger"
+      ]
+    },
+    {
+      "key": "finizen->palafin-zero",
+      "from": "finizen",
+      "to": "palafin-zero",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": 38,
+      "location": null,
+      "note": "Level up while connected with another player in Union Circle.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "goomy->sliggoo-hisui",
+      "from": "goomy",
+      "to": "sliggoo-hisui",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": 40,
+      "location": null,
+      "note": "Only evolves into Hisuian Sliggoo in the Hisui region.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "koffing->weezing-galar",
+      "from": "koffing",
+      "to": "weezing-galar",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": 35,
+      "location": null,
+      "note": "Only evolves into Galarian Weezing in the Galar region.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "magneton->magnezone",
+      "from": "magneton",
+      "to": "magnezone",
+      "trigger": "use-item",
+      "item": "thunder-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use a Thunder Stone. Older games may require leveling up in a special magnetic field.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "milcery->alcremie",
+      "from": "milcery",
+      "to": "alcremie",
+      "trigger": "other",
+      "item": null,
+      "min_level": null,
+      "location": null,
+      "note": "Give Milcery a Sweet, then spin with the player character. Form depends on spin direction/time and held Sweet.",
+      "reasons": [
+        "has-unusual-trigger"
+      ]
+    },
+    {
+      "key": "mime-jr->mr-mime-galar",
+      "from": "mime-jr",
+      "to": "mr-mime-galar",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": null,
+      "location": null,
+      "note": "Only evolves into Galarian Mr. Mime in Galar.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "nincada->shedinja",
+      "from": "nincada",
+      "to": "shedinja",
+      "trigger": "shed",
+      "item": null,
+      "min_level": 20,
+      "location": null,
+      "note": "Upon evolving Nincada to Ninjask, if there is at least one space in your party and a pokeball in your bag.",
+      "reasons": [
+        "has-unusual-trigger"
+      ]
+    },
+    {
+      "key": "nosepass->probopass",
+      "from": "nosepass",
+      "to": "probopass",
+      "trigger": "use-item",
+      "item": "thunder-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use a Thunder Stone. Older games may require leveling up in a special magnetic field.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "pawmo->pawmot",
+      "from": "pawmo",
+      "to": "pawmot",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": null,
+      "location": null,
+      "note": "Level up after walking 1,000 steps with Pawmo using Let’s Go.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "petilil->lilligant-hisui",
+      "from": "petilil",
+      "to": "lilligant-hisui",
+      "trigger": "use-item",
+      "item": "sun-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Only evolves into Hisuian Lilligant in the Hisui region.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "pikachu->raichu-alola",
+      "from": "pikachu",
+      "to": "raichu-alola",
+      "trigger": "use-item",
+      "item": "thunder-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Only evolves into Alolan Raichu in the Alola region.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "quilava->typhlosion-hisui",
+      "from": "quilava",
+      "to": "typhlosion-hisui",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": 36,
+      "location": null,
+      "note": "Only evolves into Hisuian Typhlosion in the Hisui region.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "rellor->rabsca",
+      "from": "rellor",
+      "to": "rabsca",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": null,
+      "location": null,
+      "note": "Level up after walking 1,000 steps with Rellor using Let’s Go.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "rockruff->lycanroc-dusk",
+      "from": "rockruff",
+      "to": "lycanroc-dusk",
+      "trigger": "level-up-during-evening",
+      "item": null,
+      "min_level": 25,
+      "location": null,
+      "note": "Ability must be Own Tempo",
+      "reasons": [
+        "has-unusual-trigger"
+      ]
+    },
+    {
+      "key": "rockruff->lycanroc-midday",
+      "from": "rockruff",
+      "to": "lycanroc-midday",
+      "trigger": "level-up-during-day",
+      "item": null,
+      "min_level": 25,
+      "location": null,
+      "note": "Ability must be Keen Eye, Vital Spirit, or Steadfast",
+      "reasons": [
+        "has-unusual-trigger"
+      ]
+    },
+    {
+      "key": "rockruff->lycanroc-midnight",
+      "from": "rockruff",
+      "to": "lycanroc-midnight",
+      "trigger": "level-up-during-night",
+      "item": null,
+      "min_level": 25,
+      "location": null,
+      "note": "Ability must be Keen Eye, Vital Spirit, or Steadfast",
+      "reasons": [
+        "has-unusual-trigger"
+      ]
+    },
+    {
+      "key": "rufflet->braviary-hisui",
+      "from": "rufflet",
+      "to": "braviary-hisui",
+      "trigger": "level-up",
+      "item": null,
+      "min_level": 54,
+      "location": null,
+      "note": "Only evolves into Hisuian Braviary in the Hisui region.",
+      "reasons": [
+        "has-game-specific-note"
+      ]
+    },
+    {
+      "key": "yamask->runerigus",
+      "from": "yamask",
+      "to": "runerigus",
+      "trigger": "other",
+      "item": null,
+      "min_level": null,
+      "location": null,
+      "note": "Galarian Yamask evolves after taking 49+ damage without fainting, then traveling under the large stone arch in Dusty Bowl.",
+      "reasons": [
+        "has-game-specific-note",
+        "has-unusual-trigger"
+      ]
+    },
+    {
+      "key": "yamask-galar->runerigus",
+      "from": "yamask-galar",
+      "to": "runerigus",
+      "trigger": "other",
+      "item": null,
+      "min_level": null,
+      "location": null,
+      "note": "Take 49+ damage without fainting, then travel under the large stone arch in Dusty Bowl.",
+      "reasons": [
+        "has-game-specific-note",
+        "has-unusual-trigger"
+      ]
+    }
+  ]
+}
