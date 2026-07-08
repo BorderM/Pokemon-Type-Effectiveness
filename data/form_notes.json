@@ -1,0 +1,19 @@
+{
+  "palafin": "Hero Form is an in-battle transformation caused by the Zero to Hero ability after Palafin switches out and returns. It is not a separate evolution.",
+  "maushold": "Family of Three is a rare family-size outcome; Family of Four is the usual display in this app unless a specific form is needed.",
+  "dudunsparce": "Three-Segment Form is rare; Two-Segment Form is the usual display unless a specific form is needed.",
+  "toxtricity": "Amped Form and Low Key Form share typing and base stats. They mainly differ by nature/form flavor and some move interactions.",
+  "pumpkaboo": "All Pumpkaboo sizes share typing, but the sizes have different base stats.",
+  "gourgeist": "All Gourgeist sizes share typing, but the sizes have different base stats.",
+  "rotom": "Rotom appliance forms change typing and should be treated as distinct battle forms.",
+  "giratina": "Altered Forme and Origin Forme have different stat distributions. Origin Forme is tied to the Griseous Orb/Core in mainline games.",
+  "aegislash": "Aegislash changes between Shield Forme and Blade Forme in battle; the forms have very different defensive/offensive stat profiles.",
+  "wishiwashi": "School Form is a battle transformation from Solo Form when its ability condition is met.",
+  "mimikyu": "Disguised and Busted forms reflect whether Disguise is intact; this is a battle-state mechanic rather than a normal evolution.",
+  "minior": "Meteor and Core forms are tied to Shields Down. Core colors are mostly cosmetic.",
+  "eiscue": "Ice Face and Noice Face are battle-state forms controlled by Ice Face.",
+  "morpeko": "Full Belly and Hangry modes alternate through Hunger Switch and change Aura Wheel's type.",
+  "ogerpon": "Ogerpon masks change typing and battle behavior, so mask forms are relevant for battle lookup.",
+  "zacian": "Crowned Sword changes Zacian's typing and stats, so treat it as a distinct battle form.",
+  "zamazenta": "Crowned Shield changes Zamazenta's typing and stats, so treat it as a distinct battle form."
+}

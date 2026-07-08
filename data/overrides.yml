@@ -256,7 +256,7 @@ toxel:
     note: "Nature must be one of Lonely, Bold, Relaxed, Timid, Serious, Modest, Mild, Quiet, Bashful, Calm, Gentle, or Careful."
 
 doublade:
-  - to: aegislash-shield
+  - to: aegislash
     trigger: use-item
     min_level: 35
     item: dusk-stone

@@ -1,0 +1,187 @@
+{
+  "schema_version": "1.1",
+  "description": "Curated evolution-method display overrides. These prefer game-agnostic or modern/common methods over location-specific/older game-specific methods when a broadly usable method exists, while keeping historical methods as notes.",
+  "overrides": {
+    "eevee->leafeon": {
+      "from": "eevee",
+      "to": "leafeon",
+      "trigger": "use-item",
+      "item": "leaf-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use a Leaf Stone. Older games may require leveling up near a Moss Rock.",
+      "reason": "Prefer the item method over older Moss Rock location methods."
+    },
+    "eevee->glaceon": {
+      "from": "eevee",
+      "to": "glaceon",
+      "trigger": "use-item",
+      "item": "ice-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use an Ice Stone. Older games may require leveling up near an Ice Rock.",
+      "reason": "Prefer the item method over older Ice Rock location methods."
+    },
+    "magneton->magnezone": {
+      "from": "magneton",
+      "to": "magnezone",
+      "trigger": "use-item",
+      "item": "thunder-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use a Thunder Stone. Older games may require leveling up in a special magnetic field.",
+      "reason": "Avoid showing a specific magnetic-field location as the primary method."
+    },
+    "nosepass->probopass": {
+      "from": "nosepass",
+      "to": "probopass",
+      "trigger": "use-item",
+      "item": "thunder-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use a Thunder Stone. Older games may require leveling up in a special magnetic field.",
+      "reason": "Avoid showing a specific magnetic-field location as the primary method."
+    },
+    "charjabug->vikavolt": {
+      "from": "charjabug",
+      "to": "vikavolt",
+      "trigger": "use-item",
+      "item": "thunder-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use a Thunder Stone. Older games may require leveling up in a special magnetic field.",
+      "reason": "Prefer the item method and fill in a missing/older method."
+    },
+    "crabrawler->crabominable": {
+      "from": "crabrawler",
+      "to": "crabominable",
+      "trigger": "use-item",
+      "item": "ice-stone",
+      "min_level": null,
+      "location": null,
+      "note": "Modern/common method: use an Ice Stone. Older games may require leveling up at Mount Lanakila.",
+      "reason": "Avoid showing the Alola-specific Mount Lanakila method as the primary method."
+    },
+    "sandshrew-alola->sandslash-alola": {
+      "from": "sandshrew-alola",
+      "to": "sandslash-alola",
+      "trigger": "use-item",
+      "item": "ice-stone",
+      "min_level": null,
+      "location": null,
+      "note": null,
+      "reason": "Correct display to the item method; do not show an unnecessary level requirement."
+    },
+    "slowpoke-galar->slowbro-galar": {
+      "from": "slowpoke-galar",
+      "to": "slowbro-galar",
+      "trigger": "use-item",
+      "item": "galarica-cuff",
+      "min_level": null,
+      "location": null,
+      "note": null,
+      "reason": "Correct display to the Galarica Cuff item method; do not show an unnecessary level requirement."
+    },
+    "voltorb-hisui->electrode-hisui": {
+      "from": "voltorb-hisui",
+      "to": "electrode-hisui",
+      "trigger": "use-item",
+      "item": "leaf-stone",
+      "min_level": null,
+      "location": null,
+      "note": null,
+      "reason": "Correct display to the Leaf Stone item method; do not show an unnecessary level requirement."
+    },
+    "bisharp->kingambit": {
+      "from": "bisharp",
+      "to": "kingambit",
+      "trigger": "level-up",
+      "note": "Level up after defeating three Bisharp that hold a Leader’s Crest.",
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    "bramblin->brambleghast": {
+      "from": "bramblin",
+      "to": "brambleghast",
+      "trigger": "level-up",
+      "note": "Level up after walking 1,000 steps with Bramblin using Let’s Go.",
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    "gimmighoul->gholdengo": {
+      "from": "gimmighoul",
+      "to": "gholdengo",
+      "trigger": "level-up",
+      "note": "Level up while the player has 999 Gimmighoul Coins.",
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    "pawmo->pawmot": {
+      "from": "pawmo",
+      "to": "pawmot",
+      "trigger": "level-up",
+      "note": "Level up after walking 1,000 steps with Pawmo using Let’s Go.",
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    "primeape->annihilape": {
+      "from": "primeape",
+      "to": "annihilape",
+      "trigger": "level-up",
+      "note": "Level up after Primeape uses Rage Fist 20 times.",
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    "rellor->rabsca": {
+      "from": "rellor",
+      "to": "rabsca",
+      "trigger": "level-up",
+      "note": "Level up after walking 1,000 steps with Rellor using Let’s Go.",
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    "milcery->alcremie": {
+      "from": "milcery",
+      "to": "alcremie",
+      "trigger": "other",
+      "note": "Give Milcery a Sweet, then spin with the player character. Form depends on spin direction/time and held Sweet.",
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    "farfetchd->sirfetchd": {
+      "from": "farfetchd",
+      "to": "sirfetchd",
+      "trigger": "other",
+      "note": "Land three critical hits in one battle.",
+      "reason": "Normalize the trigger and show a clear note."
+    },
+    "qwilfish->overqwil": {
+      "from": "qwilfish",
+      "to": "overqwil",
+      "trigger": "level-up",
+      "known_move": "barb-barrage",
+      "note": "Use Barb Barrage in Strong Style 20 times, then level up.",
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    "stantler->wyrdeer": {
+      "from": "stantler",
+      "to": "wyrdeer",
+      "trigger": "level-up",
+      "known_move": "psyshield-bash",
+      "note": "Use Psyshield Bash in Agile Style 20 times, then level up.",
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    "yamask->runerigus": {
+      "from": "yamask",
+      "to": "runerigus",
+      "trigger": "other",
+      "note": "Galarian Yamask evolves after taking 49+ damage without fainting, then traveling under the large stone arch in Dusty Bowl.",
+      "reason": "Add a useful special-method note for a non-standard evolution."
+    },
+    "yamask-galar->runerigus": {
+      "from": "yamask-galar",
+      "to": "runerigus",
+      "trigger": "other",
+      "note": "Take 49+ damage without fainting, then travel under the large stone arch in Dusty Bowl.",
+      "reason": "Normalize wording for a game-specific special evolution."
+    }
+  },
+  "policy": {
+    "primary_display": "Prefer the most generally useful method for a current player. Use modern/common item methods when they exist.",
+    "preserve_history": "Older or game-specific methods are preserved in the note field instead of shown as the primary method.",
+    "do_not_guess": "Region-only or special mechanic evolutions without a common replacement are reported for review rather than rewritten automatically."
+  }
+}

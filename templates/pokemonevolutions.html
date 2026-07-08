@@ -4,6 +4,7 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/app_mobile.css">
         <style>
             .input-container {
                 position: relative;
@@ -121,6 +122,282 @@
                 width: 100%;
             }
 
+
+            html, body {
+                min-height: 100%;
+                background-color: #111827 !important;
+            }
+            body {
+                padding-top: 215px;
+                justify-content: flex-start !important;
+                background-color: #111827 !important;
+            }
+            .fixed-header {
+                background-color: #111827;
+                padding-bottom: 1rem;
+            }
+            #results {
+                display: block;
+                margin-top: 0;
+                padding: 0.75rem 1rem 4rem;
+                width: 100%;
+                min-height: calc(100vh - 215px);
+                overflow-x: hidden;
+                background-color: #111827;
+            }
+            .evolution-tree {
+                display: flex;
+                justify-content: center;
+                width: 100%;
+                margin: 0 auto;
+                padding: 0.25rem 1rem 1rem;
+            }
+            .evo-node {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                position: relative;
+                width: 100%;
+            }
+            .evo-node > .result-card {
+                flex: 0 0 auto;
+            }
+            .evo-branch {
+                position: relative;
+                width: 100%;
+                max-width: 1240px;
+                padding-top: 28px;
+                margin-top: 8px;
+            }
+            .evo-branch::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 50%;
+                width: 2px;
+                height: 28px;
+                transform: translateX(-50%);
+                background: #4b5563;
+            }
+            .evo-children {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(260px, 300px));
+                justify-content: center;
+                justify-items: center;
+                align-items: flex-start;
+                gap: 1.25rem 1.5rem;
+                width: 100%;
+                position: relative;
+                padding-top: 20px;
+            }
+            .evo-children::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: max(20px, calc(50% - 420px));
+                right: max(20px, calc(50% - 420px));
+                height: 2px;
+                background: #4b5563;
+            }
+            .evo-children.single::before {
+                display: none;
+            }
+            .evo-children.single {
+                padding-top: 0;
+            }
+            .evo-children.compact {
+                grid-template-columns: repeat(var(--child-count), minmax(260px, 300px));
+                max-width: calc(var(--child-count) * 300px + (var(--child-count) - 1) * 1.5rem);
+                margin-left: auto;
+                margin-right: auto;
+            }
+            .evo-children.wide {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 300px));
+                max-width: min(100%, 1240px);
+            }
+            .evo-child {
+                position: relative;
+                width: 100%;
+                max-width: 300px;
+            }
+            .evo-child::before {
+                content: "";
+                position: absolute;
+                top: -20px;
+                left: 50%;
+                width: 2px;
+                height: 20px;
+                transform: translateX(-50%);
+                background: #4b5563;
+            }
+            .evo-children.single .evo-child::before {
+                top: -28px;
+                height: 28px;
+            }
+            .result-card {
+                min-height: 220px;
+                background-color: #2d2d2d;
+                justify-content: flex-start;
+            }
+            .result-card img {
+                margin-top: 0.25rem;
+                margin-bottom: 0.35rem;
+            }
+            .evo-root-spacer {
+                display: none;
+            }
+            .evo-condition-list {
+                margin-top: 0.35rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.3rem;
+            }
+            .evo-condition-row {
+                margin: 0 !important;
+                line-height: 1.35;
+            }
+            .sprite-missing-label {
+            color: #d1d5db;
+            font-size: 0.9rem;
+            margin: 0.35rem 0 1rem;
+        }
+
+        .evo-note {
+                margin-top: 0.5rem;
+                color: #cbd5e1;
+            }
+
+
+            /* Radial layout for many same-stage evolutions, e.g. Eevee. */
+            .evolution-tree.radial-mode {
+                display: block;
+                width: 100%;
+                padding: 0.75rem 0 3rem;
+                overflow: visible;
+            }
+            .evo-radial {
+                --radial-size: 940px;
+                --radial-radius: 350px;
+                position: relative;
+                width: min(100%, var(--radial-size));
+                height: var(--radial-size);
+                margin: 0 auto;
+            }
+            .evo-radial-lines {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 1;
+                overflow: visible;
+            }
+            .evo-radial-line {
+                stroke: #4b5563;
+                stroke-width: 2;
+                stroke-linecap: round;
+                opacity: 0.9;
+            }
+            .evo-radial-center,
+            .evo-radial-child {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                z-index: 2;
+            }
+            .evo-radial-center {
+                transform: translate(-50%, -50%);
+            }
+            .evo-radial-child {
+                transform:
+                    translate(-50%, -50%)
+                    rotate(var(--angle))
+                    translate(var(--radial-radius))
+                    rotate(calc(-1 * var(--angle)));
+            }
+            .evo-radial .result-card {
+                width: 245px;
+                min-height: 205px;
+                padding: 0.85rem;
+                margin-bottom: 0;
+            }
+            .evo-radial.many .result-card {
+                width: 220px;
+                min-height: 190px;
+                padding: 0.75rem;
+            }
+            .evo-radial .result-card h2 {
+                font-size: 1.05rem;
+                margin-bottom: 0.55rem;
+            }
+            .evo-radial .result-card img {
+                width: 82px;
+                height: 82px;
+                margin-top: 0;
+                margin-bottom: 0.25rem;
+            }
+            .evo-radial .result-card p,
+            .evo-radial .evo-condition-row {
+                font-size: 0.82rem;
+                line-height: 1.25;
+            }
+            .evo-radial-center .result-card {
+                width: 245px;
+                min-height: 185px;
+            }
+            .evo-layout-note {
+                color: #cbd5e1;
+                font-size: 0.85rem;
+                text-align: center;
+                margin: 0.5rem auto 0;
+                max-width: 620px;
+            }
+
+            @media (max-width: 900px) {
+                body { padding-top: 235px; }
+                #results { min-height: calc(100vh - 235px); }
+                .evolution-tree { padding-left: 0; padding-right: 0; }
+                .evo-branch { max-width: 100%; }
+                .evo-children,
+                .evo-children.compact,
+                .evo-children.wide {
+                    grid-template-columns: repeat(auto-fit, minmax(240px, 300px));
+                    gap: 1rem;
+                }
+
+                .evolution-tree.radial-mode {
+                    padding-top: 0.25rem;
+                }
+                .evo-radial {
+                    height: auto !important;
+                    width: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 1rem;
+                    margin-top: 0;
+                }
+                .evo-radial-lines {
+                    display: none;
+                }
+                .evo-radial-center,
+                .evo-radial-child {
+                    position: static;
+                    transform: none !important;
+                }
+                .evo-radial .result-card,
+                .evo-radial.many .result-card,
+                .evo-radial-center .result-card {
+                    width: min(300px, calc(100vw - 2rem));
+                    min-height: 190px;
+                }
+
+                .evo-children::before {
+                    left: 30px;
+                    right: 30px;
+                }
+            }
+
         </style>
         <title>Pokémon Evolution Search</title>
     </head>
@@ -143,6 +420,7 @@
                 >
                     Clear
                 </button>
+                <a href="/pokedex" class="bg-purple-500 text-white p-2 rounded-lg">Pokédex</a>
                 <a
                     href="/typeeffectiveness"
                     class="bg-green-500 text-white p-2 rounded-lg"
@@ -194,50 +472,99 @@
             // Override map for niche cases
             const FORM_OVERRIDES = {
             basculin: 'basculin-white-striped',
+            basculegion: 'basculegion-male',
             pumpkaboo: 'pumpkaboo-average',
             gourgeist: 'gourgeist-average',
+            aegislash: 'aegislash-shield', 
+            wormadam: 'wormadam-plant',
             // add more manual overrides here
             };
 
             // Words indicating form suffixes to collapse
             const SHORTEN_SECOND = new Set([
-                "blade","blue","normal","standard","three","incarnate","altered",
-                "average","ordinary","family","disguised","full",
-                "droopy","school","50", "two", "white", "two-segment","three-segment", "plant", "small", "large", "super",
-                "disguised", "busted"
+                "average", "three", "two", "standard", "ordinary", "family",
+                "disguised", "busted", "plant", "sandy", "trash", "blade",
+                "shield", "midday", "midnight", "dusk", "school", "small",
+                "large", "super", "white"
             ]);
-            const PRESERVE = new Set([
-                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y", "mr-mime-galar", 
-                "ogerpon-cornerstone-mask","ogerpon-hearthflame-mask", "ogerpon-wellspring-mask", 
-                "oricorio-pom-pom", "urshifu-rapid-strike", "urshifu-single-strike", "lycanroc-midday","lycanroc-midnight",
-                "lycanroc-dusk", "toxtricity-amped","toxtricity-low-key", "mime-jr", "mr-mime", "mr-rime"
-              ]);
 
-            // Normalize form keys: collapse to base unless special
+            const PRESERVE = new Set([
+                "charizard-mega-x", "charizard-mega-y", "mewtwo-mega-x", "mewtwo-mega-y",
+                "slowpoke-galar", "farfetchd-galar", "mime-jr", "mr-mime", "mr-rime",
+                "pumpkaboo", "gourgeist", "toxtricity-amped", "toxtricity-low-key"
+            ]);
+
+            const FULL_NAMES = new Set([
+                "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr",
+                "type-null", "tapu-koko", "tapu-lele", "tapu-bulu", "tapu-fini",
+                "pumpkaboo-average", "gourgeist-average", "basculin-white-striped",
+                "wormadam-plant", "aegislash-shield" 
+            ]);
+
+            const REGIONAL_SUFFIXES = ['alola', 'alolan', 'galar', 'galarian', 'hisui', 'hisuian', 'paldea', 'paldean'];
+
             function collapseKey(raw) {
-            const key = raw.toLowerCase().trim();
-            const parts = key.split('-');
-            // manual preserve
-            if (PRESERVE.has(key)) return key;
-            // base overrides for forms
-            if (parts[1] && SHORTEN_SECOND.has(parts[1])) return parts[0];
-            if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key][0];
-            const base = parts[0];
-            const sibs = FORMS_BY_BASE[base] || [base];
-            const signatures = new Set(
-                sibs.map(f => JSON.stringify((EVOLUTIONS_BY_FROM[f]||[]).map(e=>[e.to,e.trigger]).sort()))
-            );
-            return signatures.size > 1 ? key : base;
+                const key = raw.toLowerCase().trim();
+
+                // Fully preserve specific multi-word names
+                const FULL_NAMES = new Set([
+                    "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr",
+                    "type-null", "tapu-koko", "tapu-lele", "tapu-bulu", "tapu-fini"
+                ]);
+                if (FULL_NAMES.has(key)) return key;
+
+                // Preserve regional forms
+                if (REGIONAL_SUFFIXES.some(suffix => key.endsWith('-' + suffix))) {
+                    return key;
+                }
+
+                if (PRESERVE.has(key)) return key;
+
+                const parts = key.split('-');
+                const base = parts[0];
+
+                if (FORM_COLLAPSE_MAP[key]) return FORM_COLLAPSE_MAP[key][0];
+
+                const sibs = FORMS_BY_BASE[base] || [base];
+                const signatures = new Set(
+                    sibs.map(f =>
+                        JSON.stringify((EVOLUTIONS_BY_FROM[f] || []).map(e => [e.to, e.trigger]).sort())
+                    )
+                );
+
+                return signatures.size > 1 ? key : base;
             }
 
             function formatDisplayName(raw) {
                 if (typeof raw !== 'string') return raw;
-                const parts = raw.split('-');
-                const base = parts[0].replace(/\b\w/g, c => c.toUpperCase());
-                const suffix = parts.slice(1)
-                    .map(p => p.charAt(0).toUpperCase() + p.slice(1))
-                    .join(' ');
-                return suffix ? `${base} (${suffix})` : base;
+
+                const key = raw.toLowerCase();
+
+                const FULL_NAMES = new Set([
+                    "mr-mime", "mr-mime-galar", "mr-rime", "mime-jr",
+                    "type-null", "tapu-koko", "tapu-lele", "tapu-bulu", "tapu-fini",
+                    "pumpkaboo-average", "gourgeist-average", "basculin-white-striped",
+                    "wormadam-plant", "aegislash-shield"
+                ]);
+
+                const HIDE_FORM_SUFFIX = new Set([
+                    "pumpkaboo-average", "gourgeist-average", "basculin-white-striped", "wormadam-plant", "aegislash-shield"
+                ]);
+
+                if (FULL_NAMES.has(key)) {
+                    if (key.startsWith('wormadam')) return 'Wormadam';
+                    if (key.startsWith('aegislash')) return 'Aegislash';
+                    return key.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                }
+
+                if (HIDE_FORM_SUFFIX.has(key)) {
+                    return key.split('-')[0].replace(/\b\w/g, c => c.toUpperCase());
+                }
+
+                const parts = key.split('-');
+                const base = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+                const suffix = parts.slice(1).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+                return suffix ? `${base} ${suffix}` : base;
             }
 
             // Debounce
@@ -269,17 +596,22 @@
             }
 
             function pickRepresentative(canon) {
-                // 1) if you explicitly overrode this base, use it
+                // 1) Use override if exists
                 if (FORM_OVERRIDES[canon]) {
                     return FORM_OVERRIDES[canon];
                 }
 
-                // 2) otherwise fall back to whichever form actually has evolutions
+                // 2) Try form that has evolutions
                 const forms = FORMS_BY_BASE[canon] || [canon];
                 const evoForm = forms.find(f => EVOLUTIONS_BY_FROM[f]?.length);
                 if (evoForm) return evoForm;
 
-                // 3) otherwise just give me the first one
+                // 3) Try base key directly
+                if (EVOLUTIONS_BY_FROM[canon]?.length) {
+                    return canon;
+                }
+
+                // 4) Default fallback
                 return forms[0];
             }
 
@@ -326,13 +658,15 @@
                 const items = Object.keys(buckets)
                     .sort((a, b) => formatDisplayName(a).localeCompare(formatDisplayName(b)))
                     .map(canon => {
-                    // pick a form that actually exists in your processed cache
-                    const forms = Array.from(buckets[canon]);
-                    const pick   = pickRepresentative(canon);
-                    return {
-                        display: formatDisplayName(canon),
-                        key:     pick
-                    };
+                        const forms = Array.from(buckets[canon]);
+                        const pick = pickRepresentative(canon);
+
+                        const display = formatDisplayName(canon);
+
+                        return {
+                            display,
+                            key: pick
+                        };
                     });
 
                 // 5) render them
@@ -384,93 +718,185 @@
                 const container = document.getElementById('results');
                 container.innerHTML = '';
 
-                // 1) build a map: parent_species -> [child entries]
-                const groups = data
-                    .filter(p => p.evolves_from)        // skip the root
-                    .reduce((m, p) => {
-                    m[p.evolves_from] = m[p.evolves_from]||[];
-                    m[p.evolves_from].push(p);
-                    return m;
-                    }, {});
+                if (!Array.isArray(data) || data.length === 0) {
+                    container.innerHTML = '<div class="result-card"><p>No evolution data found.</p></div>';
+                    return;
+                }
 
-                // 2) determine which parents have >1 distinct form
-                const multiParent = new Set(
-                    Object.entries(groups)
-                    .filter(([_, children]) => children.length > 1)
-                    .map(([parent]) => parent)
-                );
-
+                const byName = new Map(data.map(p => [p.name, p]));
+                const childrenByParent = new Map();
                 data.forEach(p => {
-                    // ---- compute title based on p.name and p.evolves_from ----
-                    const parts       = p.name.split('-');
-                    const base        = parts[0];
-                    const suffixParts = parts.slice(1);
-                    let title;
+                    if (!p.parent_key || !byName.has(p.parent_key)) return;
+                    if (!childrenByParent.has(p.parent_key)) childrenByParent.set(p.parent_key, []);
+                    childrenByParent.get(p.parent_key).push(p);
+                });
 
-                    if (!p.evolves_from) {
-                    // ── ROOT form: show all parts
-                    title = [base, ...suffixParts]
-                        .map(capitalizeFirstLetter)
-                        .join(' ');
-                    } else {
-                    // ── EVOLUTION
-                    const parentBase = p.evolves_from.split('-',1)[0];
+                const roots = data.filter(p => !p.parent_key || !byName.has(p.parent_key));
+                const tree = document.createElement('div');
+                tree.className = 'evolution-tree';
 
-                    // default child: exactly one suffix and it matches the parent
-                    if (
-                        suffixParts.length === 1 &&
-                        suffixParts[0] === parentBase
-                    ) {
-                        title = `${capitalizeFirstLetter(base)} ${capitalizeFirstLetter(suffixParts[0])}`;
-                    }
-                    // alternate forms: first suffix matches parent, extra bits go in parens
-                    else if (
-                        suffixParts.length > 1 &&
-                        suffixParts[0] === parentBase
-                    ) {
-                        const extra = suffixParts
-                        .slice(1)
-                        .map(capitalizeFirstLetter)
-                        .join(' ');
-                        title = `${capitalizeFirstLetter(base)} (${extra})`;
-                    }
-                    // fallback: just join everything
-                    else {
-                        title = [base, ...suffixParts]
-                        .map(capitalizeFirstLetter)
-                        .join(' ');
-                    }
+                if (roots.length === 1 && shouldUseRadialLayout(roots[0], childrenByParent)) {
+                    tree.classList.add('radial-mode');
+                    tree.appendChild(renderRadialEvolution(roots[0], childrenByParent));
+                } else {
+                    roots.forEach(root => tree.appendChild(renderEvolutionNode(root, childrenByParent, false)));
+                }
+                container.appendChild(tree);
             }
 
-                    title = title.replace(/ Average$/, '')
+            function shouldUseRadialLayout(root, childrenByParent) {
+                const children = childrenByParent.get(root.name) || [];
+                if (children.length < 4) return false;
+                // A radial layout is only used for a hub with many direct, same-stage leaves.
+                // Multi-step branches like Applin -> Dipplin -> Hydrapple should stay as a tree.
+                return children.every(child => !(childrenByParent.get(child.name) || []).length);
+            }
 
-                    const species = p.name.split('-',1)[0];
-                    const slug    = species.charAt(0).toUpperCase() + species.slice(1);
-                    const bulbLink = `https://bulbapedia.bulbagarden.net/wiki/${slug}_(Pok%C3%A9mon)`;
+            function renderRadialEvolution(root, childrenByParent) {
+                const children = [...(childrenByParent.get(root.name) || [])]
+                    .sort((a, b) => titleForPokemon(a).localeCompare(titleForPokemon(b)));
+                const count = children.length;
 
-                    const card = document.createElement('div');
-                    card.className = 'result-card';
-                    card.innerHTML = `
+                const radial = document.createElement('div');
+                radial.className = `evo-radial ${count >= 7 ? 'many' : count >= 5 ? 'several' : 'few'}`;
+
+                const radius = Math.min(420, Math.max(285, 230 + count * 20));
+                const size = Math.max(720, radius * 2 + (count >= 7 ? 280 : 320));
+                radial.style.setProperty('--radial-size', `${size}px`);
+                radial.style.setProperty('--radial-radius', `${radius}px`);
+
+                const center = size / 2;
+                const lineEndOffset = count >= 7 ? 110 : 125;
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('class', 'evo-radial-lines');
+                svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+                svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+                const centerWrap = document.createElement('div');
+                centerWrap.className = 'evo-radial-center';
+                centerWrap.appendChild(createEvolutionCard(root));
+                radial.appendChild(centerWrap);
+
+                children.forEach((child, i) => {
+                    const angle = -90 + (360 / count) * i;
+                    const radians = angle * Math.PI / 180;
+                    const x1 = center + Math.cos(radians) * 120;
+                    const y1 = center + Math.sin(radians) * 95;
+                    const x2 = center + Math.cos(radians) * (radius - lineEndOffset);
+                    const y2 = center + Math.sin(radians) * (radius - lineEndOffset);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('class', 'evo-radial-line');
+                    line.setAttribute('x1', x1.toFixed(1));
+                    line.setAttribute('y1', y1.toFixed(1));
+                    line.setAttribute('x2', x2.toFixed(1));
+                    line.setAttribute('y2', y2.toFixed(1));
+                    svg.appendChild(line);
+
+                    const childWrap = document.createElement('div');
+                    childWrap.className = 'evo-radial-child';
+                    childWrap.style.setProperty('--angle', `${angle}deg`);
+                    childWrap.appendChild(createEvolutionCard(child));
+                    radial.appendChild(childWrap);
+                });
+
+                radial.prepend(svg);
+                return radial;
+            }
+
+            function titleForPokemon(p) {
+                return p.display_name || formatDisplayName(p.name);
+            }
+
+            function renderEvolutionNode(p, childrenByParent, isChild) {
+                const wrapper = document.createElement('div');
+                wrapper.className = isChild ? 'evo-node evo-child' : 'evo-node';
+                wrapper.appendChild(createEvolutionCard(p));
+
+                const children = childrenByParent.get(p.name) || [];
+                if (children.length) {
+                    const branch = document.createElement('div');
+                    branch.className = 'evo-branch';
+
+                    const row = document.createElement('div');
+                    const modeClass = children.length === 1 ? 'single' : children.length <= 3 ? 'compact' : 'wide';
+                    row.className = `evo-children ${modeClass}`;
+                    row.style.setProperty('--child-count', String(Math.max(children.length, 1)));
+                    children.forEach(child => row.appendChild(renderEvolutionNode(child, childrenByParent, true)));
+
+                    branch.appendChild(row);
+                    wrapper.appendChild(branch);
+                }
+                return wrapper;
+            }
+
+
+            function escapeHtmlAttr(value) {
+                return String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+            }
+
+            function handleEvolutionSpriteError(img) {
+                let fallbacks = [];
+                try {
+                    fallbacks = JSON.parse(img.dataset.fallbacks || '[]');
+                } catch (e) {
+                    fallbacks = [];
+                }
+
+                const current = img.getAttribute('src');
+                const next = fallbacks.find(src => src && src !== current && !img.dataset.tried?.split('|').includes(src));
+                img.dataset.tried = `${img.dataset.tried || ''}|${current || ''}`;
+
+                if (next) {
+                    img.src = next;
+                    return;
+                }
+
+                img.style.display = 'none';
+                const fallbackText = document.createElement('p');
+                fallbackText.className = 'sprite-missing-label';
+                fallbackText.textContent = img.alt || 'Sprite unavailable';
+                img.insertAdjacentElement('afterend', fallbackText);
+            }
+
+            function createEvolutionCard(p) {
+                const title = titleForPokemon(p);
+                const profileUrl = `/pokemon/${encodeURIComponent(p.name)}`;
+                const card = document.createElement('div');
+                card.className = 'result-card';
+
+                let conditionsHtml = '';
+                if (Array.isArray(p.evolution_conditions) && p.evolution_conditions.length) {
+                    conditionsHtml = `<div class="evo-condition-list">${p.evolution_conditions.map(cond => {
+                        return Object.entries(cond)
+                            .map(([k, v]) => `<p class="evo-condition-row"><strong>${k.replace(/_/g, ' ')}:</strong> ${v}</p>`)
+                            .join('');
+                    }).join('<hr class="my-2">')}</div>`;
+                }
+
+                card.innerHTML = `
                     <h2>
-                        <a href="${bulbLink}" target="_blank" class="text-blue-500 underline">
-                        ${title}
+                        <a href="${profileUrl}" class="text-blue-500 underline">
+                            ${title}
                         </a>
                     </h2>
-                    <img src="${p.sprite_url}" alt="${title}">
-                    ${p.evolves_from
-                        ? `<p>Evolves from: ${capitalizeFirstLetter(p.evolves_from.split('-')[0])}</p>`
-                        : ''}
-                    ${p.evolution_conditions.map(cond =>
-                        Object.entries(cond)
-                        .filter(([k,v]) => v && v !== 'N/A')
-                        .map(([k,v]) => `<p>${k.replace(/_/g,' ')}: ${v}</p>`)
-                        .join('')
-                    ).join('')}
-                    ${p.note ? `<p>Note: ${capitalizeFirstLetter(p.note)}</p>` : ''}
-                    `;
-                    container.appendChild(card);
-                });
-                }
+                    <img src="${p.sprite_url}" alt="${title}" data-fallbacks='${escapeHtmlAttr(JSON.stringify(p.sprite_candidates || []))}' onerror="handleEvolutionSpriteError(this)">
+                    ${p.evolves_from ? `<p><strong>Evolves from:</strong> ${p.evolves_from}</p>` : '<div class="evo-root-spacer"></div>'}
+                    ${conditionsHtml}
+                    ${p.note ? `<p class="evo-note"><em>${p.note}</em></p>` : ''}
+                `;
+                return card;
+            }
+
+            function buildBulbapediaLink(name) {
+                const key = String(name || '').toLowerCase();
+                const pageName = formatDisplayName(key.split('-', 1)[0]).replace(/ /g, '_');
+                return `https://bulbapedia.bulbagarden.net/wiki/${pageName}_(Pok%C3%A9mon)`;
+            }
 
             inputEl.addEventListener('input', debounce(handleInput,250));
             inputEl.addEventListener('keydown', handleArrows);

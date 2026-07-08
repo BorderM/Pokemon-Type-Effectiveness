@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/static/favicon.ico">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/app_mobile.css">
+  <title>Pokémon Profile</title>
+  <style>
+    :root { --page-bg: #111827; --panel: #1f2937; --panel-2: #263244; --line: rgba(148,163,184,.24); --profile-sticky-top: 178px; --profile-header-height: 168px; }
+    html, body { min-height: 100%; background: var(--page-bg) !important; color: white; scroll-padding-top: var(--profile-sticky-top); }
+    body { margin: 0; font-family: Arial, sans-serif; }
+    .fixed-header { position: sticky; top: 0; z-index: 1000; background: var(--page-bg); padding: 14px 16px 16px; box-shadow: 0 3px 10px rgba(0,0,0,.25); }
+    .watermark-fixed { position: absolute; top: 10px; left: 10px; font-size: .75rem; color: #a0aec0; }
+    .header-inner { width: min(960px, calc(100vw - 32px)); margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: .6rem; }
+    .header-actions { display: flex; gap: .55rem; justify-content: center; flex-wrap: wrap; }
+    .input-wrap { width: min(520px, 100%); position: relative; }
+    #profile-input { width: 100%; color: black; border-radius: 6px; padding: .75rem; }
+    #suggestions { position: absolute; top: calc(100% + 3px); left: 0; right: 0; background: white; color: black; z-index: 2000; border-radius: 0 0 8px 8px; overflow: hidden; box-shadow: 0 10px 22px rgba(0,0,0,.25); }
+    .suggestion-item { padding: .65rem .8rem; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    .suggestion-item:hover, .suggestion-item.active { background: #dbeafe; color: #111827; }
+    .suggestion-item.active { font-weight: 700; }
+    main { width: min(1180px, calc(100vw - 32px)); margin: 28px auto 48px; }
+    .profile-grid { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: 1rem; align-items: start; }
+    .section-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+    .pokedex-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 1rem; box-shadow: 0 10px 24px rgba(0,0,0,.22); }
+    .overview-card { text-align: center; }
+    .profile-side-column { display: flex; flex-direction: column; gap: 1rem; position: sticky; top: var(--profile-sticky-top); max-height: calc(100vh - var(--profile-sticky-top) - 16px); overflow-y: auto; padding-right: .25rem; overscroll-behavior: contain; }
+    .profile-toolbar { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
+    .profile-side-toolbar { margin-top: -.25rem; margin-bottom: 0; justify-content: flex-end; }
+    .profile-tool-btn { background: #334155; color: #dbeafe; border: 1px solid rgba(147,197,253,.28); border-radius: 999px; padding: .35rem .75rem; font-size: .85rem; font-weight: 800; }
+    .profile-tool-btn:hover { background: #475569; }
+    .collapsible-card { padding: 0; overflow: hidden; align-self: start; }
+    .profile-span-all { grid-column: 1 / -1; }
+    .collapsible-header { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: .75rem; background: transparent; color: white; border: 0; padding: 1rem; text-align: left; cursor: pointer; }
+    .collapsible-header:hover { background: rgba(148,163,184,.08); }
+    .collapsible-title { font-size: 1.25rem; font-weight: 800; margin: 0; }
+    .collapse-icon { color: #93c5fd; font-weight: 900; transition: transform .16s ease; min-width: 1.25rem; text-align: center; }
+    .collapsible-body { padding: 0 1rem 1rem; }
+    .collapsible-card.collapsed .collapsible-body { display: none; }
+    .collapsible-card.collapsed .collapse-icon { transform: rotate(-90deg); }
+    .profile-history-card h3 { font-size: 1rem; font-weight: 800; margin-bottom: .6rem; }
+    .profile-history-list { display: flex; flex-direction: column; gap: .45rem; }
+    .profile-history-item { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: .55rem; width: 100%; background: rgba(38,50,68,.72); border: 1px solid rgba(148,163,184,.22); border-radius: 12px; padding: .45rem .55rem; text-align: left; color: white; }
+    .profile-history-item:hover { border-color: rgba(147,197,253,.55); background: rgba(59,130,246,.16); }
+    .history-sprite { width: 38px; height: 38px; object-fit: contain; image-rendering: auto; }
+    .history-name { display: block; font-weight: 800; color: #bfdbfe; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .history-types { display: flex; flex-wrap: wrap; gap: .2rem; margin-top: .12rem; }
+    .history-types .type-pill { font-size: .68rem; padding: .12rem .32rem; margin: 0; border-radius: 5px; }
+    .profile-history-actions { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .6rem; }
+    .clear-history-btn { color: #cbd5e1; font-size: .78rem; text-decoration: underline; }
+    .clear-history-btn:hover { color: white; }
+    .sprite { image-rendering: auto; max-width: 128px; min-height: 96px; margin: .5rem auto; object-fit: contain; }
+    .type-pill { display: inline-block; border-radius: 7px; padding: .3rem .55rem; margin: .15rem; font-weight: 700; font-size: .9rem; }
+    .chip { display: inline-block; border-radius: 999px; padding: .25rem .6rem; background: #334155; margin: .15rem; font-weight: 700; font-size: .85rem; }
+    .muted { color: #cbd5e1; }
+    .stat-row { display: grid; grid-template-columns: 110px 44px minmax(90px,1fr); align-items: center; gap: .5rem; margin: .45rem 0; }
+    .stat-bar-wrap { height: 10px; background: #111827; border-radius: 999px; overflow: hidden; }
+    .stat-bar { height: 100%; background: #3b82f6; border-radius: 999px; }
+    .effect-row { display: grid; grid-template-columns: 92px 1fr; gap: .4rem; padding: .42rem 0; border-top: 1px solid var(--line); }
+    .ability { border-top: 1px solid var(--line); padding: .7rem 0; }
+    .moves-toolbar { display: grid; grid-template-columns: minmax(170px, 240px) minmax(220px, 1fr); gap: .6rem; align-items: end; margin-bottom: .65rem; }
+    .moves-toolbar label { display: flex; flex-direction: column; align-items: stretch; gap: .25rem; white-space: nowrap; font-size: .95rem; }
+    select, .filter-input { background: #f8fafc; color: #111827; border: 1px solid #94a3b8; border-radius: 6px; padding: .45rem .6rem; min-height: 38px; }
+    #move-generation { width: 100%; background-color: #334155 !important; color: #f8fafc !important; border-color: #64748b !important; color-scheme: dark; }
+    #move-filter { width: 100%; }
+    #move-generation option { background: #1f2937; color: #f8fafc; }
+    #move-generation:focus, #move-filter:focus { outline: 2px solid #60a5fa; outline-offset: 2px; }
+    .moves-table-wrap { overflow-x: auto; max-height: 430px; overflow-y: auto; border-radius: 10px; border: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; min-width: 0; table-layout: fixed; }
+    th, td { padding: .45rem .55rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th:nth-child(1), td:nth-child(1) { width: 46%; }
+    th:nth-child(2), td:nth-child(2) { width: 36%; }
+    th:nth-child(3), td:nth-child(3) { width: 18%; text-align: center; }
+    .move-subtext { display: block; color: #cbd5e1; font-size: .76rem; line-height: 1.15; margin-top: .15rem; }
+    th { background: #111827; position: sticky; top: 0; z-index: 1; }
+    .forms-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .75rem; }
+    .mini-card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: .75rem; text-align: center; }
+    .mini-card img { max-width: 74px; height: 74px; object-fit: contain; margin: .2rem auto; }
+    .evo-profile-tree { display: flex; flex-direction: column; gap: .85rem; }
+    .evo-stage { background: rgba(38,50,68,.65); border: 1px solid var(--line); border-radius: 14px; padding: .75rem; position: relative; }
+    .evo-stage:not(:first-child)::before { content: ''; position: absolute; top: -.85rem; left: 50%; height: .85rem; border-left: 2px solid rgba(148,163,184,.45); }
+    .evo-stage-title { color: #93c5fd; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 800; margin-bottom: .55rem; text-align: center; }
+    .evo-stage-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: .65rem; }
+    .evo-stage-card { background: #1f2937; border: 1px solid rgba(148,163,184,.26); border-radius: 12px; padding: .65rem; text-align: center; min-height: 130px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .evo-stage-card img { max-width: 70px; height: 70px; object-fit: contain; margin: .15rem auto .25rem; }
+    .evo-parent-chip, .evo-cond-chip { display: inline-block; border-radius: 999px; background: rgba(59,130,246,.15); color: #bfdbfe; border: 1px solid rgba(59,130,246,.25); padding: .1rem .45rem; margin-top: .22rem; font-size: .76rem; }
+    .evo-cond-chip { background: rgba(148,163,184,.14); color: #e2e8f0; border-color: rgba(148,163,184,.22); }
+    .note { background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.35); color: #dbeafe; border-radius: 12px; padding: .75rem; margin-top: .6rem; }
+    .empty-state { text-align: center; color: #cbd5e1; padding: 4rem 1rem; }
+    .error-box { background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.45); color: #fecaca; border-radius: 12px; padding: .9rem; margin: 1rem 0; }
+
+    @media (min-width: 901px) {
+      .profile-side-column {
+        position: fixed;
+        top: calc(var(--profile-header-height) + 28px);
+        left: max(16px, calc((100vw - 1180px) / 2));
+        width: min(380px, calc(100vw - 32px));
+        bottom: 24px;
+        max-height: none;
+        overflow-y: auto;
+        z-index: 40;
+      }
+      .profile-grid {
+        grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+      }
+      .section-grid {
+        grid-column: 2;
+      }
+      .profile-side-column::-webkit-scrollbar {
+        width: 8px;
+      }
+      .profile-side-column::-webkit-scrollbar-thumb {
+        background: rgba(148,163,184,.35);
+        border-radius: 999px;
+      }
+    }
+    @media (max-width: 900px) { .profile-grid, .section-grid { grid-template-columns: 1fr; } .profile-side-column { position: static; max-height: none; overflow: visible; padding-right: 0; } .overview-card { position: static; } main { width: min(100%, calc(100vw - 20px)); margin-top: 18px; } .profile-toolbar { justify-content: center; } .profile-side-toolbar { justify-content: flex-end; } .moves-toolbar { grid-template-columns: 1fr; gap: .45rem; } .moves-table-wrap { max-height: 360px; } table { font-size: .92rem; } th, td { padding: .38rem .42rem; } .move-subtext { font-size: .7rem; } .evo-stage-cards { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); } }
+  </style>
+</head>
+<body>
+  <header class="fixed-header">
+    <div class="watermark-fixed">Created by BorderM</div>
+    <div class="header-inner">
+      <h1 class="text-3xl font-bold text-center">Pokémon Profile</h1>
+      <nav class="header-actions">
+        <button id="search-btn" class="bg-blue-500 text-white p-2 rounded-lg">Search</button>
+        <button id="clear-btn" class="bg-gray-500 text-white p-2 rounded-lg">Clear</button>
+        <a href="/typeeffectiveness" class="bg-green-500 text-white p-2 rounded-lg">Type Effectiveness</a>
+        <a href="/stats" class="bg-yellow-500 text-white p-2 rounded-lg">Stats</a>
+        <a href="/typecalculator" class="bg-red-500 text-white p-2 rounded-lg">Type Calcs</a>
+        <a href="/natures" class="bg-cyan-500 text-white p-2 rounded-lg">Natures</a>
+        <a href="/evolutions" class="bg-orange-500 text-white p-2 rounded-lg">Evolutions</a>
+      </nav>
+      <div class="input-wrap">
+        <input id="profile-input" type="text" placeholder="Enter Pokémon Name" value="{{ initial_name }}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions">
+        <div id="suggestions" role="listbox" hidden></div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="status" class="empty-state">Search for a Pokémon to build a full profile.</div>
+    <div id="profile-root" hidden></div>
+  </main>
+
+<script>
+const TYPE_COLORS = {
+  normal:'#A8A77A', fire:'#EE8130', water:'#6390F0', electric:'#F7D02C', grass:'#7AC74C', ice:'#96D9D6',
+  fighting:'#C22E28', poison:'#A33EA1', ground:'#E2BF65', flying:'#A98FF3', psychic:'#F95587', bug:'#A6B91A',
+  rock:'#B6A136', ghost:'#735797', dragon:'#6F35FC', dark:'#705746', steel:'#B7B7CE', fairy:'#D685AD'
+};
+const initialName = {{ initial_name|tojson }};
+const LAST_PROFILE_KEY = 'pkmnLastProfile';
+const PROFILE_HISTORY_KEY = 'pkmnProfileHistory';
+let currentProfile = null;
+let currentSuggestions = [];
+let selectedSuggestionIndex = -1;
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+}
+function titleType(type) { return type ? type.charAt(0).toUpperCase() + type.slice(1) : ''; }
+function typePill(type) {
+  return `<span class="type-pill" style="background:${TYPE_COLORS[type] || '#64748b'}">${escapeHtml(titleType(type))}</span>`;
+}
+function renderSprite(candidates, alt) {
+  const list = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
+  const first = list[0] || '';
+  const encoded = encodeURIComponent(JSON.stringify(list.slice(1)));
+  return `<img class="sprite" src="${escapeHtml(first)}" alt="${escapeHtml(alt)}" data-fallbacks="${encoded}" onerror="useNextSprite(this)">`;
+}
+function useNextSprite(img) {
+  let fallbacks = [];
+  try { fallbacks = JSON.parse(decodeURIComponent(img.dataset.fallbacks || '[]')); } catch(e) {}
+  const next = fallbacks.shift();
+  if (next) {
+    img.dataset.fallbacks = encodeURIComponent(JSON.stringify(fallbacks));
+    img.src = next;
+  } else {
+    img.style.display = 'none';
+  }
+}
+function statRows(stats) {
+  const labels = [['hp','HP'],['attack','Attack'],['defense','Defense'],['special_attack','Sp. Atk'],['special_defense','Sp. Def'],['speed','Speed']];
+  return labels.map(([key,label]) => {
+    const value = stats?.[key] ?? 0;
+    const pct = Math.min(100, Math.round((value / 180) * 100));
+    return `<div class="stat-row"><strong>${label}</strong><span>${value}</span><div class="stat-bar-wrap"><div class="stat-bar" style="width:${pct}%"></div></div></div>`;
+  }).join('') + `<div class="mt-3 text-center"><strong>Total:</strong> ${stats?.total ?? '—'}</div>`;
+}
+function typeList(types) {
+  if (!types || !types.length) return '<span class="chip">None</span>';
+  return types.map(typePill).join('');
+}
+function effectSection(eff) {
+  const rows = [
+    ['4× Weak', 'four_times_effective'], ['2× Weak', 'super_effective'], ['½ Resist', 'two_times_resistant'], ['¼ Resist', 'four_times_resistant'], ['Immune', 'immune']
+  ];
+  return rows.map(([label,key]) => `<div class="effect-row"><strong>${label}</strong><div>${(eff?.[key] || []).length ? (eff[key].map(typePill).join('')) : '<span class="chip">None</span>'}</div></div>`).join('') +
+    `<details class="mt-3"><summary class="cursor-pointer text-blue-300">Show neutral types</summary><div class="mt-2">${(eff?.normal_effective || []).map(typePill).join('') || '<span class="chip">None</span>'}</div></details>`;
+}
+function abilitySection(abilities) {
+  if (!abilities || !abilities.length) return '<p class="muted">Ability data is not in the local profile cache yet. Run data/build_profile_details_cache.py --online to populate it.</p>';
+  return abilities.map(a => `<div class="ability"><div><strong>${escapeHtml(a.name)}</strong>${a.is_hidden ? ' <span class="chip">Hidden</span>' : ''}</div>${a.effect ? `<p class="muted mt-1">${escapeHtml(a.effect)}</p>` : ''}</div>`).join('');
+}
+function renderForms(forms) {
+  if (!forms || forms.length <= 1) return '<p class="muted">No major alternate forms in the local cache.</p>';
+  return `<div class="forms-grid">${forms.map(f => `<a class="mini-card hover:brightness-110" href="/pokemon/${encodeURIComponent(f.key)}">${renderSprite(f.sprite_candidates || [f.sprite_url], f.display_name)}<strong>${escapeHtml(f.display_name)}</strong><div class="mt-2">${typeList(f.types)}</div></a>`).join('')}</div>`;
+}
+function evolutionDepths(chain) {
+  const byName = new Map((chain || []).map(n => [n.name, n]));
+  const memo = new Map();
+  function depthOf(node) {
+    if (!node) return 0;
+    if (memo.has(node.name)) return memo.get(node.name);
+    const parent = node.parent_key ? byName.get(node.parent_key) : null;
+    const depth = parent ? depthOf(parent) + 1 : 0;
+    memo.set(node.name, depth);
+    return depth;
+  }
+  const levels = [];
+  (chain || []).forEach(node => {
+    const depth = depthOf(node);
+    levels[depth] = levels[depth] || [];
+    levels[depth].push(node);
+  });
+  return levels.filter(Boolean);
+}
+function compactConditionText(node) {
+  const cond = Array.isArray(node.evolution_conditions) ? node.evolution_conditions[0] : null;
+  if (!cond) return '';
+  const parts = [];
+  if (cond['Minimum Level']) parts.push(`Lv. ${cond['Minimum Level']}+`);
+  if (cond['Item']) parts.push(cond['Item']);
+  if (cond['Known Move']) parts.push(cond['Known Move']);
+  if (cond['Known Move Type']) parts.push(`${cond['Known Move Type']} move`);
+  if (cond['Time of Day']) parts.push(cond['Time of Day']);
+  if (cond['Location']) parts.push(cond['Location']);
+  if (!parts.length && cond['Triggered by']) parts.push(cond['Triggered by']);
+  return parts.slice(0, 2).join(' • ');
+}
+function renderEvolutionMini(chain) {
+  if (!chain || !chain.length) return '<p class="muted">No evolution data found.</p>';
+  const levels = evolutionDepths(chain);
+  const stageNames = ['Base', 'Evolution options', 'Further evolutions', 'Later evolutions'];
+  return `<div class="evo-profile-tree">${levels.map((nodes, depth) => `
+    <div class="evo-stage">
+      <div class="evo-stage-title">${stageNames[depth] || `Stage ${depth + 1}`}</div>
+      <div class="evo-stage-cards">
+        ${nodes.map(n => {
+          const condition = compactConditionText(n);
+          return `<a class="evo-stage-card hover:brightness-110" href="/pokemon/${encodeURIComponent(n.name)}">
+            ${renderSprite(n.sprite_candidates || [n.sprite_url], n.display_name)}
+            <strong>${escapeHtml(n.display_name)}</strong>
+            ${n.evolves_from ? `<span class="evo-parent-chip">from ${escapeHtml(n.evolves_from)}</span>` : ''}
+            ${condition ? `<span class="evo-cond-chip">${escapeHtml(condition)}</span>` : ''}
+          </a>`;
+        }).join('')}
+      </div>
+    </div>`).join('')}</div>`;
+}
+function dedupeMovesForDisplay(moves) {
+  const seen = new Set();
+  const out = [];
+  for (const m of moves || []) {
+    const key = [m.key || m.name, m.learn_method || m.learn_method_display, Number(m.level || 0)].join('|');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(m);
+  }
+  return out;
+}
+function variantMoveKeys(moves) {
+  const buckets = new Map();
+  for (const m of moves || []) {
+    const key = [m.key || m.name, m.learn_method || m.learn_method_display].join('|');
+    if (!buckets.has(key)) buckets.set(key, new Set());
+    const versions = Array.isArray(m.version_group_displays) && m.version_group_displays.length
+      ? m.version_group_displays.join(', ')
+      : (m.version_group_display || '');
+    buckets.get(key).add(`${Number(m.level || 0)}@@${versions}`);
+  }
+  const variants = new Set();
+  buckets.forEach((values, key) => { if (values.size > 1) variants.add(key); });
+  return variants;
+}
+function versionSubtext(m, variants) {
+  const variantKey = [m.key || m.name, m.learn_method || m.learn_method_display].join('|');
+  if (!variants.has(variantKey)) return '';
+  const versions = Array.isArray(m.version_group_displays) && m.version_group_displays.length
+    ? m.version_group_displays.join(', ')
+    : (m.version_group_display || '');
+  return versions ? `<span class="move-subtext">${escapeHtml(versions)}</span>` : '';
+}
+function moveRows(profile, generation) {
+  const moves = dedupeMovesForDisplay(profile.moves_by_generation?.[generation] || []);
+  const variants = variantMoveKeys(moves);
+  const filter = document.getElementById('move-filter')?.value?.toLowerCase() || '';
+  const filtered = moves.filter(m => {
+    const versions = Array.isArray(m.version_group_displays) ? m.version_group_displays.join(' ') : (m.version_group_display || '');
+    return !filter || `${m.name} ${m.learn_method_display} ${m.level || ''} ${versions}`.toLowerCase().includes(filter);
+  });
+  if (!filtered.length) return '<tr><td colspan="3" class="muted">No moves found for this filter/generation.</td></tr>';
+  return filtered.map(m => `<tr><td><strong>${escapeHtml(m.name)}</strong>${versionSubtext(m, variants)}</td><td>${escapeHtml(m.learn_method_display)}</td><td>${m.level || '—'}</td></tr>`).join('');
+}
+function renderMoves(profile) {
+  const generations = profile.move_generations || [];
+  if (!generations.length) return '<p class="muted">Move data is not in the local profile cache for this exact form yet.</p>';
+  const currentGen = generations[0];
+  return `<div class="moves-toolbar"><label><strong>Generation</strong><select id="move-generation">${generations.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('')}</select></label><label><strong>Filter</strong><input id="move-filter" class="filter-input" placeholder="Move / method / level / version"></label></div><div class="moves-table-wrap"><table><thead><tr><th>Move</th><th>Method</th><th>Level</th></tr></thead><tbody id="move-table-body">${moveRows(profile, currentGen)}</tbody></table></div>`;
+}
+function slugifySectionTitle(title) {
+  return String(title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'section';
+}
+function collapsibleCard(title, body, options = {}) {
+  const id = options.id || slugifySectionTitle(title);
+  const extraClass = options.fullWidth ? ' profile-span-all' : '';
+  return `<section class="pokedex-card collapsible-card collapsed${extraClass}" data-collapsible-card data-section="${escapeHtml(id)}">
+    <button class="collapsible-header" type="button" aria-expanded="false">
+      <h3 class="collapsible-title">${escapeHtml(title)}</h3>
+      <span class="collapse-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body">${body}</div>
+  </section>`;
+}
+function setCardCollapsed(card, collapsed) {
+  if (!card) return;
+  card.classList.toggle('collapsed', collapsed);
+  const header = card.querySelector('.collapsible-header');
+  if (header) header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+}
+function updateSectionToggleButton() {
+  const toggle = document.getElementById('toggle-profile-sections');
+  if (!toggle) return;
+  const cards = Array.from(document.querySelectorAll('[data-collapsible-card]'));
+  const allOpen = cards.length > 0 && cards.every(card => !card.classList.contains('collapsed'));
+  toggle.textContent = allOpen ? 'Collapse all' : 'Expand all';
+  toggle.setAttribute('aria-label', allOpen ? 'Collapse all profile sections' : 'Expand all profile sections');
+}
+function wireCollapsibleControls() {
+  document.querySelectorAll('[data-collapsible-card] .collapsible-header').forEach(button => {
+    button.addEventListener('click', () => {
+      const card = button.closest('[data-collapsible-card]');
+      setCardCollapsed(card, !card.classList.contains('collapsed'));
+      updateSectionToggleButton();
+    });
+  });
+  const toggle = document.getElementById('toggle-profile-sections');
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      const cards = Array.from(document.querySelectorAll('[data-collapsible-card]'));
+      const allOpen = cards.length > 0 && cards.every(card => !card.classList.contains('collapsed'));
+      cards.forEach(card => setCardCollapsed(card, allOpen));
+      updateSectionToggleButton();
+    });
+  }
+  updateSectionToggleButton();
+}
+function getProfileHistory() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PROFILE_HISTORY_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    return [];
+  }
+}
+function saveProfileHistory(profile) {
+  if (!profile || !profile.key) return;
+  const entry = {
+    key: profile.key,
+    display_name: profile.display_name || profile.key,
+    sprite: Array.isArray(profile.sprite_candidates) && profile.sprite_candidates.length ? profile.sprite_candidates[0] : (profile.sprite_url || ''),
+    types: Array.isArray(profile.types) ? profile.types : []
+  };
+  const history = getProfileHistory().filter(item => item && item.key !== entry.key);
+  history.unshift(entry);
+  localStorage.setItem(PROFILE_HISTORY_KEY, JSON.stringify(history.slice(0, 10)));
+}
+function renderProfileHistory(activeKey) {
+  const history = getProfileHistory().filter(item => item && item.key && item.key !== activeKey).slice(0, 8);
+  if (!history.length) return '<p class="muted text-sm">Recently viewed Pokémon will appear here.</p>';
+  return `<div class="profile-history-list">${history.map(item => `
+    <button class="profile-history-item" type="button" data-profile-history-key="${escapeHtml(item.key)}">
+      ${item.sprite ? `<img class="history-sprite" src="${escapeHtml(item.sprite)}" alt="${escapeHtml(item.display_name)}">` : '<span></span>'}
+      <span><span class="history-name">${escapeHtml(item.display_name)}</span><span class="history-types">${(item.types || []).map(typePill).join('')}</span></span>
+    </button>`).join('')}</div>`;
+}
+function wireProfileHistory() {
+  document.querySelectorAll('[data-profile-history-key]').forEach(button => {
+    button.addEventListener('click', () => fetchProfile(button.dataset.profileHistoryKey));
+  });
+  const clearHistory = document.getElementById('clear-profile-history');
+  if (clearHistory) clearHistory.addEventListener('click', () => {
+    localStorage.removeItem(PROFILE_HISTORY_KEY);
+    const wrap = document.getElementById('profile-history-content');
+    if (wrap) wrap.innerHTML = '<p class="muted text-sm">Recently viewed Pokémon will appear here.</p>';
+  });
+}
+function wireMoveControls(profile) {
+  const gen = document.getElementById('move-generation');
+  const filter = document.getElementById('move-filter');
+  const update = () => { document.getElementById('move-table-body').innerHTML = moveRows(profile, gen.value); };
+  if (gen) gen.addEventListener('change', update);
+  if (filter) filter.addEventListener('input', update);
+}
+function renderProfile(profile) {
+  currentProfile = profile;
+  saveProfileHistory(profile);
+  const notes = (profile.form_notes || []).map(n => `<div class="note">${escapeHtml(n)}</div>`).join('');
+  document.getElementById('status').hidden = true;
+  const root = document.getElementById('profile-root');
+  root.hidden = false;
+  root.innerHTML = `
+    <div class="profile-grid">
+      <div class="profile-side-column">
+        <section class="pokedex-card overview-card">
+          <h2 class="text-3xl font-bold text-blue-300">${escapeHtml(profile.display_name)}</h2>
+          ${renderSprite(profile.sprite_candidates || [profile.sprite_url], profile.display_name)}
+          <div>${typeList(profile.types)}</div>
+          <p class="muted mt-2">${escapeHtml(profile.species_display || profile.species)}</p>
+          <div class="mt-3 flex justify-center gap-2 flex-wrap"><a class="text-blue-300 underline" href="/typeeffectiveness?name=${encodeURIComponent(profile.type_lookup_key || profile.key)}">Type page</a><a class="text-blue-300 underline" href="/stats?name=${encodeURIComponent(profile.stats_lookup_key || profile.key)}">Stats page</a></div>
+          ${notes}
+        </section>
+        <div class="profile-toolbar profile-side-toolbar"><button id="toggle-profile-sections" class="profile-tool-btn" type="button">Expand all</button></div>
+        <section class="pokedex-card profile-history-card">
+          <div class="profile-history-actions"><h3>Recent Profiles</h3><button id="clear-profile-history" class="clear-history-btn" type="button">Clear history</button></div>
+          <div id="profile-history-content">${renderProfileHistory(profile.key)}</div>
+        </section>
+      </div>
+      <div class="section-grid">
+        ${collapsibleCard('Battle Matchup', effectSection(profile.effectiveness))}
+        ${collapsibleCard('Base Stats', statRows(profile.stats))}
+        ${collapsibleCard('Abilities', abilitySection(profile.abilities))}
+        ${collapsibleCard('Evolution Family', renderEvolutionMini(profile.evolution_family), { fullWidth: true })}
+        ${collapsibleCard('Forms', renderForms(profile.forms), { fullWidth: true })}
+        ${collapsibleCard('Moves by Generation', renderMoves(profile), { fullWidth: true })}
+      </div>
+    </div>`;
+  wireCollapsibleControls();
+  wireProfileHistory();
+  wireMoveControls(profile);
+}
+async function fetchProfile(name) {
+  const status = document.getElementById('status');
+  const input = document.getElementById('profile-input');
+  const lookup = String(name || '').trim();
+  if (!lookup) return;
+  hideSuggestions();
+  status.hidden = false;
+  status.innerHTML = 'Loading profile…';
+  document.getElementById('profile-root').hidden = true;
+  try {
+    const res = await fetch(`/api/pokemon/profile?name=${encodeURIComponent(lookup)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Profile not found');
+    history.replaceState(null, '', `/pokemon/${encodeURIComponent(data.key)}`);
+    localStorage.setItem(LAST_PROFILE_KEY, data.key);
+    input.value = '';
+    renderProfile(data);
+  } catch (err) {
+    status.innerHTML = `<div class="error-box">${escapeHtml(err.message)}</div>`;
+  }
+}
+const profileInput = document.getElementById('profile-input');
+const suggestionsBox = document.getElementById('suggestions');
+let suggestionRequestToken = 0;
+let profileSearchActive = false;
+function refocusProfileInput() {
+  try { profileInput.focus({ preventScroll: true }); }
+  catch (err) { profileInput.focus(); }
+}
+
+function renderSuggestions() {
+  if (!currentSuggestions.length) { hideSuggestions(); return; }
+  if (selectedSuggestionIndex < 0) selectedSuggestionIndex = 0;
+  if (selectedSuggestionIndex >= currentSuggestions.length) selectedSuggestionIndex = currentSuggestions.length - 1;
+  suggestionsBox.innerHTML = currentSuggestions.map((s, i) => `
+    <div
+      id="profile-suggestion-${i}"
+      role="option"
+      tabindex="-1"
+      class="suggestion-item${i === selectedSuggestionIndex ? ' active' : ''}"
+      aria-selected="${i === selectedSuggestionIndex ? 'true' : 'false'}"
+      data-index="${i}"
+      data-key="${escapeHtml(s.key)}"
+    >${escapeHtml(s.display)}</div>`).join('');
+  suggestionsBox.hidden = false;
+  profileInput.setAttribute('aria-expanded', 'true');
+  profileInput.setAttribute('aria-activedescendant', `profile-suggestion-${selectedSuggestionIndex}`);
+}
+function hideSuggestions(options = {}) {
+  currentSuggestions = [];
+  selectedSuggestionIndex = -1;
+  suggestionsBox.hidden = true;
+  suggestionsBox.innerHTML = '';
+  profileInput.setAttribute('aria-expanded', 'false');
+  profileInput.removeAttribute('aria-activedescendant');
+  if (options.deactivate) profileSearchActive = false;
+}
+async function showSuggestions(q) {
+  const query = String(q || '').trim();
+  const token = ++suggestionRequestToken;
+  profileSearchActive = true;
+  if (!query) { hideSuggestions(); return; }
+  try {
+    const res = await fetch(`/api/pokemon/suggestions?context=stats&limit=12&query=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    if (token !== suggestionRequestToken) return;
+    currentSuggestions = data.suggestions || [];
+    selectedSuggestionIndex = currentSuggestions.length ? 0 : -1;
+    renderSuggestions();
+  } catch (err) {
+    if (token === suggestionRequestToken) hideSuggestions();
+  }
+}
+function chooseSuggestion(index) {
+  const suggestion = currentSuggestions[index];
+  if (!suggestion) return false;
+  const key = suggestion.key;
+  hideSuggestions({ deactivate: true });
+  profileInput.value = '';
+  refocusProfileInput();
+  fetchProfile(key);
+  return true;
+}
+function getSuggestionItemFromEvent(e) {
+  const target = e.target;
+  if (!target || !target.closest) return null;
+  return target.closest('.suggestion-item');
+}
+function handleSuggestionPointer(e) {
+  const item = getSuggestionItemFromEvent(e);
+  if (!item) return false;
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+  const idx = Number(item.dataset.index);
+  if (!Number.isNaN(idx)) {
+    selectedSuggestionIndex = idx;
+    chooseSuggestion(idx);
+  }
+  return true;
+}
+function handleProfileKeydown(e) {
+  const key = e.key || e.code;
+  const dropdownOpen = !suggestionsBox.hidden && currentSuggestions.length;
+  if ((key === 'Enter' || key === 'NumpadEnter')) {
+    e.preventDefault();
+    if (selectedSuggestionIndex >= 0 && chooseSuggestion(selectedSuggestionIndex)) return;
+    fetchProfile(profileInput.value);
+  } else if ((key === 'ArrowDown' || key === 'Down') && dropdownOpen) {
+    e.preventDefault();
+    profileSearchActive = true;
+    selectedSuggestionIndex = (selectedSuggestionIndex + 1) % currentSuggestions.length;
+    renderSuggestions();
+  } else if ((key === 'ArrowUp' || key === 'Up') && dropdownOpen) {
+    e.preventDefault();
+    profileSearchActive = true;
+    selectedSuggestionIndex = (selectedSuggestionIndex - 1 + currentSuggestions.length) % currentSuggestions.length;
+    renderSuggestions();
+  } else if (key === 'Escape' || key === 'Esc') {
+    hideSuggestions({ deactivate: true });
+  }
+}
+
+document.getElementById('search-btn').addEventListener('click', () => fetchProfile(profileInput.value));
+document.getElementById('clear-btn').addEventListener('click', () => { profileInput.value=''; hideSuggestions({ deactivate: true }); document.getElementById('profile-root').hidden=true; document.getElementById('status').hidden=false; document.getElementById('status').textContent='Search for a Pokémon to build a full profile.'; localStorage.removeItem(LAST_PROFILE_KEY); history.replaceState(null, '', '/pokedex'); });
+profileInput.addEventListener('keydown', handleProfileKeydown, true);
+profileInput.addEventListener('input', e => showSuggestions(e.target.value));
+profileInput.addEventListener('focus', () => { profileSearchActive = true; if (currentSuggestions.length) renderSuggestions(); });
+profileInput.addEventListener('blur', () => {
+  // Do not immediately deactivate: Chromium/Safari move focus during suggestion clicks before click fires.
+  window.setTimeout(() => {
+    if (!document.activeElement || !document.activeElement.closest || !document.activeElement.closest('.input-wrap')) {
+      if (suggestionsBox.hidden) profileSearchActive = false;
+    }
+  }, 120);
+});
+['pointerdown','mousedown','touchstart','pointerup','mouseup','click'].forEach(evtName => {
+  suggestionsBox.addEventListener(evtName, handleSuggestionPointer, true);
+});
+suggestionsBox.addEventListener('mousemove', e => {
+  const item = getSuggestionItemFromEvent(e);
+  if (!item) return;
+  const idx = Number(item.dataset.index);
+  if (!Number.isNaN(idx) && idx !== selectedSuggestionIndex) {
+    selectedSuggestionIndex = idx;
+    renderSuggestions();
+  }
+});
+document.addEventListener('keydown', e => {
+  const target = e.target;
+  const isTypingInProfileInput = target === profileInput;
+  const dropdownOpen = !suggestionsBox.hidden && currentSuggestions.length;
+  if (isTypingInProfileInput) return;
+  if (!profileSearchActive || !dropdownOpen) return;
+  const key = e.key || e.code;
+  if (key === 'Enter' || key === 'NumpadEnter' || key === 'ArrowDown' || key === 'Down' || key === 'ArrowUp' || key === 'Up' || key === 'Escape' || key === 'Esc') {
+    handleProfileKeydown(e);
+  }
+}, true);
+document.addEventListener('pointerdown', e => {
+  if (handleSuggestionPointer(e)) return;
+  const target = e.target;
+  if (target && target.closest && target.closest('.input-wrap')) return;
+  hideSuggestions({ deactivate: true });
+}, true);
+document.addEventListener('mousedown', e => {
+  if (handleSuggestionPointer(e)) return;
+}, true);
+document.addEventListener('click', e => {
+  if (handleSuggestionPointer(e)) return;
+  const target = e.target;
+  if (target && target.closest && target.closest('.input-wrap')) return;
+  hideSuggestions({ deactivate: true });
+}, true);
+
+function syncProfileHeaderHeight() {
+  const header = document.querySelector('.fixed-header');
+  if (!header) return;
+  const height = Math.ceil(header.getBoundingClientRect().height);
+  document.documentElement.style.setProperty('--profile-header-height', `${height}px`);
+  document.documentElement.style.setProperty('--profile-sticky-top', `${height + 18}px`);
+}
+window.addEventListener('load', syncProfileHeaderHeight);
+window.addEventListener('resize', syncProfileHeaderHeight);
+syncProfileHeaderHeight();
+
+const savedProfile = localStorage.getItem(LAST_PROFILE_KEY);
+if (initialName) {
+  fetchProfile(initialName);
+} else if (savedProfile) {
+  fetchProfile(savedProfile);
+}
+</script>
+</body>
+</html>
