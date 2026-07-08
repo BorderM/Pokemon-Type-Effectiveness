@@ -29,6 +29,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 PROCESSED_PATH = os.path.join(ROOT, "processed_pokemon_cache.json")
 OUTPUT_PATH = os.path.join(SCRIPT_DIR, "pokemon_profile_details.json")
+SHARDED_INDEX_PATH = os.path.join(SCRIPT_DIR, "pokemon_profile_details_index.json")
+SHARDED_DETAILS_DIR = os.path.join(SCRIPT_DIR, "profile_details_shards")
 POKEAPI_BASE = "https://pokeapi.co/api/v2"
 
 VERSION_GROUP_GENERATIONS = {
@@ -364,15 +366,50 @@ def build_cache(args: argparse.Namespace) -> Dict[str, Any]:
 
 
 
+def load_sharded_profiles(index: Dict[str, Any]) -> Dict[str, Any]:
+    """Load all sharded runtime profiles for cache status reporting.
+
+    The Flask app loads shards lazily at runtime, but the maintenance --status
+    command needs full coverage counts. Only *.json shard files are considered;
+    temporary files such as tmp* are ignored by design.
+    """
+    profiles: Dict[str, Any] = {}
+    shard_counts = index.get("shard_counts", {}) if isinstance(index, dict) else {}
+    shard_ids = sorted(shard_counts) or [chr(code) for code in range(ord("a"), ord("z") + 1)]
+    for shard_id in shard_ids:
+        shard_path = os.path.join(SHARDED_DETAILS_DIR, f"{shard_id}.json")
+        shard = load_json(shard_path, {})
+        shard_profiles = shard.get("profiles", {}) if isinstance(shard, dict) else {}
+        if isinstance(shard_profiles, dict):
+            profiles.update(shard_profiles)
+    return profiles
+
+
 def cache_status() -> Dict[str, Any]:
     processed = load_json(PROCESSED_PATH, [])
-    cache = load_json(OUTPUT_PATH, {})
     keys = [p.get("name") for p in processed if p.get("name")] if isinstance(processed, list) else []
+
+    index = load_json(SHARDED_INDEX_PATH, {})
+    if isinstance(index, dict) and isinstance(index.get("key_to_shard"), dict):
+        profiles = load_sharded_profiles(index)
+        missing = [k for k in keys if k not in profiles]
+        return {
+            "cache_format": "sharded",
+            "expected": len(keys),
+            "cached": len(profiles),
+            "missing": len(missing),
+            "missing_keys": missing,
+            "index_profiles_cached": index.get("profiles_cached"),
+            "index_errors_count": index.get("errors_count", 0),
+        }
+
+    cache = load_json(OUTPUT_PATH, {})
     profiles = cache.get("profiles", {}) if isinstance(cache, dict) else {}
     missing = [k for k in keys if k not in profiles]
     errors = cache.get("errors", []) if isinstance(cache, dict) else []
     unresolved_errors = [e for e in errors if e.get("key") in missing]
     return {
+        "cache_format": "single-file",
         "expected": len(keys),
         "cached": len(profiles),
         "missing": len(missing),

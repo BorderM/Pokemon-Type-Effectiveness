@@ -1,0 +1,5 @@
+# Development/build dependencies for local maintenance scripts.
+-r requirements-web.txt
+
+pyinstaller>=6.7.0
+pyinstaller-hooks-contrib>=2024.6
