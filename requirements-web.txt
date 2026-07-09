@@ -1,0 +1,9 @@
+# Runtime dependencies for borderm.pythonanywhere.com
+Flask>=3.0.3
+aiohttp>=3.9.3
+asgiref>=3.8.1
+certifi>=2024.6.2
+PyYAML>=6.0
+requests>=2.32.3
+pokebase
+beautifulsoup4
